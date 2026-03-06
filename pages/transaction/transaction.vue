@@ -2,7 +2,7 @@
   <view class="transaction-page">
     <view class="tabs">
       <view :class="['tab', form.type === 'payment_to_merchant' && 'active']"
-        @click="form.type = 'payment_to_merchant'">向商户结账</view>
+        @click="form.type = 'payment_to_merchant'">向鸡场结账</view>
       <view :class="['tab', form.type === 'payment_to_worker' && 'active']"
         @click="form.type = 'payment_to_worker'">向员工结账</view>
     </view>

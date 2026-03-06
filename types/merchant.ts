@@ -1,5 +1,5 @@
 /**
- * 商户
+ * 鸡场
  */
 export interface Merchant {
 	id: string  

@@ -21,7 +21,7 @@
 	{
 		"path": "pages/merchant/merchant",
 		"style": {
-			"navigationBarTitleText": "商户"
+			"navigationBarTitleText": "鸡场"
 		}
 	},
 	{
@@ -72,7 +72,7 @@
 			},
 			{
 				"pagePath": "pages/merchant/merchant",
-				"text": "商户",
+				"text": "鸡场",
 				"iconPath": "static/icon/egg.png",
 				"selectedIconPath": "static/icon/egg-active.png"
 			},

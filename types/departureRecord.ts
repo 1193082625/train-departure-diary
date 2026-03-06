@@ -20,7 +20,7 @@ export interface DepartureRecord {
 	date: string // 日期 YYYY-MM-DD
 	dailyQuote: number // 当日报价（元/斤）
    
-	// 商户信息（一个记录可包含多个商户）
+	// 鸡场信息（一个记录可包含多个鸡场）
 	merchantDetails: MerchantDetail[]
    
 	// 留货数量  

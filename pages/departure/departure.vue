@@ -112,7 +112,7 @@
               <text class="time">{{ record.date }}</text>
             </view>
             <view class="record-content">
-              <text>商户: {{ record.merchantDetails.map(m => m.merchantName).join(', ') }}</text>
+              <text>鸡场: {{ record.merchantDetails.map(m => m.merchantName).join(', ') }}</text>
               <text>发车: {{ getWorkerName(record.departureWorkerId) }}</text>
               <text>装车: {{ record.loadingWorkerIds.map(id => getWorkerName(id)).join(', ') }}</text>
             </view>
@@ -138,7 +138,7 @@
             <text class="time">{{ record.date }}</text>
           </view>
           <view class="record-content">
-            <text>商户: {{ record.merchantDetails.map(m => m.merchantName).join(', ') }}</text>
+            <text>鸡场: {{ record.merchantDetails.map(m => m.merchantName).join(', ') }}</text>
             <text>发车: {{ getWorkerName(record.departureWorkerId) }}</text>
             <text>装车: {{ record.loadingWorkerIds.map(id => getWorkerName(id)).join(', ') }}</text>
           </view>

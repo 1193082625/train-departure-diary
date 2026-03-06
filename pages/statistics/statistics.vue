@@ -2,7 +2,7 @@
   <view class="statistics-page">
     <view class="tabs">
       <view :class="['tab', activeTab === 'worker' && 'active']" @click="activeTab = 'worker'">按人员</view>
-      <view :class="['tab', activeTab === 'merchant' && 'active']" @click="activeTab = 'merchant'">按商户</view>
+      <view :class="['tab', activeTab === 'merchant' && 'active']" @click="activeTab = 'merchant'">按鸡场</view>
     </view>
 
     <!-- 快捷日期范围选择 -->
@@ -58,10 +58,10 @@
       </view>
     </view>
 
-    <!-- 按商户统计 -->
+    <!-- 按鸡场统计 -->
     <view v-if="activeTab === 'merchant'" class="tab-content">
       <picker :range="merchantOptions" :range-key="'name'" @change="onMerchantChange">
-        <view class="picker">{{ selectedMerchant?.name || '选择商户' }}</view>
+        <view class="picker">{{ selectedMerchant?.name || '选择鸡场' }}</view>
       </picker>
 
       <picker mode="date" :value="dateRange.start" @change="onStartDateChange">
@@ -81,7 +81,7 @@
           <text class="value">{{ merchantStats.totalSmallBoxes }}</text>
         </view>
         <view class="stat-item">
-          <text>应收金额</text>
+          <text>应结金额</text>
           <text class="value">¥{{ merchantStats.receivable }}</text>
         </view>
         <view class="stat-item">
@@ -187,7 +187,7 @@ const updatePersonRecord = () => {
   })
 }
 
-// 更新商户记录的函数
+// 更新鸡场记录的函数
 const updateMerchantRecord = () => {
   if (!selectedMerchantId.value) {
     merchantRecord.value = []
@@ -208,7 +208,7 @@ watch(selectedWorkerId, () => {
   updatePersonRecord()
 })
 
-// 监听选择商户变化，更新有生意记录
+// 监听选择鸡场变化，更新有生意记录
 watch(selectedMerchantId, () => {
   updateMerchantRecord()
 })

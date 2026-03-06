@@ -59,11 +59,7 @@
             "es6" : true
         },
         "usingComponents" : true,
-        "permission" : {
-            "scope.userLocation" : {
-                "desc" : ""
-            }
-        }
+        "permission" : {}
     },
     "vueVersion" : "3",
     "fallbackLocale" : "zh-Hans",

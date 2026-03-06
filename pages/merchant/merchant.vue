@@ -1,7 +1,7 @@
 <template>
   <view class="merchant-page">
     <view class="header">
-      <text class="title">商户管理</text>
+      <text class="title">鸡场管理</text>
       <button class="add-btn" size="mini" @click="showAddModal = true">+ 添加</button>
     </view>
 
@@ -24,7 +24,7 @@
     <!-- 添加/编辑弹窗 -->
     <view v-if="showAddModal" class="modal-mask" @click="closeModal">
       <view class="modal" @click.stop>
-        <text class="modal-title">{{ editingMerchant ? '编辑商户' : '添加商户' }}</text>
+        <text class="modal-title">{{ editingMerchant ? '编辑鸡场' : '添加鸡场' }}</text>
 		<uni-forms :modelValue="form">
 			<uni-forms-item label="姓名" name="name">
 				<uni-easyinput type="text" v-model="form.name" placeholder="请输入姓名" />
@@ -93,7 +93,7 @@ const saveMerchant = () => {
 const deleteMerchant = (id) => {
   uni.showModal({
     title: '确认删除',
-    content: '确定要删除此商户吗？',
+    content: '确定要删除此鸡场吗？',
     success: (res) => {
       if (res.confirm) {
         merchantStore.deleteMerchant(id)

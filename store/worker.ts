@@ -24,9 +24,8 @@ export const useWorkerStore = defineStore('worker', () => {
 
   const saveWorkers = async () => {
     try {
-      // 删除旧数据，重新插入（简化处理）
-      // 实际生产中应该使用更高效的更新方式
-      await dbOps.dbOps?.executeSql?.({ sql: 'DELETE FROM workers' })
+      // 先删除所有旧数据
+      await dbOps.deleteAll('workers')
       for (const worker of workers.value) {
         await dbOps.insert('workers', worker)
       }

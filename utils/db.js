@@ -42,7 +42,7 @@ const createTables = () => {
     }
 
     const tables = [
-      // 商户表
+      // 鸡场表
       `CREATE TABLE IF NOT EXISTS merchants (
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
@@ -258,6 +258,27 @@ export const dbOps = {
         resolve(result.result || [])
       }, (err) => {
         console.error(`查询 ${table} 失败:`, err)
+        reject(err)
+      })
+    })
+  },
+
+  // 删除表中所有记录
+  deleteAll: (table) => {
+    return new Promise((resolve, reject) => {
+      if (!db) {
+        // 兼容模式：清空 localStorage
+        uni.removeStorageSync(table)
+        resolve()
+        return
+      }
+
+      db.executeSql({
+        sql: `DELETE FROM ${table}`
+      }, (result) => {
+        resolve()
+      }, (err) => {
+        console.error(`清空 ${table} 失败:`, err)
         reject(err)
       })
     })

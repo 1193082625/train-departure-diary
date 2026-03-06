@@ -16,35 +16,6 @@
         </view>
       </view>
 
-      <!-- 商户信息 -->
-      <view class="section">
-        <text class="section-title">商户信息</text>
-        <view v-for="(detail, index) in form.merchantDetails" :key="index" class="merchant-item">
-          <picker :range="merchantOptions" :range-key="'name'" @change="(e) => onMerchantChange(index, e)">
-            <view class="merchant-select">{{ detail.merchantName || '选择商户' }}</view>
-          </picker>
-          <view class="merchant-inputs">
-            <input v-model.number="detail.bigBoxes" type="number" placeholder="大框数" />
-            <input v-model.number="detail.smallBoxes" type="number" placeholder="小框数" />
-          </view>
-          <text @click="removeMerchant(index)" class="remove">×</text>
-        </view>
-        <button @click="addMerchant" class="add-merchant">+ 添加商户</button>
-      </view>
-
-      <!-- 留货信息 -->
-      <view class="section">
-        <text class="section-title">留货数量</text>
-        <view class="form-item">
-          <text>留货大框</text>
-          <input v-model.number="form.reservedBigBoxes" type="number" placeholder="0" />
-        </view>
-        <view class="form-item">
-          <text>留货小框</text>
-          <input v-model.number="form.reservedSmallBoxes" type="number" placeholder="0" />
-        </view>
-      </view>
-
       <!-- 人员信息 -->
       <view class="section">
         <text class="section-title">人员</text>
@@ -59,6 +30,47 @@
           <view class="checkbox-group">
             <uni-data-checkbox multiple v-model="form.loadingWorkerIds" :localdata="loadingWorkerOptions"></uni-data-checkbox>
           </view>
+        </view>
+      </view>
+
+      <!-- 鸡场信息 -->
+      <view class="section">
+        <text class="section-title">鸡场信息</text>
+        <view v-for="(detail, index) in form.merchantDetails" :key="index" class="merchant-item">
+          <picker :range="merchantOptions" :range-key="'name'" @change="(e) => onMerchantChange(index, e)">
+            <view class="merchant-select">{{ detail.merchantName || '选择鸡场' }}</view>
+          </picker>
+          <view class="merchant-inputs">
+            <input v-model.number="detail.bigBoxes" type="number" placeholder="大框数" />
+            <input v-model.number="detail.smallBoxes" type="number" placeholder="小框数" />
+          </view>
+          <text @click="removeMerchant(index)" class="remove">×</text>
+        </view>
+        <button @click="addMerchant" class="add-merchant">+ 添加鸡场</button>
+      </view>
+
+      <!-- 货车信息 -->
+      <view class="section">
+        <text class="section-title">货车信息</text>
+        <view v-for="(row, index) in form.truckRows" :key="index" class="truck-row">
+          <text>第{{ index + 1 }}排</text>
+          <input v-model.number="row.bigBoxes" type="number" placeholder="大框" />
+          <input v-model.number="row.smallBoxes" type="number" placeholder="小框" />
+          <text @click="removeTruckRow(index)" class="remove">×</text>
+        </view>
+        <button @click="addTruckRow" class="add-row">+ 添加排数</button>
+      </view>
+
+      <!-- 留货信息 -->
+      <view class="section">
+        <text class="section-title">留货数量</text>
+        <view class="form-item">
+          <text>留货大框</text>
+          <input v-model.number="form.reservedBigBoxes" type="number" placeholder="0" />
+        </view>
+        <view class="form-item">
+          <text>留货小框</text>
+          <input v-model.number="form.reservedSmallBoxes" type="number" placeholder="0" />
         </view>
       </view>
 
@@ -91,29 +103,9 @@
         </view>
       </view>
 
-      <!-- 货车信息 -->
-      <view class="section">
-        <text class="section-title">货车信息</text>
-        <view v-for="(row, index) in form.truckRows" :key="index" class="truck-row">
-          <text>第{{ index + 1 }}排</text>
-          <input v-model.number="row.bigBoxes" type="number" placeholder="大框" />
-          <input v-model.number="row.smallBoxes" type="number" placeholder="小框" />
-          <text @click="removeTruckRow(index)" class="remove">×</text>
-        </view>
-        <button @click="addTruckRow" class="add-row">+ 添加排数</button>
-      </view>
-
       <!-- 到货信息 -->
       <view class="section">
-        <text class="section-title">到货信息</text>
-        <view class="form-item">
-          <text>到货大框</text>
-          <input v-model.number="form.arrivalBigBoxes" type="number" placeholder="0" />
-        </view>
-        <view class="form-item">
-          <text>到货小框</text>
-          <input v-model.number="form.arrivalSmallBoxes" type="number" placeholder="0" />
-        </view>
+        <text class="section-title">回框信息</text>
         <view class="form-item">
           <text>回框大框</text>
           <input v-model.number="form.returnedBigBoxes" type="number" placeholder="0" />
@@ -130,16 +122,16 @@
         <textarea v-model="form.note" placeholder="请输入备注" class="note-input" />
       </view>
 
-      <!-- 计算结果 -->
+      <!-- 计算结果 - 【针对中间商可见】 -->
       <view class="section result">
         <text class="section-title">计算结果</text>
         <view class="result-item">
           <text>本次共拉大框</text>
-          <text class="result-value">{{ calculated.totalBig }}</text>
+          <text class="result-value">{{ calculated.merchantBigTotal }}</text>
         </view>
         <view class="result-item">
           <text>本次共拉小框</text>
-          <text class="result-value">{{ calculated.totalSmall }}</text>
+          <text class="result-value">{{ calculated.merchantSmallTotal }}</text>
         </view>
         <view class="result-item">
           <text>货车共装大框</text>
@@ -150,8 +142,8 @@
           <text class="result-value">{{ calculated.truckSmall }}</text>
         </view>
 
-        <!-- 商户金额明细 -->
-        <view v-if="calculated.merchantAmount.length > 0" class="result-subtitle">商户金额明细</view>
+        <!-- 鸡场金额明细 -->
+        <view v-if="calculated.merchantAmount.length > 0" class="result-subtitle">鸡场金额明细</view>
         <view v-for="(item, index) in calculated.merchantAmount" :key="index" class="calc-item">
           <text class="name">{{ item.name }}</text>
           <text class="result-value">¥{{ item.amount }}</text>
@@ -241,17 +233,13 @@ const calculated = computed(() => {
   const bigWeight = settingsStore.bigBoxWeight || 50
   const smallWeight = settingsStore.smallBoxWeight || 30
 
-  // 商户大框总数
+  // 鸡场大框总数
   const merchantBigTotal = form.merchantDetails.reduce((sum, m) => sum + (m.bigBoxes || 0), 0)
   const merchantSmallTotal = form.merchantDetails.reduce((sum, m) => sum + (m.smallBoxes || 0), 0)
 
-  // 本次共拉
-  const totalBig = merchantBigTotal - form.reservedBigBoxes
-  const totalSmall = merchantSmallTotal - form.reservedSmallBoxes
-
   // 货车共装
-  const truckBig = form.truckRows.reduce((sum, r) => sum + (r.bigBoxes || 0), 0)
-  const truckSmall = form.truckRows.reduce((sum, r) => sum + (r.smallBoxes || 0), 0)
+  const truckBig = form.truckRows.reduce((sum, r) => sum + (r.bigBoxes || 0), 0) - form.reservedBigBoxes
+  const truckSmall = form.truckRows.reduce((sum, r) => sum + (r.smallBoxes || 0), 0) - form.reservedSmallBoxes
 
   // 费用合计
   const totalOilFee = form.oilFee || 0
@@ -261,7 +249,7 @@ const calculated = computed(() => {
   const totalUnloadingFee = form.unloadingFee || 0
   const totalDepartureFee = form.departureFee || 0
 
-  // 按商户计算金额 - 使用新公式
+  // 按鸡场计算金额 - 使用新公式
   let merchantAmount = []
   let totalReceivePrice = 0  // 收货价合计
   let totalDeliveryPrice = 0 // 交货价合计
@@ -271,13 +259,13 @@ const calculated = computed(() => {
     if (merchant && form.dailyQuote) {
       const merchantMargin = merchant.margin || 0
 
-      // 收货价 = (当日报价 - 商户margin) / 45 × 大框斤数 × 本次共拉大框数量 + (当日报价 - 商户margin) / 45 × 小框斤数 × 本次共拉小框数量
+      // 收货价 = (当日报价 - 鸡场margin) / 45 × 大框斤数 × 本次共拉大框数量 + (当日报价 - 鸡场margin) / 45 × 小框斤数 × 本次共拉小框数量
       const receiveBig = (form.dailyQuote - merchantMargin) / 45 * bigWeight * detail.bigBoxes
       const receiveSmall = (form.dailyQuote - merchantMargin) / 45 * smallWeight * detail.smallBoxes
       const receivePrice = receiveBig + receiveSmall
       totalReceivePrice += receivePrice
 
-      // 交货价 = (当日报价 - 1) × 本次共拉大框数量 + (当日报价 - 商户margin) / 44 × 小框斤数 × 本次共拉小框数量
+      // 交货价 = (当日报价 - 1) × 本次共拉大框数量 + (当日报价 - 鸡场margin) / 44 × 小框斤数 × 本次共拉小框数量
       const deliveryBig = (form.dailyQuote - 1) * detail.bigBoxes
       const deliverySmall = (form.dailyQuote - merchantMargin) / 44 * smallWeight * detail.smallBoxes
       const deliveryPrice = deliveryBig + deliverySmall
@@ -292,14 +280,14 @@ const calculated = computed(() => {
     }
   })
 
-  // 本趟盈利 = 交货价 - 收货价 - 油费 - 进门费 - 过路费 - 装车费 - 卸车费
+  // 本趟盈利 = 交货价 - 收货价 - 油费 - 进门费 - 过路费 - 装车费 - 卸车费 - 发车费
   const profit = totalDeliveryPrice - totalReceivePrice - totalOilFee - totalEntryFee - totalTollFee - totalLoadingFee - totalUnloadingFee - totalDepartureFee
 
   return {
-    totalBig,
-    totalSmall,
     truckBig,
     truckSmall,
+    merchantBigTotal,
+    merchantSmallTotal,
     merchantAmount,
     totalReceivePrice: totalReceivePrice.toFixed(2),
     totalDeliveryPrice: totalDeliveryPrice.toFixed(2),
@@ -336,7 +324,7 @@ const saveRecord = () => {
   }
   if (form.merchantDetails.length === 0) {
     uni.showToast({
-      title: '请添加商户',
+      title: '请添加鸡场',
       icon: 'none'
     })
     return

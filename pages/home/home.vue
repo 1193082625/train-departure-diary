@@ -29,7 +29,7 @@
       </view>
       <view v-for="record in todayRecords" :key="record.id" class="record-item">
         <view class="record-info">
-          <text>{{ record.merchantDetails.map(m => m.merchantName).join(', ') || '未选择商户' }}</text>
+          <text>{{ record.merchantDetails.map(m => m.merchantName).join(', ') || '未选择鸡场' }}</text>
           <text class="record-profit" v-if="record.getMoney">盈利: ¥{{ record.getMoney.toFixed(2) }}</text>
         </view>
       </view>

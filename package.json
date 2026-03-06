@@ -10,8 +10,24 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@dcloudio/uni-app": "^2.0.2-4080720251210002",
+    "@dcloudio/uni-cli-i18n": "^2.0.2-4080720251210002",
+    "@dcloudio/uni-cli-shared": "^2.0.2-4080720251210002",
+    "@dcloudio/uni-h5": "^2.0.2-4080720251210002",
+    "@dcloudio/uni-mp-weixin": "^2.0.2-4080720251210002",
+    "@dcloudio/uni-template-compiler": "^2.0.2-4080720251210002",
+    "@dcloudio/vue-cli-plugin-hbuilderx": "^2.0.2-4080720251210002",
+    "@dcloudio/vue-cli-plugin-uni-optimize": "^2.0.2-4080720251210002",
+    "@dcloudio/webpack-uni-pages-loader": "^2.0.2-4080720251210002",
     "dayjs": "^1.11.19",
     "pinia": "^3.0.4",
     "sass": "^1.97.3"
+  },
+  "devDependencies": {
+    "@dcloudio/vue-cli-plugin-uni": "^2.0.2-4080720251210002",
+    "@dcloudio/webpack-uni-mp-loader": "^2.0.2-4080720251210002",
+    "@vue/cli-plugin-babel": "^5.0.9",
+    "@vue/cli-plugin-typescript": "^5.0.9",
+    "@vue/cli-service": "^5.0.9"
   }
 }

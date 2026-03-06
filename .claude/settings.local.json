@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm search @dcloudio/uni 2>/dev/null | grep -E \"\\(cli|build\\)\" | head -20)",
+      "Bash(npm search @dcloudio/uni 2>/dev/null | grep \"publish\" | head -30)",
+      "Bash(npm view @dcloudio/uni-app versions --json 2>/dev/null | tail -20)",
+      "Bash(npm view @dcloudio/uni-app-cli versions --json 2>/dev/null | tail -10)",
+      "Bash(/Applications/HBuilderX.app/Contents/HBuilderX/plugins/uniapp-cli/bin/uniapp-cli.js --help 2>&1 | head -30)",
+      "Bash(node /Applications/HBuilderX.app/Contents/HBuilderX/plugins/uniapp-cli/bin/uniapp-cli.js --help 2>&1 | head -30)",
+      "Bash(/Applications/HBuilderX.app/Contents/MacOS/cli --help 2>&1 | head -30)",
+      "Bash(/Applications/HBuilderX.app/Contents/MacOS/cli --help 2>&1 | tail -30)",
+      "Bash(\\\\\nexport UNI_INPUT_DIR=\"/Users/wangyue/Desktop/claude-pros/train-departure-diary\" && \\\\\nexport UNI_OUTPUT_DIR=\"/Users/wangyue/Desktop/claude-pros/train-departure-diary/unpackage/release\" && \\\\\nexport UNI_PLATFORM=\"app-android\" && \\\\\nnode /Applications/HBuilderX.app/Contents/HBuilderX/plugins/uniapp-cli/bin/uniapp-cli.js build --help 2>&1 | head -30)",
+      "Bash(cd /Applications/HBuilderX.app/Contents/HBuilderX/plugins/uniapp-cli && npx vue-cli-service --help 2>&1 | head -30)",
+      "Bash(npm install @dcloudio/vue-cli-plugin-uni @dcloudio/webpack-uni-mp-loader --save-dev 2>&1 | tail -20)",
+      "Bash(npm install @vue/cli-service @vue/cli-plugin-babel @vue/cli-plugin-typescript --save-dev 2>&1 | tail -10)",
+      "Bash(npm install @vue/cli-service @vue/cli-plugin-babel @vue/cli-plugin-typescript --save-dev --legacy-peer-deps 2>&1 | tail -10)",
+      "Bash(npx vue-cli-service --help 2>&1 | head -20)",
+      "Bash(npm install @dcloudio/uni-cli-i18n @dcloudio/uni-cli-shared --legacy-peer-deps 2>&1 | tail -10)",
+      "Bash(npm install @dcloudio/webpack-uni-pages-loader @dcloudio/webpack-uni-mp-loader @dcloudio/uni-template-compiler @dcloudio/uni-cli-i18n @dcloudio/uni-cli-shared @dcloudio/uni-app @dcloudio/uni-h5 @dcloudio/uni-mp-weixin @dcloudio/vue-cli-plugin-hbuilderx @dcloudio/vue-cli-plugin-uni-optimize --legacy-peer-deps 2>&1 | tail -15)"
+    ]
+  }
+}
