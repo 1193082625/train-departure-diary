@@ -11,12 +11,25 @@
         <view class="picker">{{ selectedWorker?.name || '选择人员' }}</view>
       </picker>
 
-      <picker mode="date" :value="dateRange.start" @change="onStartDateChange">
+      <!-- <picker mode="date" :value="dateRange.start" @change="onStartDateChange">
         <view class="picker">开始: {{ dateRange.start }}</view>
       </picker>
       <picker mode="date" :value="dateRange.end" @change="onEndDateChange">
         <view class="picker">结束: {{ dateRange.end }}</view>
-      </picker>
+      </picker> -->
+	  
+	  <uni-calendar 
+	  	:insert="true"
+	  	:lunar="true" 
+		:range="true"
+		:start-date="dateRange.start"
+		:end-date="dateRange.end"
+		:clear-date="true"
+		:show-month="false"
+		:selected="personRecord"
+	  	@change="changeDateRange"
+		@monthSwitch="clearWorkerStats"
+	  	 />
 
       <view class="stats-result">
         <view class="stat-item">
@@ -40,13 +53,26 @@
         <view class="picker">{{ selectedMerchant?.name || '选择商户' }}</view>
       </picker>
 
-      <picker mode="date" :value="dateRange.start" @change="onStartDateChange">
+      <!-- <picker mode="date" :value="dateRange.start" @change="onStartDateChange">
         <view class="picker">开始: {{ dateRange.start }}</view>
       </picker>
       <picker mode="date" :value="dateRange.end" @change="onEndDateChange">
         <view class="picker">结束: {{ dateRange.end }}</view>
-      </picker>
-
+      </picker> -->
+	  <view class="">
+		<uni-calendar 
+	  	:insert="true"
+	  	:lunar="true" 
+		:range="true"
+		:start-date="dateRange.start"
+		:end-date="dateRange.end"
+		:clear-date="true"
+		:show-month="false"
+		:selected="personRecord"
+	  	@change="changeDateRange"
+		@monthSwitch="clearWorkerStats"
+	  	 />
+		 </view>
       <view class="stats-result">
         <view class="stat-item">
           <text>共拉大框</text>
@@ -95,6 +121,8 @@ const dateRange = reactive({
   end: new Date().toISOString().split('T')[0]
 })
 
+const personRecord = []
+
 const workerOptions = computed(() => workerStore.workers)
 const merchantOptions = computed(() => merchantStore.merchants)
 
@@ -105,6 +133,11 @@ const onWorkerChange = (e) => { selectedWorkerId.value = workerOptions.value[e.d
 const onMerchantChange = (e) => { selectedMerchantId.value = merchantOptions.value[e.detail.value]?.id || '' }
 const onStartDateChange = (e) => { dateRange.start = e.detail.value }
 const onEndDateChange = (e) => { dateRange.end = e.detail.value }
+
+const clearWorkerStats = () => {}
+const changeDateRange = () => {
+	
+}
 
 const workerStats = computed(() => {
   if (!selectedWorkerId.value) return { workDays: 0, departureCount: 0, loadingCount: 0 }

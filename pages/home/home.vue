@@ -25,7 +25,7 @@
     <view class="recent-records">
       <text class="section-title">今日记录</text>
       <view v-for="record in todayRecords" :key="record.id" class="record-item">
-        <text>{{ record.merchantDetails.map(m => m.merchantName).join(', ') }}</text>
+			<text>{{ record.merchantDetails.map(m => m.merchantName).join(', ') }}</text>
         <!-- <text class="amount">¥{{ record.totalAmount }}</text> -->
       </view>
       <view v-if="todayRecords.length === 0" class="empty">暂无记录</view>
@@ -43,6 +43,7 @@ const todayRecords = computed(() => departureStore.getTodayRecords())
 
 const todayStats = computed(() => {
   const records = todayRecords.value
+  console.log('打印今日收入', records)
   const totalIncome = records.reduce((sum, r) => sum + (r.totalAmount || 0), 0)
   return {
     count: records.length,

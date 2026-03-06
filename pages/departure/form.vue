@@ -139,9 +139,9 @@
           <text class="result-value">{{ calculated.truckSmall }}</text>
         </view>
         <view class="result-item total">
-          <text>本次总计</text>
-		  <view class="">
-			  <view class="" v-for="(item, index) in calculated.merchantAmount" :key="index">
+          <view>本次总计</view>
+		  <view>
+			  <view class="calc-item" v-for="(item, index) in calculated.merchantAmount" :key="index">
 				<text class="name">{{ item.name }}</text>
 				<text class="result-value">¥{{ item.amount }}</text>
 			  </view>
@@ -215,6 +215,8 @@ const calculated = computed(() => {
 
   // 按商户计算金额
   let merchantAmount = []
+  // 本次盈利
+  let getMoney = 0
   form.merchantDetails.forEach(detail => {
     const merchant = merchantStore.getMerchantById(detail.merchantId)
     if (merchant) {
@@ -226,10 +228,14 @@ const calculated = computed(() => {
 		  name: merchant.name,
 		  amount: amount.toFixed(2)
 	  })
+	  getMoney += merchant.margin * bigWeight * detail.bigBoxes
+	  getMoney += merchant.margin * smallWeight * detail.smallBoxes
     }
   })
+  
+  getMoney = getMoney - form.fuelCost - form.entryFee;
 
-  return { totalBig, totalSmall, truckBig, truckSmall, merchantAmount: merchantAmount }
+  return { totalBig, totalSmall, truckBig, truckSmall, merchantAmount: merchantAmount, getMoney: getMoney }
 })
 
 const onDateChange = (e) => { form.date = e.detail.value }
@@ -261,7 +267,8 @@ const removeTruckRow = (index) => { form.truckRows.splice(index, 1) }
 const saveRecord = () => {
   const record = {
     ...form,
-    merchantAmount: calculated.value.merchantAmount
+    merchantAmount: calculated.value.merchantAmount,
+	getMoney: calculated.value.getMoney
   }
 
   if (form.id) {
@@ -307,8 +314,9 @@ onMounted(() => {
 .result { background: #f6ffed; }
 .result-item { display: flex; justify-content: space-between; padding: 8px 0; }
 .result-value { font-weight: bold; }
-.result-item.total { border-top: 1px solid #d9f7be; margin-top: 10px; padding-top: 10px; font-size: 16px; }
-.result-item.total .result-value { color: #52c41a; font-size: 18px; }
+.total { border-top: 1px solid #d9f7be; margin-top: 10px; padding-top: 10px; font-size: 16px; }
+.total .result-value { color: #52c41a; font-size: 18px; }
 .actions { margin-top: 20px; }
 .save-btn { background: #007aff; color: #fff; }
+.calc-item{ display: flex; justify-content: space-between; align-items: center; padding: 10px 0; }
 </style>

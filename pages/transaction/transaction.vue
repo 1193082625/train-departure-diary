@@ -130,7 +130,7 @@ const deleteTransaction = (id) => {
 .form-section { background: #fff; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
 .form-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
 .form-item input { text-align: right; width: 150px; }
-.add-btn { background: #52c41a; color: #fff; margin-top: 15px; }
+.add-btn { background: #52c41a; color: #fff; margin-top: 15px; margin: 0; }
 .records { background: #fff; padding: 15px; border-radius: 8px; }
 .title { font-weight: bold; margin-bottom: 10px; display: block; }
 .record-item { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }

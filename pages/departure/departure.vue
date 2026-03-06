@@ -16,7 +16,7 @@
     <view class="record-list">
       <view v-for="record in records" :key="record.id" class="record-card" @click="editRecord(record)">
         <view class="record-header">
-          <text class="time">{{ record.createdAt.split('T')[1].slice(0,5) }}</text>
+          <text class="time">{{ record.date }}</text>
           <!-- <text class="amount">¥{{ record.totalAmount }}</text> -->
         </view>
         <view class="record-content">
@@ -47,8 +47,11 @@ const workerStore = useWorkerStore()
 
 const selectedDate = ref(new Date().toISOString().split('T')[0])
 
-const records = computed(() =>
-  departureStore.getRecordsByDate(selectedDate.value)
+const records = computed(() => {
+	const res = departureStore.getRecordsByDate(selectedDate.value)
+	console.log(444, res)
+	return res;
+}
 )
 
 const onDateChange = (e) => {
@@ -83,7 +86,7 @@ const calculateTotalSmallBoxes = (record) => {
 .departure-page { padding: 20px; }
 .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
 .title { font-size: 20px; font-weight: bold; }
-.add-btn { background: #007aff; color: #fff; padding: 8px 16px; border-radius: 4px; }
+.add-btn { background: #007aff; color: #fff; padding: 8px 16px; border-radius: 4px; margin: 0;}
 .date-picker { margin-bottom: 15px; }
 .picker-text { background: #f5f5f5; padding: 10px; border-radius: 4px; text-align: center; }
 .record-card { background: #fff; padding: 15px; border-radius: 8px; margin-bottom: 10px; }

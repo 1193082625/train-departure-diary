@@ -118,7 +118,7 @@ const onTypeChange = (e) => {
 .worker-page { padding: 20px; }
 .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
 .title { font-size: 20px; font-weight: bold; }
-.add-btn { background: #007aff; color: #fff; padding: 8px 16px; border-radius: 4px; }
+.add-btn { background: #007aff; color: #fff; padding: 8px 16px; border-radius: 4px; margin: 0; }
 .worker-card { background: #fff; padding: 15px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
 .worker-info { display: flex; flex-direction: column; }
 .name { font-size: 16px; font-weight: bold; }
