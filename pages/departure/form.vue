@@ -57,12 +57,7 @@
         <view class="form-item">
           <text>装车人员</text>
           <view class="checkbox-group">
-            <checkbox v-for="worker in loadingWorkerOptions" :key="worker.id"
-              :value="worker.id"
-              :checked="form.loadingWorkerIds.includes(worker.id)"
-              @change="onLoadingWorkerChange(worker.id)">
-              {{ worker.name }}
-            </checkbox>
+            <uni-data-checkbox multiple v-model="form.loadingWorkerIds" :localdata="loadingWorkerOptions"></uni-data-checkbox>
           </view>
         </view>
       </view>
@@ -190,7 +185,10 @@ const form = reactive({
 
 const merchantOptions = computed(() => merchantStore.merchants)
 const departureWorkerOptions = computed(() => workerStore.departureWorkers)
-const loadingWorkerOptions = computed(() => workerStore.loadingWorkers)
+const loadingWorkerOptions = computed(() => workerStore.loadingWorkers.map(worker => ({
+  text: worker.name,
+  value: worker.id
+})))
 
 const selectedDepartureWorker = computed(() =>
   workerStore.getWorkerById(form.departureWorkerId)
@@ -240,14 +238,6 @@ const calculated = computed(() => {
 
 const onDateChange = (e) => { form.date = e.detail.value }
 const onDepartureWorkerChange = (e) => { form.departureWorkerId = departureWorkerOptions.value[e.detail.value]?.id || '' }
-const onLoadingWorkerChange = (workerId) => {
-  const index = form.loadingWorkerIds.indexOf(workerId)
-  if (index > -1) {
-    form.loadingWorkerIds.splice(index, 1)
-  } else {
-    form.loadingWorkerIds.push(workerId)
-  }
-}
 
 const addMerchant = () => {
   form.merchantDetails.push({ merchantId: '', merchantName: '', bigBoxes: null, smallBoxes: null })

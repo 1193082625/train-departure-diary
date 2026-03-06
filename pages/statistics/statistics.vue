@@ -161,11 +161,20 @@ const updatePersonRecord = () => {
   const records = departureStore.getRecordsByDateRange(dateRange.start, dateRange.end)
   const workDates = records
     .filter(r => r.departureWorkerId === selectedWorkerId.value || r.loadingWorkerIds.includes(selectedWorkerId.value))
-    .map(r => r.date)
-  personRecord.value = [...new Set(workDates)].map(date => ({
-    date,
-    info: '出勤'
-  }))
+    
+  personRecord.value = [...new Set(workDates)].map(r => {
+    const label = []
+    if(r.departureWorkerId === selectedWorkerId.value) {
+      label.push('发')
+    }
+    if(r.loadingWorkerIds.includes(selectedWorkerId.value)) {
+      label.push('装')
+    }
+    return {
+      date: r.date,
+      info: label.join('+')
+    }
+  })
 }
 
 // 更新商户记录的函数
