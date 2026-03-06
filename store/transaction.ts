@@ -1,30 +1,62 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import { dbOps } from '@/utils/db'
 
 export const useTransactionStore = defineStore('transaction', () => {
   const transactions = ref([])
 
-  const loadTransactions = () => {
-    const data = uni.getStorageSync('transactions')
-    transactions.value = data ? JSON.parse(data) : []
+  const loadTransactions = async () => {
+    try {
+      const results = await dbOps.queryAll('transactions')
+      if (results && results.length > 0) {
+        transactions.value = results
+      } else {
+        // 兼容：从 localStorage 读取
+        const data = uni.getStorageSync('transactions')
+        transactions.value = data ? JSON.parse(data) : []
+      }
+    } catch (e) {
+      // 兼容：localStorage 读取
+      const data = uni.getStorageSync('transactions')
+      transactions.value = data ? JSON.parse(data) : []
+    }
   }
 
-  const saveTransactions = () => {
-    uni.setStorageSync('transactions', JSON.stringify(transactions.value))
+  const saveTransactions = async () => {
+    try {
+      // 保存到数据库
+      for (const transaction of transactions.value) {
+        const existing = await dbOps.queryBy('transactions', 'id', transaction.id)
+        if (existing && existing.length > 0) {
+          await dbOps.update('transactions', transaction.id, transaction)
+        } else {
+          await dbOps.insert('transactions', transaction)
+        }
+      }
+    } catch (e) {
+      // 兼容：保存到 localStorage
+      uni.setStorageSync('transactions', JSON.stringify(transactions.value))
+    }
   }
 
-  const addTransaction = (transaction) => {
-    transactions.value.push({
+  const addTransaction = async (transaction) => {
+    const newTransaction = {
       ...transaction,
       id: Date.now().toString(),
       createdAt: new Date().toISOString()
-    })
-    saveTransactions()
+    }
+    transactions.value.push(newTransaction)
+    await saveTransactions()
+    return newTransaction
   }
 
-  const deleteTransaction = (id) => {
+  const deleteTransaction = async (id) => {
     transactions.value = transactions.value.filter(t => t.id !== id)
-    saveTransactions()
+    try {
+      await dbOps.delete('transactions', id)
+    } catch (e) {
+      // 兼容 localStorage
+    }
   }
 
   const getTransactionsByTarget = (targetId) =>

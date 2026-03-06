@@ -12,7 +12,7 @@
           <text class="phone">{{ merchant.phone }}</text>
         </view>
         <view class="merchant-margin">
-          <text>差额: {{ merchant.margin }}元/斤</text>
+          <text>差额: {{ merchant.margin }}元/框</text>
         </view>
         <view class="actions">
           <text @click="editMerchant(merchant)">编辑</text>
@@ -33,7 +33,7 @@
 				<uni-easyinput type="tel" v-model="form.phone" placeholder="请输入手机号" />
 			</uni-forms-item>
 			<uni-forms-item label="差额" name="margin">
-				<uni-easyinput type="number" v-model="form.margin" placeholder="差额（元/斤）" />
+				<uni-easyinput type="number" v-model="form.margin" placeholder="差额（元/框）" />
 			</uni-forms-item>
 		</uni-forms>
         <view class="modal-actions">

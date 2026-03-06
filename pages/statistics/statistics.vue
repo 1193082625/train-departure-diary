@@ -51,6 +51,10 @@
           <text>装车次数</text>
           <text class="value">{{ workerStats.loadingCount }}</text>
         </view>
+        <view class="stat-item">
+          <text>应结金额</text>
+          <text class="value profit">¥{{ workerStats.totalProfit }}</text>
+        </view>
       </view>
     </view>
 
@@ -130,15 +134,21 @@ const setQuickRange = (type) => {
       dateRange.end = dateRange.start
       break
     case 'month':
-      dateRange.start = new Date(year, month, 1).toISOString().split('T')[0]
+      // 获取本月第一天
+      dateRange.start = new Date(year, month, 2).toISOString().split('T')[0]
+      // 获取本月最后一天
       dateRange.end = today.toISOString().split('T')[0]
       break
     case 'lastMonth':
-      dateRange.start = new Date(year, month - 1, 1).toISOString().split('T')[0]
-      dateRange.end = new Date(year, month, 0).toISOString().split('T')[0]
+      // 获取上月第一天
+      dateRange.start = new Date(year, month - 1, 2).toISOString().split('T')[0]
+      // 获取上月最后一天
+      dateRange.end = new Date(year, month, 1).toISOString().split('T')[0]
       break
     case 'year':
-      dateRange.start = new Date(year, 0, 1).toISOString().split('T')[0]
+      // 获取本年第一天
+      dateRange.start = new Date(year, 0, 2).toISOString().split('T')[0]
+      // 获取本年最后一天
       dateRange.end = today.toISOString().split('T')[0]
       break
     case 'all':
@@ -226,14 +236,15 @@ const changeDateRange = () => {
 }
 
 const workerStats = computed(() => {
-  if (!selectedWorkerId.value) return { workDays: 0, departureCount: 0, loadingCount: 0 }
+  if (!selectedWorkerId.value) return { workDays: 0, departureCount: 0, loadingCount: 0, totalProfit: 0 }
 
   const records = departureStore.getRecordsByDateRange(dateRange.start, dateRange.end)
   const workDays = new Set(records.map(r => r.date)).size
   const departureCount = records.filter(r => r.departureWorkerId === selectedWorkerId.value).length
   const loadingCount = records.filter(r => r.loadingWorkerIds.includes(selectedWorkerId.value)).length
+  const totalProfit = records.reduce((sum, r) => sum + (parseFloat(r.getMoney) || 0), 0)
 
-  return { workDays, departureCount, loadingCount }
+  return { workDays, departureCount, loadingCount, totalProfit: totalProfit.toFixed(2) }
 })
 
 const merchantStats = computed(() => {
@@ -252,7 +263,7 @@ const merchantStats = computed(() => {
       if (merchant) {
         const bigWeight = settingsStore.bigBoxWeight || 50
         const smallWeight = settingsStore.smallBoxWeight || 30
-        const price = r.dailyQuote - merchant.margin
+        const price = (r.dailyQuote - merchant.margin) / (settingsStore.bigBoxWeight || 45)
         receivable += price * bigWeight * detail.bigBoxes + price * smallWeight * detail.smallBoxes
       }
     }
@@ -273,8 +284,8 @@ const merchantStats = computed(() => {
 
 <style scoped>
 .statistics-page { padding: 20px; }
-.tabs { display: flex; background: #f5f5f5; border-radius: 8px; margin-bottom: 20px; }
-.tab { flex: 1; text-align: center; padding: 10px; border-radius: 8px; }
+.tabs { display: flex; gap: 10px; background: #f5f5f5; border-radius: 8px; margin-bottom: 20px; }
+.tab { flex: 1; text-align: center; padding: 10px; border-radius: 8px; background: #fff;}
 .tab.active { background: #007aff; color: #fff; }
 .quick-range { display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap; }
 .range-btn { padding: 8px 12px; background: #fff; border-radius: 4px; font-size: 14px; border: 1px solid #ddd; }
@@ -283,6 +294,8 @@ const merchantStats = computed(() => {
 .picker { background: #fff; padding: 12px; border-radius: 4px; }
 .stats-result { background: #fff; padding: 15px; border-radius: 8px; margin-top: 15px; }
 .stat-item { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
+.stat-item:last-child { border-bottom: none; }
 .value { font-weight: bold; color: #007aff; }
+.profit { color: #52c41a; }
 .unpaid { color: #ff4d4f; }
 </style>

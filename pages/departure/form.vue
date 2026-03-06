@@ -11,7 +11,7 @@
           </view>
         </picker>
         <view class="form-item">
-          <text>当日报价（元/斤）</text>
+          <text>当日报价（元/框）</text>
           <input v-model.number="form.dailyQuote" type="digit" placeholder="请输入" />
         </view>
       </view>
@@ -64,14 +64,26 @@
 
       <!-- 费用信息 -->
       <view class="section">
-        <text class="section-title">费用</text>
+        <text class="section-title">费用（元）</text>
         <view class="form-item">
-          <text>加油费（元）</text>
-          <input v-model.number="form.fuelCost" type="digit" placeholder="0" />
+          <text>油费</text>
+          <input v-model.number="form.oilFee" type="digit" placeholder="0" />
         </view>
         <view class="form-item">
-          <text>进门费（元）</text>
+          <text>进门费</text>
           <input v-model.number="form.entryFee" type="digit" placeholder="0" />
+        </view>
+        <view class="form-item">
+          <text>过路费</text>
+          <input v-model.number="form.tollFee" type="digit" placeholder="0" />
+        </view>
+        <view class="form-item">
+          <text>装车费</text>
+          <input v-model.number="form.loadingFee" type="digit" placeholder="0" />
+        </view>
+        <view class="form-item">
+          <text>卸车费</text>
+          <input v-model.number="form.unloadingFee" type="digit" placeholder="0" />
         </view>
       </view>
 
@@ -133,15 +145,27 @@
           <text>货车共装小框</text>
           <text class="result-value">{{ calculated.truckSmall }}</text>
         </view>
+
+        <!-- 商户金额明细 -->
+        <view v-if="calculated.merchantAmount.length > 0" class="result-subtitle">商户金额明细</view>
+        <view v-for="(item, index) in calculated.merchantAmount" :key="index" class="calc-item">
+          <text class="name">{{ item.name }}</text>
+          <text class="result-value">¥{{ item.amount }}</text>
+        </view>
+
+        <!-- 新增：收货价、交货价、盈利 -->
+        <view class="result-divider"></view>
+        <view class="result-item highlight">
+          <text>收货价合计</text>
+          <text class="result-value">¥{{ calculated.totalReceivePrice }}</text>
+        </view>
+        <view class="result-item highlight">
+          <text>交货价合计</text>
+          <text class="result-value">¥{{ calculated.totalDeliveryPrice }}</text>
+        </view>
         <view class="result-item total">
-          <view>本次总计</view>
-		  <view>
-			  <view class="calc-item" v-for="(item, index) in calculated.merchantAmount" :key="index">
-				<text class="name">{{ item.name }}</text>
-				<text class="result-value">¥{{ item.amount }}</text>
-			  </view>
-		  </view>
-          
+          <view>本趟盈利</view>
+          <view class="result-value profit">¥{{ calculated.profit }}</view>
         </view>
       </view>
 
@@ -153,7 +177,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useDepartureStore } from '@/store/departure'
 import { useMerchantStore } from '@/store/merchant'
 import { useWorkerStore } from '@/store/worker'
@@ -173,8 +197,11 @@ const form = reactive({
   reservedSmallBoxes: 0,
   departureWorkerId: '',
   loadingWorkerIds: [],
-  fuelCost: 0,
+  oilFee: 0,
   entryFee: 0,
+  tollFee: 0,
+  loadingFee: 0,
+  unloadingFee: 0,
   truckRows: [],
   arrivalBigBoxes: 0,
   arrivalSmallBoxes: 0,
@@ -194,7 +221,16 @@ const selectedDepartureWorker = computed(() =>
   workerStore.getWorkerById(form.departureWorkerId)
 )
 
-// 计算结果
+// 从设置中加载默认值
+const loadDefaultSettings = () => {
+  form.oilFee = settingsStore.oilFee || 0
+  form.entryFee = settingsStore.entryFee || 0
+  form.tollFee = settingsStore.tollFee || 0
+  form.loadingFee = settingsStore.loadingFee || 0
+  form.unloadingFee = settingsStore.unloadingFee || 0
+}
+
+// 计算结果 - 使用新公式
 const calculated = computed(() => {
   const bigWeight = settingsStore.bigBoxWeight || 50
   const smallWeight = settingsStore.smallBoxWeight || 30
@@ -211,29 +247,57 @@ const calculated = computed(() => {
   const truckBig = form.truckRows.reduce((sum, r) => sum + (r.bigBoxes || 0), 0)
   const truckSmall = form.truckRows.reduce((sum, r) => sum + (r.smallBoxes || 0), 0)
 
-  // 按商户计算金额
+  // 费用合计
+  const totalOilFee = form.oilFee || 0
+  const totalEntryFee = form.entryFee || 0
+  const totalTollFee = form.tollFee || 0
+  const totalLoadingFee = form.loadingFee || 0
+  const totalUnloadingFee = form.unloadingFee || 0
+
+  // 按商户计算金额 - 使用新公式
   let merchantAmount = []
-  // 本次盈利
-  let getMoney = 0
+  let totalReceivePrice = 0  // 收货价合计
+  let totalDeliveryPrice = 0 // 交货价合计
+
   form.merchantDetails.forEach(detail => {
     const merchant = merchantStore.getMerchantById(detail.merchantId)
-    if (merchant) {
-		let amount = 0;
-      const price = form.dailyQuote - merchant.margin
-      amount += price * bigWeight * detail.bigBoxes
-      amount += price * smallWeight * detail.smallBoxes
-	  merchantAmount.push({
-		  name: merchant.name,
-		  amount: amount.toFixed(2)
-	  })
-	  getMoney += merchant.margin * bigWeight * detail.bigBoxes
-	  getMoney += merchant.margin * smallWeight * detail.smallBoxes
+    if (merchant && form.dailyQuote) {
+      const merchantMargin = merchant.margin || 0
+
+      // 收货价 = (当日报价 - 商户margin) / 45 × 大框斤数 × 本次共拉大框数量 + (当日报价 - 商户margin) / 45 × 小框斤数 × 本次共拉小框数量
+      const receiveBig = (form.dailyQuote - merchantMargin) / 45 * bigWeight * detail.bigBoxes
+      const receiveSmall = (form.dailyQuote - merchantMargin) / 45 * smallWeight * detail.smallBoxes
+      const receivePrice = receiveBig + receiveSmall
+      totalReceivePrice += receivePrice
+
+      // 交货价 = (当日报价 - 1) × 本次共拉大框数量 + (当日报价 - 商户margin) / 44 × 小框斤数 × 本次共拉小框数量
+      const deliveryBig = (form.dailyQuote - 1) * detail.bigBoxes
+      const deliverySmall = (form.dailyQuote - merchantMargin) / 44 * smallWeight * detail.smallBoxes
+      const deliveryPrice = deliveryBig + deliverySmall
+      totalDeliveryPrice += deliveryPrice
+
+      merchantAmount.push({
+        name: merchant.name,
+        amount: receivePrice.toFixed(2),
+        receivePrice: receivePrice.toFixed(2),
+        deliveryPrice: deliveryPrice.toFixed(2)
+      })
     }
   })
-  
-  getMoney = getMoney - form.fuelCost - form.entryFee;
 
-  return { totalBig, totalSmall, truckBig, truckSmall, merchantAmount: merchantAmount, getMoney: getMoney }
+  // 本趟盈利 = 交货价 - 收货价 - 油费 - 进门费 - 过路费 - 装车费 - 卸车费
+  const profit = totalDeliveryPrice - totalReceivePrice - totalOilFee - totalEntryFee - totalTollFee - totalLoadingFee - totalUnloadingFee
+
+  return {
+    totalBig,
+    totalSmall,
+    truckBig,
+    truckSmall,
+    merchantAmount,
+    totalReceivePrice: totalReceivePrice.toFixed(2),
+    totalDeliveryPrice: totalDeliveryPrice.toFixed(2),
+    profit: profit.toFixed(2)
+  }
 })
 
 const onDateChange = (e) => { form.date = e.detail.value }
@@ -255,10 +319,61 @@ const addTruckRow = () => { form.truckRows.push({ rowNumber: form.truckRows.leng
 const removeTruckRow = (index) => { form.truckRows.splice(index, 1) }
 
 const saveRecord = () => {
+  // 添加校验
+  if (form.dailyQuote <= 0) {
+    uni.showToast({
+      title: '当日报价不能为0',
+      icon: 'none'
+    })
+    return
+  }
+  if (form.merchantDetails.length === 0) {
+    uni.showToast({
+      title: '请添加商户',
+      icon: 'none'
+    })
+    return
+  }
+  if (form.truckRows.length === 0) {
+    uni.showToast({
+      title: '请添加货车排数',
+      icon: 'none'
+    })
+    return
+  }
+  // 发车人不能为空
+  if (!form.departureWorkerId) {
+    uni.showToast({
+      title: '请选择发车人员',
+      icon: 'none'
+    })
+    return
+  }
+  // 装车人不能为空
+  if (form.loadingWorkerIds.length === 0) {
+    uni.showToast({
+      title: '请选择装车人员',
+      icon: 'none'
+    })
+    return
+  }
+
+  const money = parseFloat(calculated.value.profit)
+
+  // if(money <= 0) {
+  //   uni.showToast({
+  //     title: '本趟盈利为0，请检查是否存在错误输入',
+  //     icon: 'none'
+  //   })
+  //   return
+  // }
+
   const record = {
     ...form,
     merchantAmount: calculated.value.merchantAmount,
-	getMoney: calculated.value.getMoney
+    totalReceivePrice: calculated.value.totalReceivePrice,
+    totalDeliveryPrice: calculated.value.totalDeliveryPrice,
+    getMoney: parseFloat(calculated.value.profit)
   }
 
   if (form.id) {
@@ -270,6 +385,9 @@ const saveRecord = () => {
 }
 
 onMounted(() => {
+  // 加载默认设置
+  loadDefaultSettings()
+
   // 检查是否有编辑ID
   const pages = getCurrentPages()
   const currentPage = pages[pages.length - 1]
@@ -304,9 +422,14 @@ onMounted(() => {
 .result { background: #f6ffed; }
 .result-item { display: flex; justify-content: space-between; padding: 8px 0; }
 .result-value { font-weight: bold; }
+.result-subtitle { font-size: 14px; color: #666; margin: 10px 0 5px; }
+.calc-item { display: flex; justify-content: space-between; padding: 5px 0; font-size: 14px; }
+.result-divider { height: 1px; background: #d9f7be; margin: 10px 0; }
+.result-item.highlight { background: #fff7e6; padding: 10px; border-radius: 4px; margin: 5px 0; }
+.result-item.highlight .result-value { color: #fa8c16; }
 .total { border-top: 1px solid #d9f7be; margin-top: 10px; padding-top: 10px; font-size: 16px; }
 .total .result-value { color: #52c41a; font-size: 18px; }
+.profit { color: #52c41a !important; }
 .actions { margin-top: 20px; }
 .save-btn { background: #007aff; color: #fff; }
-.calc-item{ display: flex; justify-content: space-between; align-items: center; padding: 10px 0; }
 </style>
