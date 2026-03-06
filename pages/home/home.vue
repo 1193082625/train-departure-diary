@@ -67,6 +67,10 @@
               <input v-model.number="settingsForm.unloadingFee" type="digit" placeholder="请输入" />
             </view>
             <view class="form-item">
+              <text>发车费</text>
+              <input v-model.number="settingsForm.departureFee" type="digit" placeholder="请输入" />
+            </view>
+            <view class="form-item">
               <text>过路费</text>
               <input v-model.number="settingsForm.tollFee" type="digit" placeholder="请输入" />
             </view>
@@ -101,6 +105,7 @@ const settingsForm = reactive({
   smallBoxWeight: 29.5,
   loadingFee: 300, // 装车费
   unloadingFee: 200, // 卸车费
+  departureFee: 200, // 发车费
   tollFee: 50, // 过路费
   entryFee: 50, // 进门费
   oilFee: 50, // 油费
@@ -135,6 +140,7 @@ const popupChange = (e) => {
     settingsForm.smallBoxWeight = settingsStore.smallBoxWeight
     settingsForm.loadingFee = settingsStore.loadingFee
     settingsForm.unloadingFee = settingsStore.unloadingFee
+    settingsForm.departureFee = settingsStore.departureFee
     settingsForm.tollFee = settingsStore.tollFee
     settingsForm.entryFee = settingsStore.entryFee
     settingsForm.oilFee = settingsStore.oilFee
@@ -147,6 +153,7 @@ const saveSettings = () => {
     smallBoxWeight: settingsForm.smallBoxWeight,
     loadingFee: settingsForm.loadingFee,
     unloadingFee: settingsForm.unloadingFee,
+    departureFee: settingsForm.departureFee,
     tollFee: settingsForm.tollFee,
     entryFee: settingsForm.entryFee,
     oilFee: settingsForm.oilFee

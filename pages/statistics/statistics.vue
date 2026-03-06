@@ -240,9 +240,12 @@ const workerStats = computed(() => {
 
   const records = departureStore.getRecordsByDateRange(dateRange.start, dateRange.end)
   const workDays = new Set(records.map(r => r.date)).size
+  // 发车次数
   const departureCount = records.filter(r => r.departureWorkerId === selectedWorkerId.value).length
+  // 装车次数
   const loadingCount = records.filter(r => r.loadingWorkerIds.includes(selectedWorkerId.value)).length
-  const totalProfit = records.reduce((sum, r) => sum + (parseFloat(r.getMoney) || 0), 0)
+    
+  const totalProfit = departureCount * (settingsStore.departureFee || 0) + loadingCount * (settingsStore.loadingFee / 2 || 0)
 
   return { workDays, departureCount, loadingCount, totalProfit: totalProfit.toFixed(2) }
 })

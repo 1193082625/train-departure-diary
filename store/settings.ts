@@ -7,6 +7,7 @@ export const useSettingsStore = defineStore('settings', () => {
   const smallBoxWeight = ref(29.5)
   const loadingFee = ref(300)      // 装车费
   const unloadingFee = ref(200)    // 卸车费
+  const departureFee = ref(200)    // 发车费
   const tollFee = ref(50)         // 过路费
   const entryFee = ref(50)        // 进门费
   const oilFee = ref(50)          // 油费
@@ -21,6 +22,7 @@ export const useSettingsStore = defineStore('settings', () => {
         smallBoxWeight.value = settings.smallBoxWeight ?? 30
         loadingFee.value = settings.loadingFee ?? 0
         unloadingFee.value = settings.unloadingFee ?? 0
+        departureFee.value = settings.departureFee ?? 0
         tollFee.value = settings.tollFee ?? 0
         entryFee.value = settings.entryFee ?? 0
         oilFee.value = settings.oilFee ?? 0
@@ -33,6 +35,7 @@ export const useSettingsStore = defineStore('settings', () => {
           smallBoxWeight.value = settings.smallBoxWeight ?? 30
           loadingFee.value = settings.loadingFee ?? 0
           unloadingFee.value = settings.unloadingFee ?? 0
+          departureFee.value = settings.departureFee ?? 0
           tollFee.value = settings.tollFee ?? 0
           entryFee.value = settings.entryFee ?? 0
           oilFee.value = settings.oilFee ?? 0
@@ -47,6 +50,7 @@ export const useSettingsStore = defineStore('settings', () => {
         smallBoxWeight.value = settings.smallBoxWeight ?? 30
         loadingFee.value = settings.loadingFee ?? 0
         unloadingFee.value = settings.unloadingFee ?? 0
+        departureFee.value = settings.departureFee ?? 0
         tollFee.value = settings.tollFee ?? 0
         entryFee.value = settings.entryFee ?? 0
         oilFee.value = settings.oilFee ?? 0
@@ -61,6 +65,7 @@ export const useSettingsStore = defineStore('settings', () => {
       smallBoxWeight: smallBoxWeight.value,
       loadingFee: loadingFee.value,
       unloadingFee: unloadingFee.value,
+      departureFee: departureFee.value,
       tollFee: tollFee.value,
       entryFee: entryFee.value,
       oilFee: oilFee.value
@@ -95,6 +100,11 @@ export const useSettingsStore = defineStore('settings', () => {
     saveSettings()
   }
 
+  const setDepartureFee = (fee) => {
+    departureFee.value = fee
+    saveSettings()
+  }
+
   const setTollFee = (fee) => {
     tollFee.value = fee
     saveSettings()
@@ -115,6 +125,7 @@ export const useSettingsStore = defineStore('settings', () => {
     if (params.smallBoxWeight !== undefined) smallBoxWeight.value = params.smallBoxWeight
     if (params.loadingFee !== undefined) loadingFee.value = params.loadingFee
     if (params.unloadingFee !== undefined) unloadingFee.value = params.unloadingFee
+    if (params.departureFee !== undefined) departureFee.value = params.departureFee
     if (params.tollFee !== undefined) tollFee.value = params.tollFee
     if (params.entryFee !== undefined) entryFee.value = params.entryFee
     if (params.oilFee !== undefined) oilFee.value = params.oilFee
@@ -129,6 +140,7 @@ export const useSettingsStore = defineStore('settings', () => {
     smallBoxWeight,
     loadingFee,
     unloadingFee,
+    departureFee,
     tollFee,
     entryFee,
     oilFee,
@@ -136,6 +148,7 @@ export const useSettingsStore = defineStore('settings', () => {
     setSmallBoxWeight,
     setLoadingFee,
     setUnloadingFee,
+    setDepartureFee,
     setTollFee,
     setEntryFee,
     setOilFee,

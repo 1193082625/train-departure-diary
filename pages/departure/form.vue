@@ -85,6 +85,10 @@
           <text>卸车费</text>
           <input v-model.number="form.unloadingFee" type="digit" placeholder="0" />
         </view>
+        <view class="form-item">
+          <text>发车费</text>
+          <input v-model.number="form.departureFee" type="digit" placeholder="0" />
+        </view>
       </view>
 
       <!-- 货车信息 -->
@@ -202,6 +206,7 @@ const form = reactive({
   tollFee: 0,
   loadingFee: 0,
   unloadingFee: 0,
+  departureFee: 0,
   truckRows: [],
   arrivalBigBoxes: 0,
   arrivalSmallBoxes: 0,
@@ -228,6 +233,7 @@ const loadDefaultSettings = () => {
   form.tollFee = settingsStore.tollFee || 0
   form.loadingFee = settingsStore.loadingFee || 0
   form.unloadingFee = settingsStore.unloadingFee || 0
+  form.departureFee = settingsStore.departureFee || 0
 }
 
 // 计算结果 - 使用新公式
@@ -253,6 +259,7 @@ const calculated = computed(() => {
   const totalTollFee = form.tollFee || 0
   const totalLoadingFee = form.loadingFee || 0
   const totalUnloadingFee = form.unloadingFee || 0
+  const totalDepartureFee = form.departureFee || 0
 
   // 按商户计算金额 - 使用新公式
   let merchantAmount = []
@@ -286,7 +293,7 @@ const calculated = computed(() => {
   })
 
   // 本趟盈利 = 交货价 - 收货价 - 油费 - 进门费 - 过路费 - 装车费 - 卸车费
-  const profit = totalDeliveryPrice - totalReceivePrice - totalOilFee - totalEntryFee - totalTollFee - totalLoadingFee - totalUnloadingFee
+  const profit = totalDeliveryPrice - totalReceivePrice - totalOilFee - totalEntryFee - totalTollFee - totalLoadingFee - totalUnloadingFee - totalDepartureFee
 
   return {
     totalBig,
