@@ -1,0 +1,314 @@
+<template>
+  <view class="form-page">
+    <view class="form-container">
+      <!-- 基本信息 -->
+      <view class="section">
+        <text class="section-title">基本信息</text>
+        <picker mode="date" :value="form.date" @change="onDateChange">
+          <view class="form-item">
+            <text>日期</text>
+            <text class="value">{{ form.date }}</text>
+          </view>
+        </picker>
+        <view class="form-item">
+          <text>当日报价（元/斤）</text>
+          <input v-model.number="form.dailyQuote" type="digit" placeholder="请输入" />
+        </view>
+      </view>
+
+      <!-- 商户信息 -->
+      <view class="section">
+        <text class="section-title">商户信息</text>
+        <view v-for="(detail, index) in form.merchantDetails" :key="index" class="merchant-item">
+          <picker :range="merchantOptions" :range-key="'name'" @change="(e) => onMerchantChange(index, e)">
+            <view class="merchant-select">{{ detail.merchantName || '选择商户' }}</view>
+          </picker>
+          <view class="merchant-inputs">
+            <input v-model.number="detail.bigBoxes" type="number" placeholder="大框数" />
+            <input v-model.number="detail.smallBoxes" type="number" placeholder="小框数" />
+          </view>
+          <text @click="removeMerchant(index)" class="remove">×</text>
+        </view>
+        <button @click="addMerchant" class="add-merchant">+ 添加商户</button>
+      </view>
+
+      <!-- 留货信息 -->
+      <view class="section">
+        <text class="section-title">留货数量</text>
+        <view class="form-item">
+          <text>留货大框</text>
+          <input v-model.number="form.reservedBigBoxes" type="number" placeholder="0" />
+        </view>
+        <view class="form-item">
+          <text>留货小框</text>
+          <input v-model.number="form.reservedSmallBoxes" type="number" placeholder="0" />
+        </view>
+      </view>
+
+      <!-- 人员信息 -->
+      <view class="section">
+        <text class="section-title">人员</text>
+        <view class="form-item">
+          <text>发车人员</text>
+          <picker :range="departureWorkerOptions" :range-key="'name'" @change="onDepartureWorkerChange">
+            <view class="picker-value">{{ selectedDepartureWorker?.name || '选择发车人员' }}</view>
+          </picker>
+        </view>
+        <view class="form-item">
+          <text>装车人员</text>
+          <view class="checkbox-group">
+            <checkbox v-for="worker in loadingWorkerOptions" :key="worker.id"
+              :value="worker.id"
+              :checked="form.loadingWorkerIds.includes(worker.id)"
+              @change="onLoadingWorkerChange(worker.id)">
+              {{ worker.name }}
+            </checkbox>
+          </view>
+        </view>
+      </view>
+
+      <!-- 费用信息 -->
+      <view class="section">
+        <text class="section-title">费用</text>
+        <view class="form-item">
+          <text>加油费（元）</text>
+          <input v-model.number="form.fuelCost" type="digit" placeholder="0" />
+        </view>
+        <view class="form-item">
+          <text>进门费（元）</text>
+          <input v-model.number="form.entryFee" type="digit" placeholder="0" />
+        </view>
+      </view>
+
+      <!-- 货车信息 -->
+      <view class="section">
+        <text class="section-title">货车信息</text>
+        <view v-for="(row, index) in form.truckRows" :key="index" class="truck-row">
+          <text>第{{ index + 1 }}排</text>
+          <input v-model.number="row.bigBoxes" type="number" placeholder="大框" />
+          <input v-model.number="row.smallBoxes" type="number" placeholder="小框" />
+          <text @click="removeTruckRow(index)" class="remove">×</text>
+        </view>
+        <button @click="addTruckRow" class="add-row">+ 添加排数</button>
+      </view>
+
+      <!-- 到货信息 -->
+      <view class="section">
+        <text class="section-title">到货信息</text>
+        <view class="form-item">
+          <text>到货大框</text>
+          <input v-model.number="form.arrivalBigBoxes" type="number" placeholder="0" />
+        </view>
+        <view class="form-item">
+          <text>到货小框</text>
+          <input v-model.number="form.arrivalSmallBoxes" type="number" placeholder="0" />
+        </view>
+        <view class="form-item">
+          <text>回框大框</text>
+          <input v-model.number="form.returnedBigBoxes" type="number" placeholder="0" />
+        </view>
+        <view class="form-item">
+          <text>回框小框</text>
+          <input v-model.number="form.returnedSmallBoxes" type="number" placeholder="0" />
+        </view>
+      </view>
+
+      <!-- 备注 -->
+      <view class="section">
+        <text class="section-title">备注</text>
+        <textarea v-model="form.note" placeholder="请输入备注" class="note-input" />
+      </view>
+
+      <!-- 计算结果 -->
+      <view class="section result">
+        <text class="section-title">计算结果</text>
+        <view class="result-item">
+          <text>本次共拉大框</text>
+          <text class="result-value">{{ calculated.totalBig }}</text>
+        </view>
+        <view class="result-item">
+          <text>本次共拉小框</text>
+          <text class="result-value">{{ calculated.totalSmall }}</text>
+        </view>
+        <view class="result-item">
+          <text>货车共装大框</text>
+          <text class="result-value">{{ calculated.truckBig }}</text>
+        </view>
+        <view class="result-item">
+          <text>货车共装小框</text>
+          <text class="result-value">{{ calculated.truckSmall }}</text>
+        </view>
+        <view class="result-item total">
+          <text>本次总计</text>
+		  <view class="">
+			  <view class="" v-for="(item, index) in calculated.merchantAmount" :key="index">
+				<text class="name">{{ item.name }}</text>
+				<text class="result-value">¥{{ item.amount }}</text>
+			  </view>
+		  </view>
+          
+        </view>
+      </view>
+
+      <view class="actions">
+        <button @click="saveRecord" class="save-btn">保存</button>
+      </view>
+    </view>
+  </view>
+</template>
+
+<script setup>
+import { ref, reactive, computed, onMounted } from 'vue'
+import { useDepartureStore } from '@/store/departure'
+import { useMerchantStore } from '@/store/merchant'
+import { useWorkerStore } from '@/store/worker'
+import { useSettingsStore } from '@/store/settings'
+
+const departureStore = useDepartureStore()
+const merchantStore = useMerchantStore()
+const workerStore = useWorkerStore()
+const settingsStore = useSettingsStore()
+
+const form = reactive({
+  id: null,
+  date: new Date().toISOString().split('T')[0],
+  dailyQuote: 0,
+  merchantDetails: [],
+  reservedBigBoxes: 0,
+  reservedSmallBoxes: 0,
+  departureWorkerId: '',
+  loadingWorkerIds: [],
+  fuelCost: 0,
+  entryFee: 0,
+  truckRows: [],
+  arrivalBigBoxes: 0,
+  arrivalSmallBoxes: 0,
+  returnedBigBoxes: 0,
+  returnedSmallBoxes: 0,
+  note: ''
+})
+
+const merchantOptions = computed(() => merchantStore.merchants)
+const departureWorkerOptions = computed(() => workerStore.departureWorkers)
+const loadingWorkerOptions = computed(() => workerStore.loadingWorkers)
+
+const selectedDepartureWorker = computed(() =>
+  workerStore.getWorkerById(form.departureWorkerId)
+)
+
+// 计算结果
+const calculated = computed(() => {
+  const bigWeight = settingsStore.bigBoxWeight || 50
+  const smallWeight = settingsStore.smallBoxWeight || 30
+
+  // 商户大框总数
+  const merchantBigTotal = form.merchantDetails.reduce((sum, m) => sum + (m.bigBoxes || 0), 0)
+  const merchantSmallTotal = form.merchantDetails.reduce((sum, m) => sum + (m.smallBoxes || 0), 0)
+
+  // 本次共拉
+  const totalBig = merchantBigTotal - form.reservedBigBoxes
+  const totalSmall = merchantSmallTotal - form.reservedSmallBoxes
+
+  // 货车共装
+  const truckBig = form.truckRows.reduce((sum, r) => sum + (r.bigBoxes || 0), 0)
+  const truckSmall = form.truckRows.reduce((sum, r) => sum + (r.smallBoxes || 0), 0)
+
+  // 按商户计算金额
+  let merchantAmount = []
+  form.merchantDetails.forEach(detail => {
+    const merchant = merchantStore.getMerchantById(detail.merchantId)
+    if (merchant) {
+		let amount = 0;
+      const price = form.dailyQuote - merchant.margin
+      amount += price * bigWeight * detail.bigBoxes
+      amount += price * smallWeight * detail.smallBoxes
+	  merchantAmount.push({
+		  name: merchant.name,
+		  amount: amount.toFixed(2)
+	  })
+    }
+  })
+
+  return { totalBig, totalSmall, truckBig, truckSmall, merchantAmount: merchantAmount }
+})
+
+const onDateChange = (e) => { form.date = e.detail.value }
+const onDepartureWorkerChange = (e) => { form.departureWorkerId = departureWorkerOptions.value[e.detail.value]?.id || '' }
+const onLoadingWorkerChange = (workerId) => {
+  const index = form.loadingWorkerIds.indexOf(workerId)
+  if (index > -1) {
+    form.loadingWorkerIds.splice(index, 1)
+  } else {
+    form.loadingWorkerIds.push(workerId)
+  }
+}
+
+const addMerchant = () => {
+  form.merchantDetails.push({ merchantId: '', merchantName: '', bigBoxes: null, smallBoxes: null })
+}
+
+const removeMerchant = (index) => { form.merchantDetails.splice(index, 1) }
+
+const onMerchantChange = (index, e) => {
+  const merchant = merchantOptions.value[e.detail.value]
+  form.merchantDetails[index].merchantId = merchant.id
+  form.merchantDetails[index].merchantName = merchant.name
+}
+
+const addTruckRow = () => { form.truckRows.push({ rowNumber: form.truckRows.length + 1, bigBoxes: null, smallBoxes: null }) }
+const removeTruckRow = (index) => { form.truckRows.splice(index, 1) }
+
+const saveRecord = () => {
+  const record = {
+    ...form,
+    merchantAmount: calculated.value.merchantAmount
+  }
+
+  if (form.id) {
+    departureStore.updateRecord(form.id, record)
+  } else {
+    departureStore.addRecord(record)
+  }
+  uni.navigateBack()
+}
+
+onMounted(() => {
+  // 检查是否有编辑ID
+  const pages = getCurrentPages()
+  const currentPage = pages[pages.length - 1]
+  const options = currentPage.options || {}
+
+  if (options.id) {
+    const record = departureStore.records.find(r => r.id === options.id)
+    if (record) {
+      Object.assign(form, record)
+    }
+  }
+})
+</script>
+
+<style scoped>
+.form-page { padding: 15px; padding-bottom: 50px; }
+.section { background: #fff; border-radius: 8px; padding: 15px; margin-bottom: 15px; }
+.section-title { font-size: 16px; font-weight: bold; margin-bottom: 10px; display: block; }
+.form-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f0f0f0; }
+.form-item input { text-align: right; width: 150px; }
+.value, .picker-value { color: #999; }
+.merchant-item { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.merchant-select { background: #f5f5f5; padding: 8px; border-radius: 4px; min-width: 80px; }
+.merchant-inputs { display: flex; gap: 10px; flex: 1; }
+.merchant-inputs input { flex: 1; background: #f5f5f5; padding: 8px; border-radius: 4px; }
+.remove { color: #ff4d4f; font-size: 20px; padding: 5px; }
+.add-merchant, .add-row { background: #f5f5f5; color: #007aff; margin-top: 10px; }
+.truck-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.truck-row input { flex: 1; background: #f5f5f5; padding: 8px; border-radius: 4px; text-align: center; }
+.checkbox-group { display: flex; flex-wrap: wrap; gap: 10px; }
+.note-input { width: 100%; height: 80px; background: #f5f5f5; padding: 10px; border-radius: 4px; box-sizing: border-box; }
+.result { background: #f6ffed; }
+.result-item { display: flex; justify-content: space-between; padding: 8px 0; }
+.result-value { font-weight: bold; }
+.result-item.total { border-top: 1px solid #d9f7be; margin-top: 10px; padding-top: 10px; font-size: 16px; }
+.result-item.total .result-value { color: #52c41a; font-size: 18px; }
+.actions { margin-top: 20px; }
+.save-btn { background: #007aff; color: #fff; }
+</style>

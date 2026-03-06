@@ -1,0 +1,138 @@
+<template>
+  <view class="worker-page">
+    <view class="header">
+      <text class="title">人员管理</text>
+      <button class="add-btn" size="mini" @click="showAddModal = true">+ 添加</button>
+    </view>
+
+    <view class="worker-list">
+      <view v-for="worker in workerStore.workers" :key="worker.id" class="worker-card">
+        <view class="worker-info">
+          <text class="name">{{ worker.name }}</text>
+          <text class="phone">{{ worker.phone }}</text>
+        </view>
+        <view class="worker-type">
+          <text v-if="worker.type === 'departure'" class="tag departure">发车</text>
+          <text v-else-if="worker.type === 'loading'" class="tag loading">装车</text>
+          <text v-else class="tag both">发车+装车</text>
+        </view>
+        <view class="actions">
+          <text @click="editWorker(worker)">编辑</text>
+          <text @click="deleteWorker(worker.id)" class="delete">删除</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 添加/编辑弹窗 -->
+    <view v-if="showAddModal" class="modal-mask" @click="closeModal">
+      <view class="modal" @click.stop>
+        <text class="modal-title">{{ editingWorker ? '编辑人员' : '添加人员' }}</text>
+		<uni-forms :modelValue="form">
+			<uni-forms-item label="姓名" name="name">
+				<uni-easyinput type="text" v-model="form.name" placeholder="请输入姓名" />
+			</uni-forms-item>
+			<uni-forms-item label="手机号" name="phone">
+				<uni-easyinput type="tel" v-model="form.phone" placeholder="请输入手机号" />
+			</uni-forms-item>
+			<uni-forms-item label="工作内容" name="typeIndex">
+				<picker :range="typeOptions" @change="onTypeChange">
+				  <view class="picker">{{ typeOptions[form.typeIndex] }}</view>
+				</picker>
+			</uni-forms-item>
+		</uni-forms>
+        <view class="modal-actions">
+          <button @click="closeModal">取消</button>
+          <button @click="saveWorker">保存</button>
+        </view>
+      </view>
+    </view>
+  </view>
+</template>
+
+<script setup>
+import { ref, reactive } from 'vue'
+import { useWorkerStore } from '@/store/worker'
+
+const workerStore = useWorkerStore()
+
+const showAddModal = ref(false)
+const editingWorker = ref(null)
+const typeOptions = ['发车人员', '装车人员', '发车+装车']
+const form = reactive({
+  name: '',
+  phone: '',
+  typeIndex: 2
+})
+
+const typeMap = ['departure', 'loading', 'both']
+
+const editWorker = (worker) => {
+  editingWorker.value = worker
+  form.name = worker.name
+  form.phone = worker.phone
+  form.typeIndex = typeMap.indexOf(worker.type)
+  showAddModal.value = true
+}
+
+const closeModal = () => {
+  showAddModal.value = false
+  editingWorker.value = null
+  form.name = ''
+  form.phone = ''
+  form.typeIndex = 0
+}
+
+const saveWorker = () => {
+  const data = {
+    name: form.name,
+    phone: form.phone,
+    type: typeMap[form.typeIndex]
+  }
+
+  if (editingWorker.value) {
+    workerStore.updateWorker(editingWorker.value.id, data)
+  } else {
+    workerStore.addWorker(data)
+  }
+  closeModal()
+}
+
+const deleteWorker = (id) => {
+  uni.showModal({
+    title: '确认删除',
+    content: '确定要删除此人员吗？',
+    success: (res) => {
+      if (res.confirm) {
+        workerStore.deleteWorker(id)
+      }
+    }
+  })
+}
+
+const onTypeChange = (e) => {
+  form.typeIndex = parseInt(e.detail.value)
+}
+</script>
+
+<style scoped>
+.worker-page { padding: 20px; }
+.header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.title { font-size: 20px; font-weight: bold; }
+.add-btn { background: #007aff; color: #fff; padding: 8px 16px; border-radius: 4px; }
+.worker-card { background: #fff; padding: 15px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+.worker-info { display: flex; flex-direction: column; }
+.name { font-size: 16px; font-weight: bold; }
+.phone { color: #999; font-size: 14px; }
+.tag { padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+.departure { background: #e6f7ff; color: #007aff; }
+.loading { background: #f6ffed; color: #52c41a; }
+.both { background: #fff7e6; color: #fa8c16; }
+.actions { display: flex; gap: 15px; }
+.delete { color: #ff4d4f; }
+.modal-mask { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; }
+.modal { background: #fff; padding: 20px; border-radius: 8px; width: 80%; }
+.modal-title { font-size: 18px; font-weight: bold; margin-bottom: 15px; display: block; }
+.input { border: 1px solid #ddd; padding: 10px; border-radius: 4px; margin-bottom: 10px; width: 100%; box-sizing: border-box; }
+.picker { border: 1px solid #ddd; padding: 10px; border-radius: 4px; margin-bottom: 10px; }
+.modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+</style>

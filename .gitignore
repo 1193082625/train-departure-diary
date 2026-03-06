@@ -1,0 +1,27 @@
+# npm
+node_modules/
+package-lock.json
+yarn.lock
+
+# IDE
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# UniApp
+unpackage/
+dist/
+uni_modules/
+.hbuilderx/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test
+test/
+coverage/

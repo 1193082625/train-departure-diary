@@ -1,0 +1,83 @@
+{
+	"pages": [
+	{
+		"path": "pages/home/home",
+		"style": {
+			"navigationBarTitleText": "首页"
+		}
+	},
+	{
+		"path": "pages/departure/departure",
+		"style": {
+			"navigationBarTitleText": "发车"
+		}
+	},
+	{
+		"path": "pages/departure/form",
+		"style": {
+			"navigationBarTitleText": "发车记录"
+		}
+	},
+	{
+		"path": "pages/merchant/merchant",
+		"style": {
+			"navigationBarTitleText": "商户"
+		}
+	},
+	{
+		"path": "pages/worker/worker",
+		"style": {
+			"navigationBarTitleText": "人员"
+		}
+	},
+	{
+		"path": "pages/statistics/statistics",
+		"style": {
+			"navigationBarTitleText": "结账"
+		}
+	},
+	{
+		"path": "pages/transaction/transaction",
+		"style": {
+			"navigationBarTitleText": "结账"
+		}
+	}
+],
+	"globalStyle": {
+		"navigationBarTextStyle": "black",
+		"navigationBarTitleText": "uni-app",
+		"navigationBarBackgroundColor": "#F8F8F8",
+		"backgroundColor": "#F8F8F8",
+		"app-plus": {
+			"background": "#efeff4"
+		}
+	},
+	"tabBar": {
+		"color": "#7A7E83",
+		"selectedColor": "#007aff",
+		"borderStyle": "black",
+		"backgroundColor": "#ffffff",
+		"list": [
+			{
+				"pagePath": "pages/home/home",
+				"text": "首页"
+			},
+			{
+				"pagePath": "pages/departure/departure",
+				"text": "发车"
+			},
+			{
+				"pagePath": "pages/merchant/merchant",
+				"text": "商户"
+			},
+			{
+				"pagePath": "pages/worker/worker",
+				"text": "人员"
+			},
+			{
+				"pagePath": "pages/statistics/statistics",
+				"text": "结账"
+			}
+		]
+	}
+}
