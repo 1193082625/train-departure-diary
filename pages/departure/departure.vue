@@ -24,50 +24,55 @@
       >按年</view>
     </view>
 
-    <!-- 快捷切换按钮 -->
-    <!-- <view class="quick-filter">
+    <!-- 按天模式 -->
+    <view v-if="viewMode === 'day'" class="date-picker flex-between">
+      <view class="flex-start">
+        <picker mode="date" :value="selectedDate" @change="onDateChange">
+          <view class="picker-text">{{ selectedDate }}</view>
+        </picker>
+        <text class="picker-text-label">(点击日期可切换)</text>
+      </view>
       <button
         v-if="viewMode === 'day'"
         size="mini"
         :class="['quick-btn', { active: selectedDate === today }]"
         @click="selectToday"
       >今天</button>
+    </view>
+
+    <!-- 按月模式 -->
+    <view v-if="viewMode === 'month'" class="month-picker flex-between">
+      <view class="flex-start">
+        <picker mode="selector" :range="yearOptions" :value="yearOptions.indexOf(selectedYear)" @change="onYearChange">
+          <view class="picker-text">{{ selectedYear }}年</view>
+        </picker>
+        <picker mode="selector" :range="monthOptions" :value="selectedMonth - 1" @change="onMonthChange">
+          <view class="picker-text">{{ selectedMonth }}月</view>
+        </picker>
+        <text class="picker-text-label ml-10">(点击年月可切换)</text>
+      </view>
       <button
         v-if="viewMode === 'month'"
         size="mini"
         :class="['quick-btn', { active: selectedYear === currentYear && selectedMonth === currentMonth }]"
         @click="selectCurrentMonth"
       >本月</button>
+    </view>
+
+    <!-- 按年模式 -->
+    <view v-if="viewMode === 'year'" class="year-picker flex-between">
+      <view class="flex-start">
+        <picker mode="selector" :range="yearOptions" :value="yearOptions.indexOf(selectedYearForYear)" @change="onYearForYearChange">
+          <view class="picker-text">{{ selectedYearForYear }}年</view>
+        </picker>
+        <text class="picker-text-label">(点击年份可切换)</text>
+      </view>
       <button
         v-if="viewMode === 'year'"
         size="mini"
         :class="['quick-btn', { active: selectedYearForYear === currentYear }]"
         @click="selectCurrentYear"
       >本年</button>
-    </view> -->
-
-    <!-- 按天模式 -->
-    <view v-if="viewMode === 'day'" class="date-picker">
-      <picker mode="date" :value="selectedDate" @change="onDateChange">
-        <view class="picker-text">{{ selectedDate }}</view>
-      </picker>
-    </view>
-
-    <!-- 按月模式 -->
-    <view v-if="viewMode === 'month'" class="month-picker">
-      <picker mode="selector" :range="yearOptions" :value="yearOptions.indexOf(selectedYear)" @change="onYearChange">
-        <view class="picker-text">{{ selectedYear }}年</view>
-      </picker>
-      <picker mode="selector" :range="monthOptions" :value="selectedMonth - 1" @change="onMonthChange">
-        <view class="picker-text">{{ selectedMonth }}月</view>
-      </picker>
-    </view>
-
-    <!-- 按年模式 -->
-    <view v-if="viewMode === 'year'" class="year-picker">
-      <picker mode="selector" :range="yearOptions" :value="yearOptions.indexOf(selectedYearForYear)" @change="onYearForYearChange">
-        <view class="picker-text">{{ selectedYearForYear }}年</view>
-      </picker>
     </view>
 
     <!-- 统计汇总 -->
@@ -363,16 +368,17 @@ onMounted(() => {
 
 /* 快捷筛选 */
 .quick-filter { margin-bottom: 15px; }
-.quick-btn { background: #f5f5f5; color: #666; margin-right: 10px; padding: 6px 12px; border-radius: 4px; }
+.quick-btn { background: #f5f5f5; color: #666; padding: 3px 10px; margin-right: 0 !important; border-radius: 4px; }
 .quick-btn.active { background: #007aff; color: #fff; }
 
 /* 日期选择器 */
 .date-picker, .month-picker, .year-picker { margin-bottom: 15px; }
 .month-picker, .year-picker { display: flex; gap: 10px; }
-.picker-text { background: #f5f5f5; padding: 10px; border-radius: 4px; text-align: center; }
+.picker-text { background: #f5f5f5; padding: 10px; border-radius: 4px; font-size: 18px; font-weight: bold; }
+.picker-text-label { font-size: 12px; color: #999; margin-top: 5px; }
 
 /* 统计汇总 */
-.summary { display: flex; justify-content: space-around; background: #f0f7ff; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
+.summary { display: flex; justify-content: space-around; background: #f0f7ff; padding: 15px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.1); }
 .summary-item { display: flex; flex-direction: column; align-items: center; }
 .summary-label { font-size: 12px; color: #666; }
 .summary-value { font-size: 16px; font-weight: bold; color: #333; }

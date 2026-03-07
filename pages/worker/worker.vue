@@ -79,7 +79,7 @@ const closeModal = () => {
   editingWorker.value = null
   form.name = ''
   form.phone = ''
-  form.typeIndex = 0
+  form.typeIndex = 2
 }
 
 const saveWorker = () => {

@@ -27,7 +27,7 @@
         </view>
         <view class="form-item">
           <text>装车人员</text>
-          <view class="checkbox-group">
+          <view class="checkbox-group max-width-220">
             <uni-data-checkbox multiple v-model="form.loadingWorkerIds" :localdata="loadingWorkerOptions"></uni-data-checkbox>
           </view>
         </view>
@@ -66,11 +66,13 @@
         <text class="section-title">留货数量</text>
         <view class="form-item">
           <text>留货大框</text>
-          <input v-model.number="form.reservedBigBoxes" type="number" placeholder="0" />
+          <text class="result-value">{{ calculated.reservedBigBoxesTotal }}</text>
+          <!-- <input v-model.number="form.reservedBigBoxes" type="number" placeholder="0" /> -->
         </view>
         <view class="form-item">
           <text>留货小框</text>
-          <input v-model.number="form.reservedSmallBoxes" type="number" placeholder="0" />
+          <text class="result-value">{{ calculated.reservedSmallBoxesTotal }}</text>
+          <!-- <input v-model.number="form.reservedSmallBoxes" type="number" placeholder="0" /> -->
         </view>
       </view>
 
@@ -230,16 +232,22 @@ const loadDefaultSettings = () => {
 
 // 计算结果 - 使用新公式
 const calculated = computed(() => {
+  // 大框斤数和小框斤数
   const bigWeight = settingsStore.bigBoxWeight || 50
-  const smallWeight = settingsStore.smallBoxWeight || 30
+  const smallWeight = settingsStore.smallBoxWeight || 29.5
 
-  // 鸡场大框总数
+  // 本次共拉 
   const merchantBigTotal = form.merchantDetails.reduce((sum, m) => sum + (m.bigBoxes || 0), 0)
   const merchantSmallTotal = form.merchantDetails.reduce((sum, m) => sum + (m.smallBoxes || 0), 0)
 
   // 货车共装
-  const truckBig = form.truckRows.reduce((sum, r) => sum + (r.bigBoxes || 0), 0) - form.reservedBigBoxes
-  const truckSmall = form.truckRows.reduce((sum, r) => sum + (r.smallBoxes || 0), 0) - form.reservedSmallBoxes
+  const truckBig = form.truckRows.reduce((sum, r) => sum + (r.bigBoxes || 0), 0)
+  const truckSmall = form.truckRows.reduce((sum, r) => sum + (r.smallBoxes || 0), 0)
+
+  // 留货数量
+  // 大框留货数量 = 
+  const reservedBigBoxesTotal = merchantBigTotal - truckBig
+  const reservedSmallBoxesTotal = merchantSmallTotal - truckSmall
 
   // 费用合计
   const totalOilFee = form.oilFee || 0
@@ -252,7 +260,6 @@ const calculated = computed(() => {
   // 按鸡场计算金额 - 使用新公式
   let merchantAmount = []
   let totalReceivePrice = 0  // 收货价合计
-  let totalDeliveryPrice = 0 // 交货价合计
 
   form.merchantDetails.forEach(detail => {
     const merchant = merchantStore.getMerchantById(detail.merchantId)
@@ -265,20 +272,19 @@ const calculated = computed(() => {
       const receivePrice = receiveBig + receiveSmall
       totalReceivePrice += receivePrice
 
-      // 交货价 = (当日报价 - 1) × 本次共拉大框数量 + (当日报价 - 鸡场margin) / 44 × 小框斤数 × 本次共拉小框数量
-      const deliveryBig = (form.dailyQuote - 1) * detail.bigBoxes
-      const deliverySmall = (form.dailyQuote - merchantMargin) / 44 * smallWeight * detail.smallBoxes
-      const deliveryPrice = deliveryBig + deliverySmall
-      totalDeliveryPrice += deliveryPrice
-
       merchantAmount.push({
         name: merchant.name,
         amount: receivePrice.toFixed(2),
         receivePrice: receivePrice.toFixed(2),
-        deliveryPrice: deliveryPrice.toFixed(2)
+        // deliveryPrice: deliveryPrice.toFixed(2)
       })
     }
   })
+
+  // 交货价 = (当日报价 - 1) × 本次共拉大框数量 + (当日报价 - 鸡场margin) / 44 × 小框斤数 × 本次共拉小框数量
+  const deliveryBig = (form.dailyQuote - 1) * truckBig
+  const deliverySmall = (form.dailyQuote - 1) / 44 * smallWeight * truckSmall
+  const totalDeliveryPrice  = deliveryBig + deliverySmall
 
   // 本趟盈利 = 交货价 - 收货价 - 油费 - 进门费 - 过路费 - 装车费 - 卸车费 - 发车费
   const profit = totalDeliveryPrice - totalReceivePrice - totalOilFee - totalEntryFee - totalTollFee - totalLoadingFee - totalUnloadingFee - totalDepartureFee
@@ -286,6 +292,8 @@ const calculated = computed(() => {
   return {
     truckBig,
     truckSmall,
+    reservedBigBoxesTotal,
+    reservedSmallBoxesTotal,
     merchantBigTotal,
     merchantSmallTotal,
     merchantAmount,
@@ -355,20 +363,22 @@ const saveRecord = () => {
 
   const money = parseFloat(calculated.value.profit)
 
-  // if(money <= 0) {
-  //   uni.showToast({
-  //     title: '本趟盈利为0，请检查是否存在错误输入',
-  //     icon: 'none'
-  //   })
-  //   return
-  // }
-
   const record = {
     ...form,
-    merchantAmount: calculated.value.merchantAmount,
-    totalReceivePrice: calculated.value.totalReceivePrice,
-    totalDeliveryPrice: calculated.value.totalDeliveryPrice,
+    ...calculated.value,
     getMoney: parseFloat(calculated.value.profit)
+    // merchantAmount: calculated.value.merchantAmount,
+    // totalReceivePrice: calculated.value.totalReceivePrice,
+    // totalDeliveryPrice: calculated.value.totalDeliveryPrice,
+    // reservedBigBoxesTotal: calculated.value.reservedBigBoxesTotal,
+    // reservedSmallBoxesTotal: calculated.value.reservedSmallBoxesTotal,
+    // profit: parseFloat(calculated.value.profit),
+    // profitRate: parseFloat(calculated.value.profitRate),
+    // merchantBigTotal: calculated.value.merchantBigTotal,
+    // merchantSmallTotal: calculated.value.merchantSmallTotal,
+    // truckBig: calculated.value.truckBig,
+    // truckSmall: calculated.value.truckSmall,
+    // getMoney: parseFloat(calculated.value.profit)
   }
 
   if (form.id) {
@@ -390,8 +400,12 @@ onMounted(() => {
 
   if (options.id) {
     const record = departureStore.records.find(r => r.id === options.id)
+    console.log('数据返显', record);
+    
     if (record) {
       Object.assign(form, record)
+      console.log('打印form数据', form);
+      
     }
   }
 })
@@ -402,6 +416,7 @@ onMounted(() => {
 .section { background: #fff; border-radius: 8px; padding: 15px; margin-bottom: 15px; }
 .section-title { font-size: 16px; font-weight: bold; margin-bottom: 10px; display: block; }
 .form-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f0f0f0; }
+.form-item:last-child { border-bottom: none; }
 .form-item input { text-align: right; width: 150px; }
 .value, .picker-value { color: #999; }
 .merchant-item { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
@@ -427,4 +442,5 @@ onMounted(() => {
 .profit { color: #52c41a !important; }
 .actions { margin-top: 20px; }
 .save-btn { background: #007aff; color: #fff; }
+.max-width-220 { max-width: 236px; }
 </style>

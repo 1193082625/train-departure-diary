@@ -71,6 +71,28 @@
         <view class="picker">结束: {{ dateRange.end }}</view>
       </picker>
 	
+      <!-- 明细列表 -->
+      <uni-collapse class="mt-section detail-list-collapse" v-if="merchantRecordList.length > 0">
+        <uni-collapse-item title="明细列表" :open="openMerchantRecordList">
+          <view class="detail-list">
+            <view class="detail-header">
+              <text>日期</text>
+              <text>报价</text>
+              <text>大框</text>
+              <text>小框</text>
+              <text>应结</text>
+            </view>
+            <view class="detail-item" v-for="item in merchantRecordList" :key="item.date">
+              <text>{{ item.date }}</text>
+              <text>{{ item.dailyQuote }}</text>
+              <text>{{ item.bigBoxes }}</text>
+              <text>{{ item.smallBoxes }}</text>
+              <text>{{ item.receivable }}</text>
+            </view>
+          </view>
+        </uni-collapse-item>
+      </uni-collapse>
+
       <view class="stats-result">
         <view class="stat-item">
           <text>共拉大框</text>
@@ -98,7 +120,7 @@
 </template>
 
 <script setup>
-import { ref, computed, reactive, watch } from 'vue'
+import { ref, computed, reactive, watch, watchEffect, nextTick } from 'vue'
 import { useWorkerStore } from '@/store/worker'
 import { useMerchantStore } from '@/store/merchant'
 import { useDepartureStore } from '@/store/departure'
@@ -121,6 +143,10 @@ const dateRange = reactive({
 
 const personRecord = ref([])
 const merchantRecord = ref([])
+
+// 明细列表
+const openMerchantRecordList = ref(true)
+const merchantRecordList = ref([])
 
 // 快捷日期范围设置
 const setQuickRange = (type) => {
@@ -191,14 +217,16 @@ const updatePersonRecord = () => {
 const updateMerchantRecord = () => {
   if (!selectedMerchantId.value) {
     merchantRecord.value = []
+    merchantRecordList.value = []
     return
   }
   const records = departureStore.getRecordsByDateRange(dateRange.start, dateRange.end)
   const workDates = records
     .filter(r => r.merchantDetails.some(m => m.merchantId === selectedMerchantId.value))
-    .map(r => r.date)
-  merchantRecord.value = [...new Set(workDates)].map(date => ({
-    date,
+
+  // 日历记录
+  merchantRecord.value = [...new Set(workDates)].map(r => ({
+    date: r.date,
     info: '有生意'
   }))
 }
@@ -239,43 +267,73 @@ const workerStats = computed(() => {
   if (!selectedWorkerId.value) return { workDays: 0, departureCount: 0, loadingCount: 0, totalProfit: 0 }
 
   const records = departureStore.getRecordsByDateRange(dateRange.start, dateRange.end)
-  const workDays = new Set(records.map(r => r.date)).size
+
+  const workderRecords = records.filter(r => r.departureWorkerId === selectedWorkerId.value || r.loadingWorkerIds.includes(selectedWorkerId.value))
+  
+  const workDays = new Set(workderRecords.map(r => r.date)).size
   // 发车次数
-  const departureCount = records.filter(r => r.departureWorkerId === selectedWorkerId.value).length
+  const departureCount = workderRecords.filter(r => r.departureWorkerId === selectedWorkerId.value).length
   // 装车次数
-  const loadingCount = records.filter(r => r.loadingWorkerIds.includes(selectedWorkerId.value)).length
-    
+  const loadingCount = workderRecords.filter(r => r.loadingWorkerIds.includes(selectedWorkerId.value)).length
+  // 应结算(装车费默认按两人分摊)
   const totalProfit = departureCount * (settingsStore.departureFee || 0) + loadingCount * (settingsStore.loadingFee / 2 || 0)
 
   return { workDays, departureCount, loadingCount, totalProfit: totalProfit.toFixed(2) }
 })
 
-const merchantStats = computed(() => {
+const merchantStats = ref({ totalBigBoxes: 0, totalSmallBoxes: 0, receivable: 0, paid: 0, unpaid: 0 })
+
+watchEffect(() => {
   if (!selectedMerchantId.value) return { totalBigBoxes: 0, totalSmallBoxes: 0, receivable: 0, paid: 0, unpaid: 0 }
 
   const records = departureStore.getRecordsByDateRange(dateRange.start, dateRange.end)
+
+  const merchantRecords = records.filter(r => r.merchantDetails.some(m => m.merchantId === selectedMerchantId.value))
+  
   let totalBigBoxes = 0, totalSmallBoxes = 0, receivable = 0
 
-  records.forEach(r => {
-    const detail = r.merchantDetails.find(m => m.merchantId === selectedMerchantId.value)
-    if (detail) {
-      totalBigBoxes += detail.bigBoxes
-      totalSmallBoxes += detail.smallBoxes
+  let recordList = []
+  merchantRecordList.value = []
+  openMerchantRecordList.value = false
 
-      const merchant = merchantStore.getMerchantById(selectedMerchantId.value)
-      if (merchant) {
-        const bigWeight = settingsStore.bigBoxWeight || 50
-        const smallWeight = settingsStore.smallBoxWeight || 30
-        const price = (r.dailyQuote - merchant.margin) / (settingsStore.bigBoxWeight || 45)
-        receivable += price * bigWeight * detail.bigBoxes + price * smallWeight * detail.smallBoxes
-      }
+  merchantRecords.forEach(r => {
+    // 获取鸡场信息
+    const merchant = merchantStore.getMerchantById(selectedMerchantId.value)
+    if (merchant) {
+      const detail = r.merchantDetails.find(m => m.merchantId === selectedMerchantId.value)
+      const bigBoxes = detail?.bigBoxes || 0
+      const smallBoxes = detail?.smallBoxes || 0
+
+      totalBigBoxes += bigBoxes
+      totalSmallBoxes += smallBoxes
+
+      const bigWeight = settingsStore.bigBoxWeight || 50
+      const smallWeight = settingsStore.smallBoxWeight || 30
+      // 计算每斤价格
+      const price = (r.dailyQuote - merchant.margin) / (settingsStore.bigBoxWeight || 45)
+      // 计算应结算
+      receivable += price * bigWeight * bigBoxes + price * smallWeight * smallBoxes
+      
+      recordList.push({
+        date: r.date,
+        bigBoxes: bigBoxes,
+        smallBoxes: smallBoxes,
+        dailyQuote: r.dailyQuote,
+        receivable: receivable.toFixed(2)
+      })
     }
   })
+  nextTick(() => {
+    merchantRecordList.value = recordList
+    openMerchantRecordList.value = true
+  })
 
+  // 交易记录
   const transactions = transactionStore.getTransactionsByTarget(selectedMerchantId.value)
+  // 已结金额
   const paid = transactions.reduce((sum, t) => sum + t.amount, 0)
 
-  return {
+  merchantStats.value = {
     totalBigBoxes,
     totalSmallBoxes,
     receivable: receivable.toFixed(2),
@@ -283,6 +341,7 @@ const merchantStats = computed(() => {
     unpaid: (receivable - paid).toFixed(2)
   }
 })
+
 </script>
 
 <style scoped>
@@ -301,4 +360,15 @@ const merchantStats = computed(() => {
 .value { font-weight: bold; color: #007aff; }
 .profit { color: #52c41a; }
 .unpaid { color: #ff4d4f; }
+
+.detail-list-collapse .uni-collapse {
+  border-radius: 4px;
+}
+.detail-list { background: #fff; padding: 0 15px 15px; }
+.detail-title { font-size: 16px; font-weight: bold; margin-bottom: 10px; }
+.detail-header { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
+.detail-header text { flex: 1; text-align: center; }
+.detail-item { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
+.detail-item text { flex: 1; text-align: center; }
+.detail-item:last-child { border-bottom: none; }
 </style>
