@@ -38,6 +38,22 @@
 		@monthSwitch="clearWorkerStats"
 	  	 />
 
+       <!-- 明细列表 -->
+       <uni-collapse class="mt-section detail-list-collapse" v-if="personRecordList.length > 0">
+        <uni-collapse-item title="明细列表" :open="openPersonRecordList">
+          <view class="detail-list">
+            <view class="detail-header">
+              <text>日期</text>
+              <text>信息</text>
+            </view>
+            <view class="detail-item" v-for="item in personRecordList" :key="item.date">
+              <text>{{ item.date }}</text>
+              <text>{{ item.info }}</text>
+            </view>
+          </view>
+        </uni-collapse-item>
+       </uni-collapse>
+
       <view class="stats-result">
         <view class="stat-item">
           <text>出勤天数</text>
@@ -144,7 +160,11 @@ const dateRange = reactive({
 const personRecord = ref([])
 const merchantRecord = ref([])
 
-// 明细列表
+// 人员明细列表
+const openPersonRecordList = ref(true)
+const personRecordList = ref([])
+
+// 鸡场明细列表
 const openMerchantRecordList = ref(true)
 const merchantRecordList = ref([])
 
@@ -210,6 +230,11 @@ const updatePersonRecord = () => {
       date: r.date,
       info: label.join('+')
     }
+  })
+
+  nextTick(() => {
+    personRecordList.value = personRecord.value
+    openPersonRecordList.value = true
   })
 }
 
@@ -343,7 +368,11 @@ watchEffect(() => {
 })
 
 </script>
-
+<style>
+.uni-calendar-item__weeks-box-item {
+  width: 100%!important;
+}
+</style>
 <style scoped>
 .statistics-page { padding: 20px; }
 .tabs { display: flex; gap: 10px; background: #f5f5f5; border-radius: 8px; margin-bottom: 20px; }

@@ -9,10 +9,13 @@
 
     <view class="form-section">
       <picker :range="targetOptions" :range-key="'name'" @change="onTargetChange">
-        <view class="picker">{{ selectedTarget?.name || '选择对象' }}</view>
+        <view class="flex-start">
+          <view class="picker font-bold">{{ selectedTarget?.name || '选择对象' }}</view>
+          <view class="ml-10 picker-text-label">(点击选择或切换)</view>
+        </view>
       </picker>
 
-      <view class="form-item">
+      <view class="form-item mt-section">
         <text>金额（元）</text>
         <input v-model.number="form.amount" type="digit" placeholder="请输入金额" />
       </view>
@@ -24,7 +27,7 @@
         </picker>
       </view>
 
-      <view class="form-item">
+      <view class="form-item mb-20">
         <text>备注</text>
         <input v-model="form.note" placeholder="可选" />
       </view>
@@ -129,11 +132,13 @@ const deleteTransaction = (id) => {
 .tab.active { background: #007aff; color: #fff; }
 .form-section { background: #fff; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
 .form-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
+.form-item:last-child { border-bottom: none; }
 .form-item input { text-align: right; width: 150px; }
 .add-btn { background: #52c41a; color: #fff; margin-top: 15px; margin: 0; }
 .records { background: #fff; padding: 15px; border-radius: 8px; }
 .title { font-weight: bold; margin-bottom: 10px; display: block; }
 .record-item { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
+.record-item:last-child { border-bottom: none; }
 .record-info { display: flex; flex-direction: column; }
 .target { font-weight: bold; }
 .date { color: #999; font-size: 12px; }
