@@ -1,4 +1,5 @@
 <template>
+  <!-- 鸡场管理页面 -->
   <view class="merchant-page">
     <view class="header">
       <text class="title">鸡场管理</text>

@@ -34,6 +34,13 @@
   align-items: center;
 }
 
+.flex-column-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
 .ml-10 { margin-left: 10px; }
 .mt-section { margin-top: 15px; }
 .mb-section { margin-bottom: 15px; }

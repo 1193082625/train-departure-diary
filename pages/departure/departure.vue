@@ -1,4 +1,5 @@
 <template>
+  <!-- 发车记录页面 -->
   <view class="departure-page">
     <view class="header">
       <text class="title">发车记录</text>

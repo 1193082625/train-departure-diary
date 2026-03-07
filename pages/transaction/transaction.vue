@@ -1,4 +1,5 @@
 <template>
+  <!-- 结账记录页面 -->
   <view class="transaction-page">
     <view class="tabs">
       <view :class="['tab', form.type === 'payment_to_merchant' && 'active']"

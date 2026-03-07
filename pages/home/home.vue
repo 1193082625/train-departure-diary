@@ -1,13 +1,13 @@
 <template>
   <view class="home-page">
     <view class="stats-cards">
-      <view class="stat-card" @click="openSettingsPopup">
-        <text class="stat-label">参数设置</text>
-        <text class="stat-value icon">⚙️</text>
+      <view class="action-btn" @click="openSettingsPopup">
+        <text class="icon">⚙️</text>
+        <text>参数设置</text>
       </view>
-      <view class="stat-card">
-        <text class="stat-label">今日收入</text>
+      <view class="action-btn" @click="goToUserStats">
         <text class="stat-value">¥{{ todayStats.income }}</text>
+        <text>今日收入</text>
       </view>
     </view>
 
@@ -128,6 +128,7 @@ const todayStats = computed(() => {
 
 const goToDeparture = () => uni.switchTab({ url: '/pages/departure/departure' })
 const goToTransaction = () => uni.navigateTo({ url: '/pages/transaction/transaction' })
+const goToUserStats = () => uni.navigateTo({ url: '/pages/user/user' })
 
 const openSettingsPopup = () => {
   settingsPopup.value.open('center')
@@ -171,8 +172,8 @@ const saveSettings = () => {
 .stats-cards { display: flex; gap: 15px; margin-bottom: 20px; }
 .stat-card { flex: 1; background: #fff; padding: 20px; border-radius: 8px; text-align: center; }
 .stat-label { color: #999; font-size: 14px; display: block; }
-.stat-value { color: #007aff; font-size: 24px; font-weight: bold; display: block; }
-.stat-value.icon { font-size: 28px; }
+.stat-value { color: #007aff; font-size: 30px; font-weight: bold; display: block; margin-bottom: 10px; height: 42px; line-height: 42px; }
+.stat-value.icon { font-size: 28px; margin-bottom: 0!important; }
 .quick-actions { display: flex; gap: 15px; margin-bottom: 20px; }
 .action-btn { flex: 1; background: #fff; padding: 20px; border-radius: 8px; text-align: center; }
 .icon { font-size: 30px; display: block; margin-bottom: 10px; }

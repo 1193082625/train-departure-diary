@@ -1,4 +1,5 @@
 <template>
+  <!-- 结账统计页面 -->
   <view class="statistics-page">
     <view class="tabs">
       <view :class="['tab', activeTab === 'worker' && 'active']" @click="activeTab = 'worker'">按人员</view>
