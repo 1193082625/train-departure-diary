@@ -167,9 +167,23 @@
 import { ref, computed, onMounted } from 'vue'
 import { useDepartureStore } from '@/store/departure'
 import { useWorkerStore } from '@/store/worker'
+import { useUserStore } from '@/store/user'
 
 const departureStore = useDepartureStore()
 const workerStore = useWorkerStore()
+const userStore = useUserStore()
+
+// 页面加载时检查权限
+onMounted(() => {
+	if (!userStore.isLoggedIn) {
+		uni.reLaunch({ url: '/pages/login/login' })
+		return
+	}
+
+	// 加载数据
+	departureStore.loadRecords()
+	workerStore.loadWorkers()
+})
 
 // 今天的日期
 const today = new Date().toISOString().split('T')[0]

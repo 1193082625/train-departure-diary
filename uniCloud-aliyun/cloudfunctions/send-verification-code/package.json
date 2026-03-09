@@ -1,0 +1,9 @@
+{
+  "name": "send-verification-code",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "dependencies": {
+    "uni-id-common": "file:../../../../uni_modules/uni-id-common"
+  }
+}

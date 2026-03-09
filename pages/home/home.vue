@@ -16,7 +16,7 @@
         <text class="icon">🚚</text>
         <text>发车记录</text>
       </view>
-      <view class="action-btn" @click="goToTransaction">
+      <view v-if="canAccess.transaction" class="action-btn" @click="goToTransaction">
         <text class="icon">💰</text>
         <text>单次结账</text>
       </view>
@@ -94,9 +94,19 @@
 import { ref, computed, reactive, onMounted, watch } from 'vue'
 import { useDepartureStore } from '@/store/departure'
 import { useSettingsStore } from '@/store/settings'
+import { useUserStore } from '@/store/user'
 
 const departureStore = useDepartureStore()
 const settingsStore = useSettingsStore()
+const userStore = useUserStore()
+
+const userRole = ref('')
+const canAccess = reactive({
+	merchant: true,
+	worker: true,
+	statistics: true,
+	transaction: true
+})
 
 const settingsPopup = ref(null)
 
@@ -112,6 +122,43 @@ const settingsForm = reactive({
 })
 
 const todayRecords = computed(() => departureStore.getTodayRecords())
+
+onMounted(() => {
+	// 检查登录状态
+	if (!userStore.isLoggedIn) {
+		uni.reLaunch({ url: '/pages/login/login' })
+		return
+	}
+
+	userRole.value = userStore.role
+	setPermissions()
+
+	// 加载数据
+	departureStore.loadRecords()
+	settingsStore.loadSettings()
+})
+
+const setPermissions = () => {
+	if (userRole.value === 'worker') {
+		// 装发车：无鸡场、人员、结账按鸡场
+		canAccess.merchant = false
+		canAccess.worker = false
+		canAccess.statistics = false
+		canAccess.transaction = false
+	} else if (userRole.value === 'merchant') {
+		// 鸡场：无所有管理权限
+		canAccess.merchant = false
+		canAccess.worker = false
+		canAccess.statistics = false
+		canAccess.transaction = false
+	} else {
+		// 中间商：全部权限
+		canAccess.merchant = true
+		canAccess.worker = true
+		canAccess.statistics = true
+		canAccess.transaction = true
+	}
+}
 
 const todayStats = computed(() => {
   const records = todayRecords.value

@@ -67,9 +67,48 @@ export const useDepartureStore = defineStore('departure', () => {
   const updateRecord = async (id, updates) => {
     const index = records.value.findIndex(r => r.id === id)
     if (index !== -1) {
+      const oldData = { ...records.value[index] }
       records.value[index] = { ...records.value[index], ...updates }
+
+      // 记录修改历史
+      try {
+        const changes = calculateChanges(oldData, updates)
+        if (Object.keys(changes).length > 0) {
+          const userId = uni.getStorageSync('userId') || ''
+          const userRole = uni.getStorageSync('userRole') || ''
+
+          await dbOps.insert('departure_history', {
+            departure_id: id,
+            modifier_id: userId,
+            modifier_role: userRole,
+            before_data: JSON.stringify(oldData),
+            after_data: JSON.stringify(updates),
+            changes: JSON.stringify(changes),
+            created_at: Date.now()
+          })
+        }
+      } catch (e) {
+        console.log('记录历史失败', e)
+      }
+
       await saveRecords()
     }
+  }
+
+  // 计算修改的字段
+  const calculateChanges = (oldData, newData) => {
+    const changes = {}
+    const fields = ['date', 'dailyQuote', 'departureWorkerId', 'loadingWorkerIds', 'oilFee', 'entryFee', 'tollFee', 'loadingFee', 'unloadingFee', 'departureFee', 'returnedBigBoxes', 'returnedSmallBoxes', 'note']
+
+    fields.forEach(field => {
+      const oldVal = JSON.stringify(oldData[field])
+      const newVal = JSON.stringify(newData[field])
+      if (oldVal !== newVal) {
+        changes[field] = { old: oldData[field], new: newData[field] }
+      }
+    })
+
+    return changes
   }
 
   const deleteRecord = async (id) => {

@@ -47,10 +47,30 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useMerchantStore } from '@/store/merchant'
+import { useUserStore } from '@/store/user'
 
 const merchantStore = useMerchantStore()
+const userStore = useUserStore()
+
+// 页面加载时检查权限
+onMounted(() => {
+	if (!userStore.isLoggedIn) {
+		uni.reLaunch({ url: '/pages/login/login' })
+		return
+	}
+
+	// 只有中间商可以访问鸡场管理
+	if (userStore.role !== 'middleman') {
+		uni.showToast({ title: '无权限访问', icon: 'none' })
+		setTimeout(() => uni.navigateBack(), 1500)
+		return
+	}
+
+	// 加载数据
+	merchantStore.loadMerchants()
+})
 
 const showAddModal = ref(false)
 const editingMerchant = ref(null)

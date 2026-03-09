@@ -1,6 +1,13 @@
 {
 	"pages": [
 	{
+		"path": "pages/login/login",
+		"style": {
+			"navigationBarTitleText": "登录",
+			"navigationStyle": "custom"
+		}
+	},
+	{
 		"path": "pages/home/home",
 		"style": {
 			"navigationBarTitleText": "首页"
@@ -16,6 +23,12 @@
 		"path": "pages/departure/form",
 		"style": {
 			"navigationBarTitleText": "发车记录"
+		}
+	},
+	{
+		"path": "pages/departure/history",
+		"style": {
+			"navigationBarTitleText": "修改历史"
 		}
 	},
 	{

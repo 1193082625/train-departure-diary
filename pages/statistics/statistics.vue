@@ -2,8 +2,8 @@
   <!-- 结账统计页面 -->
   <view class="statistics-page">
     <view class="tabs">
-      <view :class="['tab', activeTab === 'worker' && 'active']" @click="activeTab = 'worker'">按人员</view>
-      <view :class="['tab', activeTab === 'merchant' && 'active']" @click="activeTab = 'merchant'">按鸡场</view>
+      <view :class="['tab', activeTab === 'worker' && 'active', userRole === 'merchant' && 'disabled']" @click="userRole !== 'merchant' && (activeTab = 'worker')">按人员</view>
+      <view :class="['tab', activeTab === 'merchant' && 'active', userRole === 'worker' && 'disabled']" @click="userRole !== 'worker' && (activeTab = 'merchant')">按鸡场</view>
     </view>
 
     <!-- 快捷日期范围选择 -->
@@ -17,9 +17,10 @@
 
     <!-- 按人员统计 -->
     <view v-if="activeTab === 'worker'" class="tab-content">
-      <picker :range="workerOptions" :range-key="'name'" @change="onWorkerChange">
+      <picker v-if="canChangePerson" :range="workerOptions" :range-key="'name'" @change="onWorkerChange">
         <view class="picker">{{ selectedWorker?.name || '选择人员' }}</view>
       </picker>
+      <view v-else class="picker readonly">{{ userStore.nickname }}</view>
 
       <picker mode="date" :value="dateRange.start" @change="onStartDateChange">
         <view class="picker">开始: {{ dateRange.start }}</view>
@@ -137,22 +138,52 @@
 </template>
 
 <script setup>
-import { ref, computed, reactive, watch, watchEffect, nextTick } from 'vue'
+import { ref, computed, reactive, watch, watchEffect, nextTick, onMounted } from 'vue'
 import { useWorkerStore } from '@/store/worker'
 import { useMerchantStore } from '@/store/merchant'
 import { useDepartureStore } from '@/store/departure'
 import { useTransactionStore } from '@/store/transaction'
 import { useSettingsStore } from '@/store/settings'
+import { useUserStore } from '@/store/user'
 
 const workerStore = useWorkerStore()
 const merchantStore = useMerchantStore()
 const departureStore = useDepartureStore()
 const transactionStore = useTransactionStore()
 const settingsStore = useSettingsStore()
+const userStore = useUserStore()
 
+const userRole = ref('')
+const canChangePerson = ref(true)
 const activeTab = ref('worker')
 const selectedWorkerId = ref('')
 const selectedMerchantId = ref('')
+
+// 页面加载时检查权限
+onMounted(() => {
+	if (!userStore.isLoggedIn) {
+		uni.reLaunch({ url: '/pages/login/login' })
+		return
+	}
+
+	userRole.value = userStore.role
+
+	// 装发车：只能看按人员，默认选中自己
+	if (userRole.value === 'worker') {
+		activeTab.value = 'worker'
+		selectedWorkerId.value = userStore.userId
+		canChangePerson.value = false
+	}
+	// 鸡场：只能看按鸡场
+	else if (userRole.value === 'merchant') {
+		activeTab.value = 'merchant'
+		canChangePerson.value = false
+	}
+	else {
+		canChangePerson.value = true
+	}
+})
+
 const dateRange = reactive({
   start: new Date(new Date().setDate(1)).toISOString().split('T')[0], // 本月第一天
   end: new Date().toISOString().split('T')[0]
@@ -379,6 +410,8 @@ watchEffect(() => {
 .tabs { display: flex; gap: 10px; background: #f5f5f5; border-radius: 8px; margin-bottom: 20px; }
 .tab { flex: 1; text-align: center; padding: 10px; border-radius: 8px; background: #fff;}
 .tab.active { background: #007aff; color: #fff; }
+.tab.disabled { opacity: 0.5; }
+.picker.readonly { background: #f5f5f5; color: #333; font-weight: bold; }
 .quick-range { display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap; }
 .range-btn { padding: 8px 12px; background: #fff; border-radius: 4px; font-size: 14px; border: 1px solid #ddd; }
 .range-btn.active { background: #007aff; color: #fff; border-color: #007aff; }

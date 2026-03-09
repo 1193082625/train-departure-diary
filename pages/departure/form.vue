@@ -4,6 +4,17 @@
       <!-- 基本信息 -->
       <view class="section">
         <text class="section-title">基本信息</text>
+        <!-- 装发车：选择中间商 -->
+        <view v-if="userRole === 'worker'" class="form-item">
+          <text>选择中间商 *</text>
+          <picker
+            :range="middlemanList"
+            range-key="nickname"
+            @change="onMiddlemanChange"
+          >
+            <view class="picker-value">{{ selectedMiddleman?.nickname || '请选择中间商' }}</view>
+          </picker>
+        </view>
         <picker mode="date" :value="form.date" @change="onDateChange">
           <view class="form-item">
             <text>日期</text>
@@ -21,7 +32,10 @@
         <text class="section-title">人员</text>
         <view class="form-item">
           <text>发车人员</text>
-          <picker :range="departureWorkerOptions" :range-key="'name'" @change="onDepartureWorkerChange">
+          <view v-if="!canSelectDepartureWorker" class="picker-value readonly">
+            {{ userStore.nickname }}（不可修改）
+          </view>
+          <picker v-else :range="departureWorkerOptions" :range-key="'name'" @change="onDepartureWorkerChange">
             <view class="picker-value">{{ selectedDepartureWorker?.name || '选择发车人员' }}</view>
           </picker>
         </view>
@@ -180,11 +194,19 @@ import { useDepartureStore } from '@/store/departure'
 import { useMerchantStore } from '@/store/merchant'
 import { useWorkerStore } from '@/store/worker'
 import { useSettingsStore } from '@/store/settings'
+import { useUserStore } from '@/store/user'
 
 const departureStore = useDepartureStore()
 const merchantStore = useMerchantStore()
 const workerStore = useWorkerStore()
 const settingsStore = useSettingsStore()
+const userStore = useUserStore()
+
+const userRole = ref('')
+const userId = ref('')
+const middlemanList = ref([])
+const selectedMiddleman = ref(null)
+const canSelectDepartureWorker = ref(true)
 
 const form = reactive({
   id: null,
@@ -304,6 +326,9 @@ const calculated = computed(() => {
 })
 
 const onDateChange = (e) => { form.date = e.detail.value }
+const onMiddlemanChange = (e) => {
+  selectedMiddleman.value = middlemanList.value[e.detail.value]
+}
 const onDepartureWorkerChange = (e) => { form.departureWorkerId = departureWorkerOptions.value[e.detail.value]?.id || '' }
 
 const addMerchant = () => {
@@ -322,6 +347,15 @@ const addTruckRow = () => { form.truckRows.push({ rowNumber: form.truckRows.leng
 const removeTruckRow = (index) => { form.truckRows.splice(index, 1) }
 
 const saveRecord = () => {
+  // 装发车必须选择中间商
+  if (userRole.value === 'worker' && !selectedMiddleman.value) {
+    uni.showToast({
+      title: '请选择中间商',
+      icon: 'none'
+    })
+    return
+  }
+
   // 添加校验
   if (form.dailyQuote <= 0) {
     uni.showToast({
@@ -367,18 +401,12 @@ const saveRecord = () => {
     ...form,
     ...calculated.value,
     getMoney: parseFloat(calculated.value.profit)
-    // merchantAmount: calculated.value.merchantAmount,
-    // totalReceivePrice: calculated.value.totalReceivePrice,
-    // totalDeliveryPrice: calculated.value.totalDeliveryPrice,
-    // reservedBigBoxesTotal: calculated.value.reservedBigBoxesTotal,
-    // reservedSmallBoxesTotal: calculated.value.reservedSmallBoxesTotal,
-    // profit: parseFloat(calculated.value.profit),
-    // profitRate: parseFloat(calculated.value.profitRate),
-    // merchantBigTotal: calculated.value.merchantBigTotal,
-    // merchantSmallTotal: calculated.value.merchantSmallTotal,
-    // truckBig: calculated.value.truckBig,
-    // truckSmall: calculated.value.truckSmall,
-    // getMoney: parseFloat(calculated.value.profit)
+  }
+
+  // 装发车：添加中间商ID和创建者ID
+  if (userRole.value === 'worker' && selectedMiddleman.value) {
+    record.middleman_id = selectedMiddleman.value._id
+    record.creator_id = userId.value
   }
 
   if (form.id) {
@@ -390,8 +418,29 @@ const saveRecord = () => {
 }
 
 onMounted(() => {
+  // 检查登录
+  if (!userStore.isLoggedIn) {
+    uni.reLaunch({ url: '/pages/login/login' })
+    return
+  }
+
+  userRole.value = userStore.role
+  userId.value = userStore.userId
+
   // 加载默认设置
   loadDefaultSettings()
+
+  // 加载数据
+  merchantStore.loadMerchants()
+  workerStore.loadWorkers()
+
+  // 如果是装发车，只能看到关联的中间商，发车人员默认是自己
+  if (userRole.value === 'worker') {
+    loadRelatedMiddlemen()
+    // 发车人员默认是自己，不可修改
+    form.departureWorkerId = userId.value
+    canSelectDepartureWorker.value = false
+  }
 
   // 检查是否有编辑ID
   const pages = getCurrentPages()
@@ -401,14 +450,33 @@ onMounted(() => {
   if (options.id) {
     const record = departureStore.records.find(r => r.id === options.id)
     console.log('数据返显', record);
-    
+
     if (record) {
       Object.assign(form, record)
       console.log('打印form数据', form);
-      
     }
   }
 })
+
+// 加载关联的中间商
+const loadRelatedMiddlemen = async () => {
+  const db = uniCloud.database()
+  const res = await db.collection('user_relations').where({
+    target_id: userId.value
+  }).get()
+
+  const middlemanIds = res.result?.data?.map(r => r.middleman_id) || []
+  if (middlemanIds.length > 0) {
+    const usersRes = await db.collection('uni-id-users').where({
+      _id: db.command.in(middlemanIds)
+    }).get()
+
+    middlemanList.value = usersRes.result?.data || []
+    if (middlemanList.value.length > 0) {
+      selectedMiddleman.value = middlemanList.value[0]
+    }
+  }
+}
 </script>
 
 <style scoped>
@@ -419,6 +487,7 @@ onMounted(() => {
 .form-item:last-child { border-bottom: none; }
 .form-item input { text-align: right; width: 150px; }
 .value, .picker-value { color: #999; }
+.picker-value.readonly { color: #333; font-weight: bold; }
 .merchant-item { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
 .merchant-select { background: #f5f5f5; padding: 8px; border-radius: 4px; min-width: 80px; }
 .merchant-inputs { display: flex; gap: 10px; flex: 1; }

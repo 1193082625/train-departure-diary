@@ -50,10 +50,30 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useWorkerStore } from '@/store/worker'
+import { useUserStore } from '@/store/user'
 
 const workerStore = useWorkerStore()
+const userStore = useUserStore()
+
+// 页面加载时检查权限
+onMounted(() => {
+	if (!userStore.isLoggedIn) {
+		uni.reLaunch({ url: '/pages/login/login' })
+		return
+	}
+
+	// 只有中间商可以访问人员管理
+	if (userStore.role !== 'middleman') {
+		uni.showToast({ title: '无权限访问', icon: 'none' })
+		setTimeout(() => uni.navigateBack(), 1500)
+		return
+	}
+
+	// 加载数据
+	workerStore.loadWorkers()
+})
 
 const showAddModal = ref(false)
 const editingWorker = ref(null)

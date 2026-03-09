@@ -53,14 +53,36 @@
 </template>
 
 <script setup>
-import { ref, computed, reactive } from 'vue'
+import { ref, computed, reactive, onMounted } from 'vue'
 import { useMerchantStore } from '@/store/merchant'
 import { useWorkerStore } from '@/store/worker'
 import { useTransactionStore } from '@/store/transaction'
+import { useUserStore } from '@/store/user'
 
 const merchantStore = useMerchantStore()
 const workerStore = useWorkerStore()
 const transactionStore = useTransactionStore()
+const userStore = useUserStore()
+
+// 页面加载时检查权限
+onMounted(() => {
+	if (!userStore.isLoggedIn) {
+		uni.reLaunch({ url: '/pages/login/login' })
+		return
+	}
+
+	// 装发车和鸡场无单次结账权限
+	if (userStore.role !== 'middleman') {
+		uni.showToast({ title: '无权限访问', icon: 'none' })
+		setTimeout(() => uni.navigateBack(), 1500)
+		return
+	}
+
+	// 加载数据
+	merchantStore.loadMerchants()
+	workerStore.loadWorkers()
+	transactionStore.loadTransactions()
+})
 
 const form = reactive({
   type: 'payment_to_merchant',
