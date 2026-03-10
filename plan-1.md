@@ -84,12 +84,15 @@
     merchantName: string
     bigBoxes: number // 大框数
     smallBoxes: number // 小框数
+    weight: number // 斤数
    }
 
    interface TruckRow {
     rowNumber: number // 排号 1,2,3...
     bigBoxes: number // 本排大框数
     smallBoxes: number // 本排小框数
+    cartonBoxesBig: number // 大纸箱数
+    cartonBoxesSmall: number // 小纸箱数
    }
    ```
 
@@ -127,7 +130,7 @@
 
 ## 页面结构
 
-TabBar 页面（5个）
+TabBar 页面（5 个）
 
 1. 首页 - 数据概览、快捷操作
 2. 发车记录 - 每日发车记录列表、新增记录
@@ -226,7 +229,7 @@ TabBar 页面（5个）
 
 ### 实现任务
 
-Phase 1: 数据模型和Store
+Phase 1: 数据模型和 Store
 
 Task 1: 创建人员 Store
 
@@ -315,7 +318,8 @@ Step 1: 添加新设置项
 
 ```
 // 在现有状态中添加
-const bigBoxWeight = ref(50) // 大框斤数，默认50斤
+const receiptBigBoxWeight = ref(45) // 收获大框斤数，默认45斤
+const deliveryBigBoxWeight = ref(44) // 交货大框斤数，默认44斤
 const smallBoxWeight = ref(30) // 小框斤数，默认30斤
 ```
 
@@ -557,7 +561,7 @@ Phase 3: 完善和测试
 
 Task 14: 添加图标资源
 
-需要添加 TabBar 图标（5组：home, truck, merchant, worker, chart）
+需要添加 TabBar 图标（5 组：home, truck, merchant, worker, chart）
 
 Task 15: 测试验证
 

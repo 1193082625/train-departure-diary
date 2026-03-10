@@ -97,6 +97,7 @@
               <text>报价</text>
               <text>大框</text>
               <text>小框</text>
+              <text>斤数</text>
               <text>应结</text>
             </view>
             <view class="detail-item" v-for="item in merchantRecordList" :key="item.date">
@@ -104,6 +105,7 @@
               <text>{{ item.dailyQuote }}</text>
               <text>{{ item.bigBoxes }}</text>
               <text>{{ item.smallBoxes }}</text>
+              <text>{{ item.weight }}</text>
               <text>{{ item.receivable }}</text>
             </view>
           </view>
@@ -118,6 +120,10 @@
         <view class="stat-item">
           <text>共拉小框</text>
           <text class="value">{{ merchantStats.totalSmallBoxes }}</text>
+        </view>
+        <view class="stat-item">
+          <text>共拉斤数</text>
+          <text class="value">{{ merchantStats.totalWeight }}</text>
         </view>
         <view class="stat-item">
           <text>应结金额</text>
@@ -316,7 +322,7 @@ watchEffect(() => {
 
   const merchantRecords = records.filter(r => r.merchantDetails.some(m => m.merchantId === selectedMerchantId.value))
   
-  let totalBigBoxes = 0, totalSmallBoxes = 0, receivable = 0
+  let totalBigBoxes = 0, totalSmallBoxes = 0, totalWeight = 0, receivable = 0
 
   let recordList = []
   merchantRecordList.value = []
@@ -329,21 +335,26 @@ watchEffect(() => {
       const detail = r.merchantDetails.find(m => m.merchantId === selectedMerchantId.value)
       const bigBoxes = detail?.bigBoxes || 0
       const smallBoxes = detail?.smallBoxes || 0
+      const weight = detail?.weight || 0
 
       totalBigBoxes += bigBoxes
       totalSmallBoxes += smallBoxes
+      totalWeight += weight
 
-      const bigWeight = settingsStore.bigBoxWeight || 50
-      const smallWeight = settingsStore.smallBoxWeight || 30
+      const bigWeight = settingsStore.receiptBigBoxWeight || 45
+      const deliveryBigWeight = settingsStore.deliveryBigBoxWeight || 44
+      const smallWeight = settingsStore.smallBoxWeight || 29.5
+
       // 计算每斤价格
       const price = (r.dailyQuote - merchant.margin) / (settingsStore.bigBoxWeight || 45)
       // 计算应结算
-      receivable += price * bigWeight * bigBoxes + price * smallWeight * smallBoxes
+      receivable += price * (bigWeight * bigBoxes + smallWeight * smallBoxes + weight)
       
       recordList.push({
         date: r.date,
         bigBoxes: bigBoxes,
         smallBoxes: smallBoxes,
+        weight: weight,
         dailyQuote: r.dailyQuote,
         receivable: receivable.toFixed(2)
       })
@@ -362,6 +373,7 @@ watchEffect(() => {
   merchantStats.value = {
     totalBigBoxes,
     totalSmallBoxes,
+    totalWeight,
     receivable: receivable.toFixed(2),
     paid: paid.toFixed(2),
     unpaid: (receivable - paid).toFixed(2)

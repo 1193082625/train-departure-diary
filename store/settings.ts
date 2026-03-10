@@ -3,8 +3,11 @@ import { ref } from 'vue'
 import { dbOps } from '@/utils/db'
 
 export const useSettingsStore = defineStore('settings', () => {
-  const bigBoxWeight = ref(45)
-  const smallBoxWeight = ref(29.5)
+  const receiptBigBoxWeight = ref(45)  // 收货大框斤数
+  const deliveryBigBoxWeight = ref(44)  // 交货大框斤数
+  const smallBoxWeight = ref(29.5)  // 默认小框斤数
+  const depotCartonBoxesBig = ref(43)  // 默认大箱斤数
+  const depotCartonBoxesSmall = ref(30)  // 默认小箱斤数
   const loadingFee = ref(300)      // 装车费
   const unloadingFee = ref(200)    // 卸车费
   const departureFee = ref(200)    // 发车费
@@ -18,8 +21,11 @@ export const useSettingsStore = defineStore('settings', () => {
       const results = await dbOps.queryAll('settings')
       if (results && results.length > 0) {
         const settings = results[0]
-        bigBoxWeight.value = settings.bigBoxWeight ?? 50
+        receiptBigBoxWeight.value = settings.receiptBigBoxWeight ?? 45
+        deliveryBigBoxWeight.value = settings.deliveryBigBoxWeight ?? 44
         smallBoxWeight.value = settings.smallBoxWeight ?? 30
+        depotCartonBoxesBig.value = settings.depotCartonBoxesBig ?? 43
+        depotCartonBoxesSmall.value = settings.depotCartonBoxesSmall ?? 30
         loadingFee.value = settings.loadingFee ?? 0
         unloadingFee.value = settings.unloadingFee ?? 0
         departureFee.value = settings.departureFee ?? 0
@@ -31,8 +37,9 @@ export const useSettingsStore = defineStore('settings', () => {
         const data = uni.getStorageSync('settings')
         if (data) {
           const settings = JSON.parse(data)
-          bigBoxWeight.value = settings.bigBoxWeight ?? 50
-          smallBoxWeight.value = settings.smallBoxWeight ?? 30
+          receiptBigBoxWeight.value = settings.receiptBigBoxWeight ?? 45
+          deliveryBigBoxWeight.value = settings.deliveryBigBoxWeight ?? 44
+          smallBoxWeight.value = settings.smallBoxWeight ?? 29.5
           loadingFee.value = settings.loadingFee ?? 0
           unloadingFee.value = settings.unloadingFee ?? 0
           departureFee.value = settings.departureFee ?? 0
@@ -46,8 +53,11 @@ export const useSettingsStore = defineStore('settings', () => {
       const data = uni.getStorageSync('settings')
       if (data) {
         const settings = JSON.parse(data)
-        bigBoxWeight.value = settings.bigBoxWeight ?? 50
+        receiptBigBoxWeight.value = settings.receiptBigBoxWeight ?? 45
+        deliveryBigBoxWeight.value = settings.deliveryBigBoxWeight ?? 44
         smallBoxWeight.value = settings.smallBoxWeight ?? 30
+        depotCartonBoxesBig.value = settings.depotCartonBoxesBig ?? 43
+        depotCartonBoxesSmall.value = settings.depotCartonBoxesSmall ?? 30
         loadingFee.value = settings.loadingFee ?? 0
         unloadingFee.value = settings.unloadingFee ?? 0
         departureFee.value = settings.departureFee ?? 0
@@ -61,8 +71,11 @@ export const useSettingsStore = defineStore('settings', () => {
   const saveSettings = async () => {
     const settings = {
       id: 1,
-      bigBoxWeight: bigBoxWeight.value,
+      receiptBigBoxWeight: receiptBigBoxWeight.value,
+      deliveryBigBoxWeight: deliveryBigBoxWeight.value,
       smallBoxWeight: smallBoxWeight.value,
+      depotCartonBoxesBig: depotCartonBoxesBig.value,
+      depotCartonBoxesSmall: depotCartonBoxesSmall.value,
       loadingFee: loadingFee.value,
       unloadingFee: unloadingFee.value,
       departureFee: departureFee.value,
@@ -80,13 +93,28 @@ export const useSettingsStore = defineStore('settings', () => {
     }
   }
 
-  const setBigBoxWeight = (weight) => {
-    bigBoxWeight.value = weight
+  const setReceiptBigBoxWeight = (weight) => {
+    receiptBigBoxWeight.value = weight
+    saveSettings()
+  }
+
+  const setDeliveryBigBoxWeight = (weight) => {
+    deliveryBigBoxWeight.value = weight
     saveSettings()
   }
 
   const setSmallBoxWeight = (weight) => {
     smallBoxWeight.value = weight
+    saveSettings()
+  }
+
+  const setDepotCartonBoxesBig = (weight) => {
+    depotCartonBoxesBig.value = weight
+    saveSettings()
+  }
+
+  const setDepotCartonBoxesSmall = (weight) => {
+    depotCartonBoxesSmall.value = weight
     saveSettings()
   }
 
@@ -121,8 +149,11 @@ export const useSettingsStore = defineStore('settings', () => {
   }
 
   const updateAllSettings = (params) => {
-    if (params.bigBoxWeight !== undefined) bigBoxWeight.value = params.bigBoxWeight
+    if (params.receiptBigBoxWeight !== undefined) receiptBigBoxWeight.value = params.receiptBigBoxWeight
+    if (params.deliveryBigBoxWeight !== undefined) deliveryBigBoxWeight.value = params.deliveryBigBoxWeight
     if (params.smallBoxWeight !== undefined) smallBoxWeight.value = params.smallBoxWeight
+    if (params.depotCartonBoxesBig !== undefined) depotCartonBoxesBig.value = params.depotCartonBoxesBig
+    if (params.depotCartonBoxesSmall !== undefined) depotCartonBoxesSmall.value = params.depotCartonBoxesSmall
     if (params.loadingFee !== undefined) loadingFee.value = params.loadingFee
     if (params.unloadingFee !== undefined) unloadingFee.value = params.unloadingFee
     if (params.departureFee !== undefined) departureFee.value = params.departureFee
@@ -136,16 +167,22 @@ export const useSettingsStore = defineStore('settings', () => {
   loadSettings()
 
   return {
-    bigBoxWeight,
+    receiptBigBoxWeight,
+    deliveryBigBoxWeight,
     smallBoxWeight,
+    depotCartonBoxesBig,
+    depotCartonBoxesSmall,
     loadingFee,
     unloadingFee,
     departureFee,
     tollFee,
     entryFee,
     oilFee,
-    setBigBoxWeight,
+    setReceiptBigBoxWeight,
+    setDeliveryBigBoxWeight,
     setSmallBoxWeight,
+    setDepotCartonBoxesBig,
+    setDepotCartonBoxesSmall,
     setLoadingFee,
     setUnloadingFee,
     setDepartureFee,

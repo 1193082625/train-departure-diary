@@ -44,45 +44,60 @@
           <text class="popup-close" @click="settingsPopup.close()">×</text>
         </view>
         <view class="popup-content">
-          <view class="settings-group">
-            <text class="group-title">斤数设置</text>
-            <view class="form-item">
-              <text>大框斤数</text>
-              <input v-model.number="settingsForm.bigBoxWeight" type="number" placeholder="请输入" />
-            </view>
-            <view class="form-item">
-              <text>小框斤数</text>
-              <input v-model.number="settingsForm.smallBoxWeight" type="number" placeholder="请输入" />
-            </view>
-          </view>
-
-          <view class="settings-group">
-            <text class="group-title">费用设置（元）</text>
-            <view class="form-item">
-              <text>装车费</text>
-              <input v-model.number="settingsForm.loadingFee" type="digit" placeholder="请输入" />
-            </view>
-            <view class="form-item">
-              <text>卸车费</text>
-              <input v-model.number="settingsForm.unloadingFee" type="digit" placeholder="请输入" />
-            </view>
-            <view class="form-item">
-              <text>发车费</text>
-              <input v-model.number="settingsForm.departureFee" type="digit" placeholder="请输入" />
-            </view>
-            <view class="form-item">
-              <text>过路费</text>
-              <input v-model.number="settingsForm.tollFee" type="digit" placeholder="请输入" />
-            </view>
-            <view class="form-item">
-              <text>进门费</text>
-              <input v-model.number="settingsForm.entryFee" type="digit" placeholder="请输入" />
-            </view>
-            <view class="form-item">
-              <text>油费</text>
-              <input v-model.number="settingsForm.oilFee" type="digit" placeholder="请输入" />
-            </view>
-          </view>
+          <uni-collapse accordion  v-model="collapseValue">
+            <uni-collapse-item title="斤数设置（斤）">
+              <view class="settings-group">
+                <view class="form-item">
+                  <text>收货大框斤数</text>
+                  <input v-model.number="settingsForm.receiptBigBoxWeight" type="number" placeholder="请输入" />
+                </view>
+                <view class="form-item">
+                  <text>交货大框斤数</text>
+                  <input v-model.number="settingsForm.deliveryBigBoxWeight" type="number" placeholder="请输入" />
+                </view>
+                <view class="form-item">
+                  <text>默认小框斤数</text>
+                  <input v-model.number="settingsForm.smallBoxWeight" type="number" placeholder="请输入" />
+                </view>
+                <view class="form-item">
+                  <text>默认大箱斤数</text>
+                  <input v-model.number="settingsForm.depotCartonBoxesBig" type="number" placeholder="请输入" />
+                </view>
+                <view class="form-item">
+                  <text>默认小箱斤数</text>
+                  <input v-model.number="settingsForm.depotCartonBoxesSmall" type="number" placeholder="请输入" />
+                </view>
+              </view>
+            </uni-collapse-item>
+            <uni-collapse-item title="费用设置（元）">
+              <view class="settings-group">
+                <view class="form-item">
+                  <text>装车费</text>
+                  <input v-model.number="settingsForm.loadingFee" type="digit" placeholder="请输入" />
+                </view>
+                <view class="form-item">
+                  <text>卸车费</text>
+                  <input v-model.number="settingsForm.unloadingFee" type="digit" placeholder="请输入" />
+                </view>
+                <view class="form-item">
+                  <text>发车费</text>
+                  <input v-model.number="settingsForm.departureFee" type="digit" placeholder="请输入" />
+                </view>
+                <view class="form-item">
+                  <text>过路费</text>
+                  <input v-model.number="settingsForm.tollFee" type="digit" placeholder="请输入" />
+                </view>
+                <view class="form-item">
+                  <text>进门费</text>
+                  <input v-model.number="settingsForm.entryFee" type="digit" placeholder="请输入" />
+                </view>
+                <view class="form-item">
+                  <text>油费</text>
+                  <input v-model.number="settingsForm.oilFee" type="digit" placeholder="请输入" />
+                </view>
+              </view>
+            </uni-collapse-item>
+          </uni-collapse>
         </view>
         <button @click="saveSettings" class="save-btn">保存设置</button>
       </view>
@@ -99,10 +114,13 @@ const departureStore = useDepartureStore()
 const settingsStore = useSettingsStore()
 
 const settingsPopup = ref(null)
-
+const collapseValue = ref(['0'])
 const settingsForm = reactive({
-  bigBoxWeight: 45,
-  smallBoxWeight: 29.5,
+  receiptBigBoxWeight: 45, // 收货大框斤数
+  deliveryBigBoxWeight: 44, // 交货大框斤数
+  smallBoxWeight: 29.5, // 默认小框斤数
+  depotCartonBoxesBig: 43, // 默认大箱斤数
+  depotCartonBoxesSmall: 30, // 默认小箱斤数
   loadingFee: 300, // 装车费
   unloadingFee: 200, // 卸车费
   departureFee: 200, // 发车费
@@ -115,8 +133,6 @@ const todayRecords = computed(() => departureStore.getTodayRecords())
 
 const todayStats = computed(() => {
   const records = todayRecords.value
-  console.log('todayRecords11',todayRecords.value);
-  
   const totalIncome = records.reduce((sum, r) => {
     return sum + parseFloat(r.getMoney || 0)
   }, 0)
@@ -137,8 +153,11 @@ const openSettingsPopup = () => {
 const popupChange = (e) => {
   if (e.show) {
     // 弹窗打开时，加载当前设置
-    settingsForm.bigBoxWeight = settingsStore.bigBoxWeight
+    settingsForm.receiptBigBoxWeight = settingsStore.receiptBigBoxWeight
+    settingsForm.deliveryBigBoxWeight = settingsStore.deliveryBigBoxWeight
     settingsForm.smallBoxWeight = settingsStore.smallBoxWeight
+    settingsForm.depotCartonBoxesBig = settingsStore.depotCartonBoxesBig
+    settingsForm.depotCartonBoxesSmall = settingsStore.depotCartonBoxesSmall
     settingsForm.loadingFee = settingsStore.loadingFee
     settingsForm.unloadingFee = settingsStore.unloadingFee
     settingsForm.departureFee = settingsStore.departureFee
@@ -150,8 +169,11 @@ const popupChange = (e) => {
 
 const saveSettings = () => {
   settingsStore.updateAllSettings({
-    bigBoxWeight: settingsForm.bigBoxWeight,
+    receiptBigBoxWeight: settingsForm.receiptBigBoxWeight,
+    deliveryBigBoxWeight: settingsForm.deliveryBigBoxWeight,
     smallBoxWeight: settingsForm.smallBoxWeight,
+    depotCartonBoxesBig: settingsForm.depotCartonBoxesBig,
+    depotCartonBoxesSmall: settingsForm.depotCartonBoxesSmall,
     loadingFee: settingsForm.loadingFee,
     unloadingFee: settingsForm.unloadingFee,
     departureFee: settingsForm.departureFee,
@@ -166,7 +188,11 @@ const saveSettings = () => {
   settingsPopup.value.close()
 }
 </script>
-
+<style>
+.uni-collapse-item__wrap-content{
+  padding: 0 18px!important;
+}
+</style>
 <style scoped>
 .home-page { padding: 20px; }
 .stats-cards { display: flex; gap: 15px; margin-bottom: 20px; }

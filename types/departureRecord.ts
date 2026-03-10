@@ -7,12 +7,21 @@ export interface MerchantDetail {
 	merchantName: string  
 	bigBoxes: number // 大框数  
 	smallBoxes: number // 小框数  
+	weight: number // 斤数
 }
 	   
 export interface TruckRow {  
 	rowNumber: number // 排号 1,2,3...  
 	bigBoxes: number // 本排大框数  
 	smallBoxes: number // 本排小框数  
+	cartonBoxes: number // 本排纸箱数  
+}
+
+export interface MerchantAmount {
+	name: string
+	amount: number
+	receivePrice: number
+	deliveryPrice: number
 }
 
 export interface DepartureRecord {

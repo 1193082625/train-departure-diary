@@ -91,6 +91,10 @@
         <text class="summary-value">{{ totalSmallBoxes }}</text>
       </view>
       <view class="summary-item">
+        <text class="summary-label">斤数</text>
+        <text class="summary-value">{{ totalWeight || '--' }}</text>
+      </view>
+      <view class="summary-item">
         <text class="summary-label">总盈利</text>
         <text class="summary-value profit">¥{{ totalProfit.toFixed(2) }}</text>
       </view>
@@ -104,7 +108,7 @@
           <view class="group-header">
             <text class="group-title">{{ groupKey }}</text>
             <text class="group-summary">
-              {{ group.records.length }}车 | 大框{{ group.bigBoxes }} | 小框{{ group.smallBoxes }} | ¥{{ group.profit.toFixed(2) }}
+              {{ group.records.length }}车 | 大框{{ group.bigBoxes }} | 小框{{ group.smallBoxes }} | 斤数{{ group.weight }} | ¥{{ group.profit.toFixed(2) }}
             </text>
           </view>
           <view
@@ -125,6 +129,7 @@
             <view class="record-stats">
               <text>大框: {{ calculateTotalBigBoxes(record) }}</text>
               <text>小框: {{ calculateTotalSmallBoxes(record) }}</text>
+              <text>斤数: {{ calculateTotalWeight(record) }}</text>
               <text class="profit" v-if="record.getMoney">盈利: ¥{{ parseFloat(record.getMoney).toFixed(2) }}</text>
             </view>
           </view>
@@ -151,6 +156,7 @@
           <view class="record-stats">
             <text>大框: {{ calculateTotalBigBoxes(record) }}</text>
             <text>小框: {{ calculateTotalSmallBoxes(record) }}</text>
+            <text>散装: {{ calculateTotalWeight(record) }} 斤</text>
             <text class="profit" v-if="record.getMoney">盈利: ¥{{ parseFloat(record.getMoney).toFixed(2) }}</text>
           </view>
         </view>
@@ -277,12 +283,14 @@ const groupedRecords = computed(() => {
         records: [],
         bigBoxes: 0,
         smallBoxes: 0,
+        weight: 0,
         profit: 0
       }
     }
     groups[key].records.push(record)
     groups[key].bigBoxes += calculateTotalBigBoxes(record)
     groups[key].smallBoxes += calculateTotalSmallBoxes(record)
+    groups[key].weight += calculateTotalWeight(record)
     groups[key].profit += parseFloat(record.getMoney || 0)
   })
 
@@ -297,6 +305,11 @@ const totalBigBoxes = computed(() => {
 // 计算总小框
 const totalSmallBoxes = computed(() => {
   return records.value.reduce((sum, r) => sum + calculateTotalSmallBoxes(r), 0)
+})
+
+// 计算总斤数
+const totalWeight = computed(() => {
+  return records.value.reduce((sum, r) => sum + calculateTotalWeight(r), 0)
 })
 
 // 计算总盈利
@@ -349,6 +362,10 @@ const calculateTotalBigBoxes = (record) => {
 const calculateTotalSmallBoxes = (record) => {
   const merchantSmall = record.merchantDetails.reduce((sum, m) => sum + m.smallBoxes, 0)
   return merchantSmall - record.reservedSmallBoxes
+}
+
+const calculateTotalWeight = (record) => {
+  return record.merchantDetails.reduce((sum, m) => sum + m.weight, 0)
 }
 
 onMounted(() => {

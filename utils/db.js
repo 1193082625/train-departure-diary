@@ -101,8 +101,9 @@ const createTables = () => {
       // 设置表
       `CREATE TABLE IF NOT EXISTS settings (
         id INTEGER PRIMARY KEY DEFAULT 1,
-        bigBoxWeight REAL DEFAULT 50,
-        smallBoxWeight REAL DEFAULT 30,
+        receiptBigBoxWeight REAL DEFAULT 45,
+        deliveryBigBoxWeight REAL DEFAULT 44,
+        smallBoxWeight REAL DEFAULT 29.5,
         loadingFee REAL DEFAULT 0,
         tollFee REAL DEFAULT 0,
         entryFee REAL DEFAULT 0,
