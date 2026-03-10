@@ -201,7 +201,30 @@
       <!-- 计算结果 - 【针对中间商可见】 -->
       <view class="section result">
         <text class="section-title">计算结果</text>
-        <view class="result-item">
+        <view class="flex-start mb-10">
+          本次共拉（<text class="font-bold">{{ calculated.merchantUnitOfWeightTotal }} 斤数</text>）
+        </view>
+        <view class="flex-start">
+          <text class="w-pre25 font-bold">{{ calculated.merchantBigTotal }} 大框</text>
+          <text class="w-pre25 font-bold">{{ calculated.merchantSmallTotal }} 小框</text>
+        </view>
+        <view class="flex-start mt-15 mb-10">
+          货车共装（<text class="font-bold">{{ calculated.truckWeightTotal }} 斤数</text>）
+        </view>
+        <view class="flex-start">
+          <text class="w-pre25 font-bold">{{ calculated.truckBig }} 大框</text>
+          <text class="w-pre25 font-bold">{{ calculated.truckSmall }} 小框</text>
+          <text class="w-pre25 font-bold">{{ calculated.truckCartonBoxesBig }} 大箱</text>
+          <text class="w-pre25 font-bold">{{ calculated.truckCartonBoxesSmall }} 小箱</text>
+        </view>
+        <view class="flex-start mt-15 mb-10">
+          回框数量合计
+        </view>
+        <view class="flex-start">
+          <text class="w-pre25 font-bold">{{calculated.totalBigBoxes  < 0 ? '欠' : ''}}{{ calculated.totalBigBoxes }} 大框</text>
+          <text class="w-pre25 font-bold">{{calculated.totalSmallBoxes  < 0 ? '欠' : ''}}{{ calculated.totalSmallBoxes }} 小框</text>
+        </view>
+        <!-- <view class="result-item">
           <text>本次共拉大框</text>
           <text class="result-value">{{ calculated.merchantBigTotal }} 框</text>
         </view>
@@ -232,15 +255,15 @@
         <view class="result-item">
           <text>货车共装斤数</text>
           <text class="result-value">{{ calculated.truckWeightTotal }} 斤</text>
-        </view>
-        <view class="result-item">
+        </view> -->
+        <!-- <view class="result-item">
           <text>大框数量合计</text>
           <text class="result-value">{{ calculated.totalBigBoxes }} 个</text>
         </view>
         <view class="result-item">
           <text>小框数量合计</text>
           <text class="result-value">{{ calculated.totalSmallBoxes }} 个</text>
-        </view>
+        </view> -->
 
         <!-- 鸡场金额明细 -->
         <view v-if="calculated.merchantAmount.length > 0" class="result-subtitle">鸡场金额明细</view>
