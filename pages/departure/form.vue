@@ -515,6 +515,14 @@ const saveRecord = () => {
   } else {
     departureStore.addRecord(record)
   }
+
+  // 保存当日报价到本地存储（自动填充）
+  if (form.dailyQuote) {
+    const manualQuotes = uni.getStorageSync('dailyQuotes') || {}
+    manualQuotes[form.date] = form.dailyQuote
+    uni.setStorageSync('dailyQuotes', manualQuotes)
+  }
+
   uni.navigateBack()
 }
 
