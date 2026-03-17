@@ -47,7 +47,23 @@ export default {
       cHeight: 0,
       ctx: null,
       points: [],
-      legend: []
+      legend: [],
+      defaultOpts: {
+        color: ["#1890FF", "#91CB74", "#FAC858", "#EE6666", "#73C0DE", "#3CA272", "#FC8452", "#9A60B4", "#ea7ccc"],
+        padding: [15, 15, 0, 15],
+        enableScroll: false,
+        legend: {},
+        xAxis: { disableGrid: false, axisLine: true },
+        yAxis: { gridType: "dash", dashLength: 2 },
+        extra: {
+          area: {
+            type: "curve",
+            opacity: 0.2,
+            addLine: true,
+            gradient: false
+          }
+        }
+      }
     }
   },
   watch: {
@@ -76,7 +92,19 @@ export default {
       const ctx = this.ctx
       const width = this.cWidth
       const height = this.cHeight
-      const padding = { top: 20, right: 20, bottom: 30, left: 40 }
+
+      // 合并配置选项
+      const opts = { ...this.defaultOpts, ...this.opts }
+      const areaConfig = opts.extra?.area || {}
+
+      // 从 opts 获取 padding 或使用默认值
+      const paddingArr = opts.padding || [20, 20, 30, 40]
+      const padding = {
+        top: paddingArr[0],
+        right: paddingArr[1],
+        bottom: paddingArr[2],
+        left: paddingArr[3]
+      }
       const chartWidth = width - padding.left - padding.right
       const chartHeight = height - padding.top - padding.bottom
 
@@ -108,20 +136,23 @@ export default {
       minVal = minVal - range * 0.1
       maxVal = maxVal + range * 0.1
 
-      // 绘制网格线
-      ctx.setStrokeStyle('#eeeeee')
-      ctx.setLineWidth(1)
-      const gridLines = 5
-      for (let i = 0; i <= gridLines; i++) {
-        const y = padding.top + (chartHeight / gridLines) * i
-        ctx.moveTo(padding.left, y)
-        ctx.lineTo(width - padding.right, y)
+      // 绘制网格线（如果未禁用）
+      if (!opts.xAxis?.disableGrid) {
+        ctx.setStrokeStyle('#eeeeee')
+        ctx.setLineWidth(1)
+        const gridLines = 5
+        for (let i = 0; i <= gridLines; i++) {
+          const y = padding.top + (chartHeight / gridLines) * i
+          ctx.moveTo(padding.left, y)
+          ctx.lineTo(width - padding.right, y)
+        }
+        ctx.stroke()
       }
-      ctx.stroke()
 
       // 绘制Y轴标签
       ctx.setFillStyle('#999999')
       ctx.setFontSize(10)
+      const gridLines = 5
       for (let i = 0; i <= gridLines; i++) {
         const val = maxVal - ((maxVal - minVal) / gridLines) * i
         const y = padding.top + (chartHeight / gridLines) * i
@@ -139,6 +170,10 @@ export default {
       series.forEach((s, sIndex) => {
         if (!s.data || s.data.length === 0) return
 
+        // 获取颜色
+        const colors = opts.color || this.defaultOpts.color
+        const color = s.color || colors[sIndex % colors.length]
+
         const points = []
         s.data.forEach((val, i) => {
           const x = padding.left + xStep * i
@@ -146,28 +181,47 @@ export default {
           points.push({ x, y, val })
         })
 
-        // 获取颜色
-        const color = s.color || this.getColor(sIndex)
+        // series 中的 areaStyle 优先，其次才是全局 addLine 配置
+        const isArea = s.areaStyle !== undefined ? s.areaStyle : areaConfig.addLine
+        const areaOpacity = areaConfig.opacity || 0.3
+        const useGradient = areaConfig.gradient || false
+        const useCurve = areaConfig.type === 'curve'
 
         // 绘制区域图（如果配置了areaStyle）
-        if (s.areaStyle) {
-          // 创建渐变
-          const gradient = ctx.createLinearGradient(0, padding.top, 0, height - padding.bottom)
-          gradient.addColorStop(0, color + '99') // 顶部透明度
-          gradient.addColorStop(1, color + '10') // 底部透明度
+        if (isArea) {
+          let fillStyle
+          if (useGradient) {
+            // 创建垂直渐变
+            const gradient = ctx.createLinearGradient(0, padding.top, 0, height - padding.bottom)
+            gradient.addColorStop(0, color + Math.round(areaOpacity * 255).toString(16).padStart(2, '0'))
+            gradient.addColorStop(1, color + '00')
+            fillStyle = gradient
+          } else {
+            fillStyle = color + Math.round(areaOpacity * 255).toString(16).padStart(2, '0')
+          }
 
           ctx.beginPath()
           ctx.moveTo(points[0].x, height - padding.bottom)
-          points.forEach(p => {
-            ctx.lineTo(p.x, p.y)
-          })
+          if (useCurve && points.length > 2) {
+            // 使用贝塞尔曲线连接
+            for (let i = 0; i < points.length - 1; i++) {
+              const xc = (points[i].x + points[i + 1].x) / 2
+              const yc = (points[i].y + points[i + 1].y) / 2
+              ctx.quadraticCurveTo(points[i].x, points[i].y, xc, yc)
+            }
+            ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y)
+          } else {
+            points.forEach(p => {
+              ctx.lineTo(p.x, p.y)
+            })
+          }
           ctx.lineTo(points[points.length - 1].x, height - padding.bottom)
           ctx.closePath()
-          ctx.setFillStyle(gradient)
+          ctx.setFillStyle(fillStyle)
           ctx.fill()
         }
 
-        // 绘制曲线
+        // 绘制曲线或折线
         if (points.length > 1) {
           ctx.beginPath()
           ctx.setStrokeStyle(color)
@@ -175,14 +229,22 @@ export default {
           ctx.setLineCap('round')
           ctx.setLineJoin('round')
 
-          // 使用二次贝塞尔曲线连接点
-          ctx.moveTo(points[0].x, points[0].y)
-          for (let i = 0; i < points.length - 1; i++) {
-            const xc = (points[i].x + points[i + 1].x) / 2
-            const yc = (points[i].y + points[i + 1].y) / 2
-            ctx.quadraticCurveTo(points[i].x, points[i].y, xc, yc)
+          if (useCurve && points.length > 2) {
+            // 使用二次贝塞尔曲线连接点
+            ctx.moveTo(points[0].x, points[0].y)
+            for (let i = 0; i < points.length - 1; i++) {
+              const xc = (points[i].x + points[i + 1].x) / 2
+              const yc = (points[i].y + points[i + 1].y) / 2
+              ctx.quadraticCurveTo(points[i].x, points[i].y, xc, yc)
+            }
+            ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y)
+          } else {
+            // 使用直线连接
+            ctx.moveTo(points[0].x, points[0].y)
+            points.forEach(p => {
+              ctx.lineTo(p.x, p.y)
+            })
           }
-          ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y)
           ctx.stroke()
         }
 

@@ -59,7 +59,8 @@
 		}
 	},
 	"easycom": {
-		"u-charts": "@/components/u-charts/u-charts.vue"
+		"u-charts": "@/components/u-charts/u-charts.vue",
+		"qiun-data-charts": "uni_modules/qiun-data-charts/components/qiun-data-charts/qiun-data-charts.vue"
 	},
 	"tabBar": {
 		"color": "#7A7E83",

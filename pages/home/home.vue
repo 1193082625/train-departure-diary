@@ -65,9 +65,11 @@
             </view>
           </view>
           <!-- 图表 -->
-          <u-charts
+          <qiun-data-charts
+            type="area"
             canvasId="quoteChart"
             :chartData="chartData"
+            :opts="chartOpts"
             :width="chartWidth"
             :height="chartHeight"
           />
@@ -333,6 +335,24 @@ const chartRange = ref('month')
 const chartPoints = ref([])
 const chartWidth = ref(320)
 const chartHeight = ref(220)
+
+// 图表配置（适配 uCharts 格式）
+const chartOpts = ref({
+  color: ["#FF9500", "#52C41A"],
+  padding: [15, 15, 0, 15],
+  enableScroll: false,
+  legend: {},
+  xAxis: { disableGrid: true },
+  yAxis: { gridType: "dash", dashLength: 2 },
+  extra: {
+    area: {
+      type: "curve",
+      opacity: 0.3,
+      addLine: true,
+      gradient: true
+    }
+  }
+})
 
 // 图表数据（uCharts格式）
 const chartData = ref({
@@ -691,7 +711,7 @@ const saveSettings = () => {
 .chart-range { display: flex; gap: 10px; margin-bottom: 15px; }
 .chart-range .range-btn { padding: 8px 16px; background: #fff; border-radius: 4px; border: 1px solid #ddd; font-size: 14px; }
 .chart-range .range-btn.active { background: #007aff; color: #fff; border-color: #007aff; }
-.chart-container { background: #fff; border-radius: 8px; padding: 15px; }
+.chart-container { background: #fff; border-radius: 8px; padding-top: 15px; padding-bottom: 15px; }
 .quote-chart { width: 100%; height: 250px; }
 .no-data { text-align: center; padding: 30px; color: #999; background: #fff; border-radius: 8px; }
 
@@ -706,7 +726,7 @@ const saveSettings = () => {
 .chart-label { position: absolute; transform: translateX(-50%); font-size: 10px; color: #666; white-space: nowrap; }
 
 /* uCharts 图表样式 */
-.chart-wrapper { background: #fff; border-radius: 8px; padding: 10px; }
+.chart-wrapper { background: #fff; border-radius: 8px; }
 .chart-legend { display: flex; justify-content: center; gap: 20px; margin-bottom: 10px; }
 .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #666; }
 .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
