@@ -58,6 +58,9 @@
 			"background": "#efeff4"
 		}
 	},
+	"easycom": {
+		"u-charts": "@/components/u-charts/u-charts.vue"
+	},
 	"tabBar": {
 		"color": "#7A7E83",
 		"selectedColor": "#007aff",

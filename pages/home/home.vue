@@ -50,34 +50,30 @@
         <view @click="chartRange = 'year'" :class="['range-btn', chartRange === 'year' && 'active']">年</view>
       </view>
 
-      <!-- 折线图（视图实现） -->
+      <!-- uCharts 渐变色曲线区域图 -->
       <view class="chart-container">
-        <view v-if="chartPoints.length > 0" class="chart-view">
-          <!-- Y轴标签 -->
-          <view class="chart-y-axis">
-            <text>{{ Math.round(maxChartValue) }}</text>
-            <text>{{ Math.round(avgChartValue) }}</text>
-            <text>{{ Math.round(minChartValue) }}</text>
-          </view>
-          <!-- 图表区域 -->
-          <view class="chart-area">
-            <!-- 网格线 -->
-            <view class="grid-line" style="top: 0"></view>
-            <view class="grid-line" style="top: 50%"></view>
-            <view class="grid-line" style="top: 100%"></view>
-            <!-- 折线 -->
-            <view class="line-container">
-              <view v-for="(point, index) in chartPoints" :key="index"
-                class="chart-point"
-                :style="{ left: point.x + 'px', bottom: point.y + 'px' }">
-              </view>
-              <view v-for="(point, index) in chartPoints" :key="'l'+index"
-                class="chart-label"
-                :style="{ left: point.x + 'px', bottom: (point.y + 15) + 'px' }">
-                {{ point.label }}
-              </view>
+        <view v-if="chartData && chartData.series && chartData.series.length > 0" class="chart-wrapper">
+          <!-- 图例 -->
+          <view class="chart-legend">
+            <view class="legend-item">
+              <view class="legend-dot" style="background: #FF9500;"></view>
+              <text>报价（元/框）</text>
+            </view>
+            <view class="legend-item">
+              <view class="legend-dot" style="background: #52C41A;"></view>
+              <text>盈利（元）</text>
             </view>
           </view>
+          <!-- 图表 -->
+          <u-charts
+            canvasId="quoteChart"
+            :chartData="chartData"
+            :width="chartWidth"
+            :height="chartHeight"
+          />
+        </view>
+        <view v-else class="no-data">
+          <text>暂无数据</text>
         </view>
       </view>
     </view>
@@ -335,6 +331,27 @@ const saveQuote = () => {
 // 折线图相关
 const chartRange = ref('month')
 const chartPoints = ref([])
+const chartWidth = ref(320)
+const chartHeight = ref(220)
+
+// 图表数据（uCharts格式）
+const chartData = ref({
+  categories: [],
+  series: [
+    {
+      name: '报价',
+      color: '#FF9500',
+      data: [],
+      areaStyle: true
+    },
+    {
+      name: '盈利',
+      color: '#52C41A',
+      data: [],
+      areaStyle: false
+    }
+  ]
+})
 
 // 计算图表Y轴范围
 const chartValues = computed(() => {
@@ -354,7 +371,7 @@ const minChartValue = computed(() => chartValues.value.min)
 const maxChartValue = computed(() => chartValues.value.max)
 const avgChartValue = computed(() => chartValues.value.avg)
 
-// 获取指定时间范围的报价数据
+// 获取指定时间范围的报价和盈利数据
 const getChartData = () => {
   const today = new Date()
   let startDate = ''
@@ -383,7 +400,7 @@ const getChartData = () => {
 
   // 获取日期范围内的报价
   const quotes = getAllQuotes()
-  const dateQuotes = []
+  const dateData = []
 
   // 生成日期范围内的所有日期
   const currentDate = new Date(startDate)
@@ -391,58 +408,109 @@ const getChartData = () => {
 
   while (currentDate <= end) {
     const dateStr = currentDate.toISOString().split('T')[0]
-    if (quotes[dateStr]) {
-      dateQuotes.push({
+    const quoteInfo = quotes[dateStr]
+
+    // 获取当日的盈利（从发车记录中获取）
+    const records = departureStore.getRecordsByDate(dateStr)
+    let profit = 0
+    if (records && records.length > 0) {
+      // 计算当日总盈利
+      profit = records.reduce((sum, r) => sum + parseFloat(r.getMoney || 0), 0)
+    }
+
+    if (quoteInfo) {
+      dateData.push({
         date: dateStr,
-        quote: quotes[dateStr].quote
+        quote: quoteInfo.quote,
+        profit: profit
+      })
+    } else if (profit !== 0) {
+      // 即使没有报价，只要有盈利也显示
+      dateData.push({
+        date: dateStr,
+        quote: null,
+        profit: profit
       })
     }
     currentDate.setDate(currentDate.getDate() + 1)
   }
 
-  return dateQuotes
+  return dateData
 }
 
-// 更新图表数据（使用视图渲染方式）
+// 更新图表数据（uCharts格式）
 const updateChartData = () => {
   const data = getChartData()
 
   if (data.length === 0) {
+    chartData.value = {
+      categories: [],
+      series: [
+        { name: '报价', color: '#FF9500', data: [], areaStyle: true },
+        { name: '盈利', color: '#52C41A', data: [], areaStyle: false }
+      ]
+    }
     chartPoints.value = []
     return
   }
 
-  const values = data.map(d => d.quote)
-  const maxValue = Math.max(...values) * 1.1
-  const minValue = Math.min(...values) * 0.9
-
-  // 计算图表高度和点的位置
-  const chartHeight = 180
-  const padding = 20
-  const chartWidth = 280
-
-  chartPoints.value = data.map((d, index) => {
-    const x = padding + (chartWidth / (data.length - 1 || 1)) * index
-    const y = chartHeight - ((d.quote - minValue) / (maxValue - minValue || 1)) * chartHeight
-
-    // 格式化日期显示
+  // 更新 chartData
+  const categories = data.map(d => {
     const date = new Date(d.date)
-    let label = ''
-    if (chartRange.value === 'week') {
-      label = `${date.getMonth() + 1}/${date.getDate()}`
-    } else if (chartRange.value === 'month') {
-      label = `${date.getMonth() + 1}/${date.getDate()}`
-    } else {
-      label = `${date.getMonth() + 1}月`
+    if (chartRange.value === 'year') {
+      return `${date.getMonth() + 1}月`
     }
-
-    return {
-      x,
-      y,
-      value: d.quote,
-      label
-    }
+    return `${date.getMonth() + 1}/${date.getDate()}`
   })
+
+  const quoteData = data.map(d => d.quote)
+  const profitData = data.map(d => d.profit)
+
+  chartData.value = {
+    categories,
+    series: [
+      {
+        name: '报价',
+        color: '#FF9500',
+        data: quoteData,
+        areaStyle: true
+      },
+      {
+        name: '盈利',
+        color: '#52C41A',
+        data: profitData,
+        areaStyle: false
+      }
+    ]
+  }
+
+  // 同时更新旧的 chartPoints 以保持兼容性
+  const values = data.map(d => d.quote).filter(v => v !== null)
+  if (values.length > 0) {
+    const maxValue = Math.max(...values) * 1.1
+    const minValue = Math.min(...values) * 0.9
+
+    chartPoints.value = data.map((d, index) => {
+      const x = 20 + (280 / (data.length - 1 || 1)) * index
+      const y = 180 - ((d.quote - minValue) / (maxValue - minValue || 1)) * 180
+      const date = new Date(d.date)
+      let label = ''
+      if (chartRange.value === 'year') {
+        label = `${date.getMonth() + 1}月`
+      } else {
+        label = `${date.getMonth() + 1}/${date.getDate()}`
+      }
+
+      return {
+        x,
+        y,
+        value: d.quote,
+        label
+      }
+    }).filter(p => p.value !== null)
+  } else {
+    chartPoints.value = []
+  }
 }
 
 // 触摸图表事件
@@ -636,6 +704,12 @@ const saveSettings = () => {
 .chart-point { position: absolute; width: 10px; height: 10px; background: #1890ff; border-radius: 50%; transform: translate(-50%, 50%); }
 .chart-point::before { content: ''; position: absolute; top: -5px; left: -5px; right: -5px; bottom: -5px; border: 2px solid #1890ff; border-radius: 50%; opacity: 0.3; }
 .chart-label { position: absolute; transform: translateX(-50%); font-size: 10px; color: #666; white-space: nowrap; }
+
+/* uCharts 图表样式 */
+.chart-wrapper { background: #fff; border-radius: 8px; padding: 10px; }
+.chart-legend { display: flex; justify-content: center; gap: 20px; margin-bottom: 10px; }
+.legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #666; }
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; }
 
 /* 数据列表样式 */
 .chart-data-list { background: #fff; border-radius: 8px; margin-top: 15px; padding: 15px; }

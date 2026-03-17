@@ -443,7 +443,28 @@ const calculated = computed(() => {
   }
 })
 
-const onDateChange = (e) => { form.date = e.detail.value }
+// 根据日期自动带出报价
+const loadQuoteByDate = (date) => {
+  // 优先从 localStorage 的 dailyQuotes 读取
+  const manualQuotes = uni.getStorageSync('dailyQuotes') || {}
+  if (manualQuotes[date]) {
+    form.dailyQuote = manualQuotes[date]
+    return
+  }
+
+  // 其次从发车记录中查找
+  const records = departureStore.getRecordsByDate(date)
+  const recordQuote = records.find(r => r.dailyQuote)?.dailyQuote
+  if (recordQuote) {
+    form.dailyQuote = recordQuote
+  }
+}
+
+const onDateChange = (e) => {
+  form.date = e.detail.value
+  // 日期变化时自动带出报价
+  loadQuoteByDate(e.detail.value)
+}
 const onDepartureWorkerChange = (e) => { form.departureWorkerId = departureWorkerOptions.value[e.detail.value]?.id || '' }
 
 const addMerchant = () => {
@@ -538,12 +559,14 @@ onMounted(() => {
   if (options.id) {
     const record = departureStore.records.find(r => r.id === options.id)
     console.log('数据返显', record);
-    
+
     if (record) {
       Object.assign(form, record)
       console.log('打印form数据', form);
-      
     }
+  } else {
+    // 非编辑模式，自动带出当日报价
+    loadQuoteByDate(form.date)
   }
 })
 </script>

@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd /Users/wangyue/Desktop/claude-pros/train-departure-diary && npm install u-charts --save)",
+      "Bash(cd /Users/wangyue/Desktop/claude-pros/train-departure-diary && npm install u-charts --save --legacy-peer-deps)",
+      "WebFetch(domain:www.ucharts.cn)",
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "Bash(curl -L \"https://ext.dcloud.net.cn/plugin/download?id=4496\" -o /tmp/ucharts.zip 2>/dev/null && unzip -o /tmp/ucharts.zip -d /Users/wangyue/Desktop/claude-pros/train-departure-diary/components/u-charts/ && ls -la /Users/wangyue/Desktop/claude-pros/train-departure-diary/components/u-charts/)"
+    ]
+  }
+}
