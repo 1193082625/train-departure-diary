@@ -74,14 +74,14 @@
         <view class="depot-title">
           <text>大框</text>
           <text>小框</text>
-          <!-- <text>大箱</text>
-          <text>小箱</text> -->
+          <text>大箱</text>
+          <text>小箱</text>
         </view>
         <view class="depot-row">
           <input v-model.number="form.depotBigBoxes" type="number" placeholder="大框" />
           <input v-model.number="form.depotSmallBoxes" type="number" placeholder="小框" />
-          <!-- <input v-model.number="form.depotCartonBoxesBig" type="number" placeholder="大箱" />
-          <input v-model.number="form.depotCartonBoxesSmall" type="number" placeholder="小箱" /> -->
+          <input v-model.number="form.depotCartonBoxesBig" type="number" placeholder="大箱" />
+          <input v-model.number="form.depotCartonBoxesSmall" type="number" placeholder="小箱" />
         </view>
       </view>
 
@@ -202,11 +202,12 @@
       <view class="section result">
         <text class="section-title">计算结果</text>
         <view class="flex-start mb-10">
-          本次共拉（<text class="font-bold">{{ calculated.merchantUnitOfWeightTotal }} 斤数</text>）
+          本次共拉（<text class="font-bold">{{ calculated.allMerchantWeight }} 斤数</text>）
         </view>
         <view class="flex-start">
           <text class="w-pre25 font-bold">{{ calculated.merchantBigTotal }} 大框</text>
           <text class="w-pre25 font-bold">{{ calculated.merchantSmallTotal }} 小框</text>
+          <text class="w-pre25 font-bold">{{ calculated.merchantUnitOfWeightTotal }} 斤</text>
         </view>
         <view class="flex-start mt-15 mb-10">
           货车共装（<text class="font-bold">{{ calculated.truckWeightTotal }} 斤数</text>）
@@ -320,8 +321,8 @@ const form = reactive({
   merchantDetails: [], // 鸡场信息（一个记录可包含多个鸡场）
   depotBigBoxes: null, // 库房大框数
   depotSmallBoxes: null, // 库房小框数
-  // depotCartonBoxesBig: null, // 库房纸箱数
-  // depotCartonBoxesSmall: null, // 库房小箱数
+  depotCartonBoxesBig: null, // 库房纸箱数
+  depotCartonBoxesSmall: null, // 库房小箱数
   reservedBigBoxes: null, // 留货大框数
   reservedSmallBoxes: null, // 留货小框数  
   departureWorkerId: '', // 发车人员ID
@@ -370,6 +371,9 @@ const calculated = computed(() => {
   const merchantBigTotal = form.merchantDetails.reduce((sum, m) => sum + (m.bigBoxes || 0), 0) // 本次共拉大框数量
   const merchantSmallTotal = form.merchantDetails.reduce((sum, m) => sum + (m.smallBoxes || 0), 0) // 本次共拉小框数量
   const merchantUnitOfWeightTotal = form.merchantDetails.reduce((sum, m) => sum + (m.weight || 0), 0) // 本次共拉斤数数量
+  // 本次共拉斤数
+  const allMerchantWeight = merchantBigTotal * settingsStore.receiptBigBoxWeight + merchantSmallTotal * smallWeight + merchantUnitOfWeightTotal
+
 
   // 货车共装
   const truckBig = form.truckRows.reduce((sum, r) => sum + (r.bigBoxes || 0), 0)
@@ -406,8 +410,13 @@ const calculated = computed(() => {
     truckCartonBoxesSmall: truckCartonBoxesSmall, // 货车共装小箱
   })
 
-  // TODO： 留存合计 （留货大框 * 大框斤数 + 留货小框 * 小框斤数）* 当日报价 ？？
-  const reservedTotal = reservedBigBoxesTotal + reservedSmallBoxesTotal
+  // 最低差价： A: 差价4， B:差价是3
+  const minMargin = Math.min(...form.merchantDetails.map(m => m.margin))
+  // 留存单价 = (当日报价 - minMargin）/ 收货大框斤数
+  const reservedPrice = (form.dailyQuote - minMargin) / settingsStore.receiptBigBoxWeight
+  // 留存合计 = （留货大框 * 大框斤数 + 留货小框 * 小框斤数 + 鸡场散斤数）* 留存单价
+  const reservedTotalWeight = reservedBigBoxesTotal * settingsStore.receiptBigBoxWeight + reservedSmallBoxesTotal * smallWeight + merchantUnitOfWeightTotal
+  const reservedTotal = (reservedTotalWeight * reservedPrice).toFixed(2)
 
   // 本趟盈利 = 交货价 - 收货价 - 油费 - 进门费 - 过路费 - 装车费 - 卸车费 - 发车费
   const profit = (totalDeliveryPrice - totalReceivePrice - totalOilFee - totalEntryFee - totalTollFee - totalLoadingFee - totalUnloadingFee - totalDepartureFee).toFixed(2)
@@ -415,7 +424,8 @@ const calculated = computed(() => {
   return {
     merchantBigTotal, // 本次共拉大框数量
     merchantSmallTotal, // 本次共拉小框数量
-    merchantUnitOfWeightTotal, // 本次共拉斤数数量
+    merchantUnitOfWeightTotal, // 本次共拉机场散斤数数量
+    allMerchantWeight, // 本次共拉斤数
     truckBig, // 货车共装大框
     truckSmall, // 货车共装小框
     truckCartonBoxesBig, // 货车共装大箱
@@ -446,6 +456,7 @@ const onMerchantChange = (index, e) => {
   const merchant = merchantOptions.value[e.detail.value]
   form.merchantDetails[index].merchantId = merchant.id
   form.merchantDetails[index].merchantName = merchant.name
+  form.merchantDetails[index].margin = merchant.margin
 }
 
 const addTruckRow = () => { form.truckRows.push({ rowNumber: form.truckRows.length + 1, bigBoxes: null, smallBoxes: null }) }
