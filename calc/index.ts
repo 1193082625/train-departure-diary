@@ -28,42 +28,52 @@ export const calculateMerchantCost = ({
     merchantDetails.forEach(detail => {
         const merchant = merchantStore.getMerchantById(detail.merchantId)
         if (merchant && dailyQuote) {
-            // 鸡场差额
-            const merchantMargin = merchant.margin || 0
-        
-            // 收货价 = (当日报价 - 鸡场margin) / 45 × (大框斤数 × 本次共拉大框数量 + 小框斤数 × 本次共拉小框数量 + 斤数）
-            // 收货每斤价格
-            const price = (dailyQuote - merchantMargin) / settingsStore.receiptBigBoxWeight
-            // 大框收货
-            const receiveBigNumber = settingsStore.deliveryBigBoxWeight * detail.bigBoxes
-            // 小框收货
-            const receiveSmallNumber = smallWeight * detail.smallBoxes
-            // 斤数收货
-            const receiveOfWeight = detail.weight
-            // 本趟合计收货价
-            const receivePrice = ((receiveBigNumber + receiveSmallNumber + receiveOfWeight)*price).toFixed(2)
-            totalReceivePrice += Number(receivePrice)
+          // 大框
+          const bigBoxes = Number(detail.bigBoxes) || 0
+          // 小框
+          const smallBoxes = Number(detail.smallBoxes) || 0
+          // 斤数
+          const weight = Number(detail.weight) || 0
 
-            // 交货价 = (当日报价 - 1) × 本次共拉大框数量 + (当日报价 - 鸡场margin) / 交货大框斤数 × 小框斤数 × 本次共拉小框数量
-            // 大框交货
-            const deliveryBig = (dailyQuote - 1) * detail.bigBoxes
-            // 小框交货
-            const deliverySmall = (dailyQuote - 1) / settingsStore.deliveryBigBoxWeight * smallWeight * detail.smallBoxes
-            // 大箱交货
-            const deliveryCartonBoxesBig = (dailyQuote + 8) / settingsStore.deliveryBigBoxWeight * truckCartonBoxesBig *  settingsStore.depotCartonBoxesBig
-            // 小箱交货
-            const deliveryCartonBoxesSmall = (dailyQuote + 5) / settingsStore.deliveryBigBoxWeight * truckCartonBoxesSmall *  settingsStore.depotCartonBoxesSmall
-            // 本趟合计交货价
-            const deliveryPrice = Number((deliveryBig + deliverySmall + deliveryCartonBoxesBig + deliveryCartonBoxesSmall).toFixed(2))
-            totalDeliveryPrice += deliveryPrice
-        
-            merchantAmount.push({
-                name: merchant.name,
-                amount: Number(receivePrice),
-                receivePrice: Number(receivePrice),
-                deliveryPrice: Number(deliveryPrice.toFixed(2))
-            })
+          // 鸡场差额
+          const merchantMargin = Number(merchant.margin) || 0
+      
+          // 收货价 = (当日报价 - 鸡场margin) / 45 × (大框斤数 × 本次共拉大框数量 + 小框斤数 × 本次共拉小框数量 + 斤数）
+          // 收货每斤价格
+          const price = (dailyQuote - merchantMargin) / Number(settingsStore.receiptBigBoxWeight)
+          // 大框收货
+          const receiveBigNumber = Number(settingsStore.deliveryBigBoxWeight) * bigBoxes
+          // 小框收货
+          const receiveSmallNumber = Number(smallWeight) * smallBoxes
+          // 斤数收货
+          const receiveOfWeight = Number(Number(weight).toFixed(2))
+          // 本趟合计收货价
+          const receivePrice = Number(((receiveBigNumber + receiveSmallNumber + receiveOfWeight)*price).toFixed(2))
+          totalReceivePrice += Number(receivePrice)
+          // 交货价 = (当日报价 - 1) × 本次共拉大框数量 + (当日报价 - 鸡场margin) / 交货大框斤数 × 小框斤数 × 本次共拉小框数量
+          // 大框交货
+          const deliveryBig = Number((dailyQuote - 1) * bigBoxes)
+          // 小框交货
+          const deliverySmall = Number((dailyQuote - 1) / Number(settingsStore.deliveryBigBoxWeight) * Number(smallWeight) * smallBoxes)
+          // 大箱交货
+          const deliveryCartonBoxesBig = Number((dailyQuote + 8) / Number(settingsStore.deliveryBigBoxWeight) * truckCartonBoxesBig *  settingsStore.depotCartonBoxesBig)
+          // 小箱交货
+          const deliveryCartonBoxesSmall = Number((dailyQuote + 5) / Number(settingsStore.deliveryBigBoxWeight) * truckCartonBoxesSmall *  settingsStore.depotCartonBoxesSmall)
+          // 本趟合计交货价
+          const deliveryPrice = Number(Number((deliveryBig + deliverySmall + deliveryCartonBoxesBig + deliveryCartonBoxesSmall).toFixed(2)))
+          totalDeliveryPrice += deliveryPrice
+      
+          merchantAmount.push({
+              name: merchant.name,
+              amount: receivePrice,
+              receivePrice: receivePrice,
+              deliveryPrice: deliveryPrice
+          })
         }
     })
-    return { totalReceivePrice, totalDeliveryPrice, merchantAmount }
+    return {
+      totalReceivePrice: Number(totalReceivePrice.toFixed(2)),
+      totalDeliveryPrice: Number(totalDeliveryPrice.toFixed(2)),
+      merchantAmount: merchantAmount
+    }
 }

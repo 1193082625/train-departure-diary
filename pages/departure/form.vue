@@ -13,14 +13,14 @@
         <view class="form-item">
           <text>当日报价</text>
           <view class="flex-end">
-            <input v-model.number="form.dailyQuote" type="digit" placeholder="请输入" />
+            <input v-model="form.dailyQuote" type="digit" placeholder="请输入" />
             <text class="ml-4">（元/框）</text>
           </view>
         </view>
         <view class="form-item">
           <text>本趟小框斤数</text>
           <view class="flex-end">
-            <input v-model.number="form.smallBoxWeight" type="digit" placeholder="请输入" />
+            <input v-model="form.smallBoxWeight" type="digit" placeholder="请输入" />
             <text class="ml-4">（斤/框）</text>
           </view>
         </view>
@@ -46,6 +46,8 @@
       <!-- 鸡场装车信息 -->
       <view class="section">
         <text class="section-title">鸡场装车信息</text>
+        <!-- 提示信息 -->
+        <text class="section-tip">请先选择鸡场，并确保鸡场差额不为空</text>
         <!-- 标题 -->
          <view class="merchant-title">
           <text class="w-96">鸡场</text>
@@ -59,9 +61,9 @@
             <view class="merchant-select">{{ detail.merchantName || '选择鸡场' }}</view>
           </picker>
           <view class="merchant-inputs">
-            <input v-model.number="detail.bigBoxes" type="number" placeholder="大框" />
-            <input v-model.number="detail.smallBoxes" type="number" placeholder="小框" />
-            <input v-model.number="detail.weight" type="number" placeholder="斤数" />
+            <input v-model="detail.bigBoxes" :disabled="!detail.merchantId || !detail.margin" type="number" placeholder="大框" />
+            <input v-model="detail.smallBoxes" :disabled="!detail.merchantId || !detail.margin" type="number" placeholder="小框" />
+            <input v-model="detail.weight" :disabled="!detail.merchantId || !detail.margin" type="digit" placeholder="斤数" />
           </view>
           <text @click="removeMerchant(index)" class="remove">×</text>
         </view>
@@ -78,10 +80,10 @@
           <text>小箱</text>
         </view>
         <view class="depot-row">
-          <input v-model.number="form.depotBigBoxes" type="number" placeholder="大框" />
-          <input v-model.number="form.depotSmallBoxes" type="number" placeholder="小框" />
-          <input v-model.number="form.depotCartonBoxesBig" type="number" placeholder="大箱" />
-          <input v-model.number="form.depotCartonBoxesSmall" type="number" placeholder="小箱" />
+          <input v-model="form.depotBigBoxes" type="number" placeholder="大框" />
+          <input v-model="form.depotSmallBoxes" type="number" placeholder="小框" />
+          <input v-model="form.depotCartonBoxesBig" type="number" placeholder="大箱" />
+          <input v-model="form.depotCartonBoxesSmall" type="number" placeholder="小箱" />
         </view>
       </view>
 
@@ -98,10 +100,10 @@
         </view>
         <view v-for="(row, index) in form.truckRows" :key="index" class="truck-row">
           <text>第{{ index + 1 }}排</text>
-          <input v-model.number="row.bigBoxes" type="number" placeholder="大框" />
-          <input v-model.number="row.smallBoxes" type="number" placeholder="小框" />
-          <input v-model.number="row.cartonBoxesBig" type="number" placeholder="大箱" />
-          <input v-model.number="row.cartonBoxesSmall" type="number" placeholder="小箱" />
+          <input v-model="row.bigBoxes" type="number" placeholder="大框" />
+          <input v-model="row.smallBoxes" type="number" placeholder="小框" />
+          <input v-model="row.cartonBoxesBig" type="number" placeholder="大箱" />
+          <input v-model="row.cartonBoxesSmall" type="number" placeholder="小箱" />
           <text @click="removeTruckRow(index)" class="remove">×</text>
         </view>
         <button @click="addTruckRow" class="add-row">+ 添加排数</button>
@@ -132,14 +134,14 @@
         <view class="form-item">
           <text>回框大框</text>
           <view class="flex-end">
-            <input v-model.number="form.returnedBigBoxes" type="number" placeholder="0" />
+            <input v-model="form.returnedBigBoxes" type="number" placeholder="0" />
             <text class="ml-4">框</text>
           </view>
         </view>
         <view class="form-item">
           <text>回框小框</text>
           <view class="flex-end">
-            <input v-model.number="form.returnedSmallBoxes" type="number" placeholder="0" />
+            <input v-model="form.returnedSmallBoxes" type="number" placeholder="0" />
             <text class="ml-4">框</text>
           </view>
         </view>
@@ -157,42 +159,42 @@
         <view class="form-item">
           <text>油费</text>
           <view class="flex-end">
-            <input v-model.number="form.oilFee" type="digit" placeholder="0" />
+            <input v-model="form.oilFee" type="digit" placeholder="0" />
             <text class="ml-4">（元）</text>
           </view>
         </view>
         <view class="form-item">
           <text>进门费</text>
           <view class="flex-end">
-            <input v-model.number="form.entryFee" type="digit" placeholder="0" />
+            <input v-model="form.entryFee" type="digit" placeholder="0" />
             <text class="ml-4">（元）</text>
           </view>
         </view>
         <view class="form-item">
           <text>过路费</text>
           <view class="flex-end">
-            <input v-model.number="form.tollFee" type="digit" placeholder="0" />
+            <input v-model="form.tollFee" type="digit" placeholder="0" />
             <text class="ml-4">（元）</text>
           </view>
         </view>
         <view class="form-item">
           <text>装车费</text>
           <view class="flex-end">
-            <input v-model.number="form.loadingFee" type="digit" placeholder="0" />
+            <input v-model="form.loadingFee" type="digit" placeholder="0" />
             <text class="ml-4">（元）</text>
           </view>
         </view>
         <view class="form-item">
           <text>卸车费</text>
           <view class="flex-end">
-            <input v-model.number="form.unloadingFee" type="digit" placeholder="0" />
+            <input v-model="form.unloadingFee" type="digit" placeholder="0" />
             <text class="ml-4">（元）</text>
           </view>
         </view>
         <view class="form-item">
           <text>发车费</text>
           <view class="flex-end">
-            <input v-model.number="form.departureFee" type="digit" placeholder="0" />
+            <input v-model="form.departureFee" type="digit" placeholder="0" />
             <text class="ml-4">（元）</text>
           </view>
         </view>
@@ -225,46 +227,6 @@
           <text class="w-pre25 font-bold">{{calculated.totalBigBoxes  < 0 ? '欠' : ''}}{{ calculated.totalBigBoxes }} 大框</text>
           <text class="w-pre25 font-bold">{{calculated.totalSmallBoxes  < 0 ? '欠' : ''}}{{ calculated.totalSmallBoxes }} 小框</text>
         </view>
-        <!-- <view class="result-item">
-          <text>本次共拉大框</text>
-          <text class="result-value">{{ calculated.merchantBigTotal }} 框</text>
-        </view>
-        <view class="result-item">
-          <text>本次共拉小框</text>
-          <text class="result-value">{{ calculated.merchantSmallTotal }} 框</text>
-        </view>
-        <view class="result-item">
-          <text>本次共拉斤数</text>
-          <text class="result-value">{{ calculated.merchantUnitOfWeightTotal }} 斤</text>
-        </view>
-        <view class="result-item">
-          <text>货车共装大框</text>
-          <text class="result-value">{{ calculated.truckBig }} 框</text>
-        </view>
-        <view class="result-item">
-          <text>货车共装小框</text>
-          <text class="result-value">{{ calculated.truckSmall }} 框</text>
-        </view>
-        <view class="result-item">
-          <text>货车共装大箱</text>
-          <text class="result-value">{{ calculated.truckCartonBoxesBig }} 箱</text>
-        </view>
-        <view class="result-item">
-          <text>货车共装小箱</text>
-          <text class="result-value">{{ calculated.truckCartonBoxesSmall }} 箱</text>
-        </view>
-        <view class="result-item">
-          <text>货车共装斤数</text>
-          <text class="result-value">{{ calculated.truckWeightTotal }} 斤</text>
-        </view> -->
-        <!-- <view class="result-item">
-          <text>大框数量合计</text>
-          <text class="result-value">{{ calculated.totalBigBoxes }} 个</text>
-        </view>
-        <view class="result-item">
-          <text>小框数量合计</text>
-          <text class="result-value">{{ calculated.totalSmallBoxes }} 个</text>
-        </view> -->
 
         <!-- 鸡场金额明细 -->
         <view v-if="calculated.merchantAmount.length > 0" class="result-subtitle">鸡场金额明细</view>
@@ -365,46 +327,46 @@ const loadDefaultSettings = () => {
 // 计算结果 - 使用新公式
 const calculated = computed(() => {
   // 大框斤数和小框斤数
-  const smallWeight = form.smallBoxWeight // 本趟小框斤数
+  const smallWeight = Number(form.smallBoxWeight) // 本趟小框斤数
 
   // 本次共拉 
-  const merchantBigTotal = form.merchantDetails.reduce((sum, m) => sum + (m.bigBoxes || 0), 0) // 本次共拉大框数量
-  const merchantSmallTotal = form.merchantDetails.reduce((sum, m) => sum + (m.smallBoxes || 0), 0) // 本次共拉小框数量
-  const merchantUnitOfWeightTotal = form.merchantDetails.reduce((sum, m) => sum + (m.weight || 0), 0) // 本次共拉斤数数量
+  const merchantBigTotal = form.merchantDetails.reduce((sum, m) => sum + (Number(m.bigBoxes) || 0), 0) // 本次共拉大框数量
+  const merchantSmallTotal = form.merchantDetails.reduce((sum, m) => sum + (Number(m.smallBoxes) || 0), 0) // 本次共拉小框数量
+  const merchantUnitOfWeightTotal = form.merchantDetails.reduce((sum, m) => sum + (Number(m.weight) || 0), 0) // 本次共拉斤数数量
   // 本次共拉斤数
-  const allMerchantWeight = merchantBigTotal * settingsStore.receiptBigBoxWeight + merchantSmallTotal * smallWeight + merchantUnitOfWeightTotal
+  const allMerchantWeight = merchantBigTotal * Number(settingsStore.receiptBigBoxWeight) + merchantSmallTotal * smallWeight + merchantUnitOfWeightTotal
 
 
   // 货车共装
-  const truckBig = form.truckRows.reduce((sum, r) => sum + (r.bigBoxes || 0), 0)
-  const truckSmall = form.truckRows.reduce((sum, r) => sum + (r.smallBoxes || 0), 0)
+  const truckBig = form.truckRows.reduce((sum, r) => sum + (Number(r.bigBoxes) || 0), 0)
+  const truckSmall = form.truckRows.reduce((sum, r) => sum + (Number(r.smallBoxes) || 0), 0)
   // 货车共装大箱
-  const truckCartonBoxesBig = form.truckRows.reduce((sum, r) => sum + (r.cartonBoxesBig || 0), 0)
+  const truckCartonBoxesBig = form.truckRows.reduce((sum, r) => sum + (Number(r.cartonBoxesBig) || 0), 0)
   // 货车共装小箱
-  const truckCartonBoxesSmall = form.truckRows.reduce((sum, r) => sum + (r.cartonBoxesSmall || 0), 0)
+  const truckCartonBoxesSmall = form.truckRows.reduce((sum, r) => sum + (Number(r.cartonBoxesSmall) || 0), 0)
   // 货车共装斤数
-  const truckWeightTotal = truckBig * settingsStore.deliveryBigBoxWeight + truckSmall * smallWeight + truckCartonBoxesBig * settingsStore.depotCartonBoxesBig + truckCartonBoxesSmall * settingsStore.depotCartonBoxesSmall
+  const truckWeightTotal = truckBig * Number(settingsStore.deliveryBigBoxWeight) + truckSmall * smallWeight + truckCartonBoxesBig * Number(settingsStore.depotCartonBoxesBig) + truckCartonBoxesSmall * Number(settingsStore.depotCartonBoxesSmall)
 
   // 留货数量
-  const reservedBigBoxesTotal = merchantBigTotal + form.depotBigBoxes - truckBig // 大框留货数量
-  const reservedSmallBoxesTotal = merchantSmallTotal + form.depotSmallBoxes - truckSmall // 小框留货数量
+  const reservedBigBoxesTotal = merchantBigTotal + Number(form.depotBigBoxes) - truckBig // 大框留货数量
+  const reservedSmallBoxesTotal = merchantSmallTotal + Number(form.depotSmallBoxes) - truckSmall // 小框留货数量
 
   // 大框合计： 装车大框 - 回车大框
-  const totalBigBoxes = (truckBig || 0) - (form.returnedBigBoxes || 0)
+  const totalBigBoxes = (truckBig || 0) - (Number(form.returnedBigBoxes) || 0)
   // 小框合计： 装车小框 - 回车小框
-  const totalSmallBoxes = (truckSmall || 0) - (form.returnedSmallBoxes || 0)
+  const totalSmallBoxes = (truckSmall || 0) - (Number(form.returnedSmallBoxes) || 0)
 
   // 费用合计
-  const totalOilFee = form.oilFee || 0 // 油费
-  const totalEntryFee = form.entryFee || 0 // 进门费
-  const totalTollFee = form.tollFee || 0 // 过路费
-  const totalLoadingFee = form.loadingFee || 0 // 装车费
-  const totalUnloadingFee = form.unloadingFee || 0 // 卸车费
-  const totalDepartureFee = form.departureFee || 0 // 发车费
+  const totalOilFee = Number(form.oilFee) || 0 // 油费
+  const totalEntryFee = Number(form.entryFee) || 0 // 进门费
+  const totalTollFee = Number(form.tollFee) || 0 // 过路费
+  const totalLoadingFee = Number(form.loadingFee) || 0 // 装车费
+  const totalUnloadingFee = Number(form.unloadingFee) || 0 // 卸车费
+  const totalDepartureFee = Number(form.departureFee) || 0 // 发车费
 
   const { totalReceivePrice, totalDeliveryPrice, merchantAmount } = calculateMerchantCost({
     merchantDetails: form.merchantDetails, // 鸡场信息
-    dailyQuote: form.dailyQuote, // 当日报价
+    dailyQuote: Number(form.dailyQuote), // 当日报价
     smallWeight: smallWeight, // 本趟小框斤数
     truckCartonBoxesBig: truckCartonBoxesBig, // 货车共装大箱
     truckCartonBoxesSmall: truckCartonBoxesSmall, // 货车共装小箱
@@ -413,13 +375,13 @@ const calculated = computed(() => {
   // 最低差价： A: 差价4， B:差价是3
   const minMargin = Math.min(...form.merchantDetails.map(m => m.margin))
   // 留存单价 = (当日报价 - minMargin）/ 收货大框斤数
-  const reservedPrice = (form.dailyQuote - minMargin) / settingsStore.receiptBigBoxWeight
+  const reservedPrice = (Number(form.dailyQuote) - minMargin) / Number(settingsStore.receiptBigBoxWeight)
   // 留存合计 = （留货大框 * 大框斤数 + 留货小框 * 小框斤数 + 鸡场散斤数）* 留存单价
-  const reservedTotalWeight = reservedBigBoxesTotal * settingsStore.receiptBigBoxWeight + reservedSmallBoxesTotal * smallWeight + merchantUnitOfWeightTotal
-  const reservedTotal = (reservedTotalWeight * reservedPrice).toFixed(2)
+  const reservedTotalWeight = reservedBigBoxesTotal * Number(settingsStore.receiptBigBoxWeight) + reservedSmallBoxesTotal * smallWeight + merchantUnitOfWeightTotal
+  const reservedTotal = Number((reservedTotalWeight * reservedPrice).toFixed(2))
 
   // 本趟盈利 = 交货价 - 收货价 - 油费 - 进门费 - 过路费 - 装车费 - 卸车费 - 发车费
-  const profit = (totalDeliveryPrice - totalReceivePrice - totalOilFee - totalEntryFee - totalTollFee - totalLoadingFee - totalUnloadingFee - totalDepartureFee).toFixed(2)
+  const profit = Number((totalDeliveryPrice - totalReceivePrice - totalOilFee - totalEntryFee - totalTollFee - totalLoadingFee - totalUnloadingFee - totalDepartureFee).toFixed(2))
 
   return {
     merchantBigTotal, // 本次共拉大框数量
@@ -575,6 +537,7 @@ onMounted(() => {
 .form-page { padding: 15px; padding-bottom: 50px; }
 .section { background: #fff; border-radius: 8px; padding: 15px; margin-bottom: 15px; }
 .section-title { font-size: 16px; font-weight: bold; margin-bottom: 10px; display: block; }
+.section-tip { font-size: 12px; color: #999; margin-bottom: 10px; display: block; }
 .form-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f0f0f0; }
 .form-item:last-child { border-bottom: none; }
 .form-item input { text-align: right; width: 150px; }

@@ -53,17 +53,6 @@
       <!-- uCharts 渐变色曲线区域图 -->
       <view class="chart-container">
         <view v-if="chartData && chartData.series && chartData.series.length > 0" class="chart-wrapper">
-          <!-- 图例 -->
-          <view class="chart-legend">
-            <view class="legend-item">
-              <view class="legend-dot" style="background: #FF9500;"></view>
-              <text>报价（元/框）</text>
-            </view>
-            <view class="legend-item">
-              <view class="legend-dot" style="background: #52C41A;"></view>
-              <text>盈利（元）</text>
-            </view>
-          </view>
           <!-- 图表 -->
           <qiun-data-charts
             type="area"
@@ -107,7 +96,7 @@
           </view>
           <view class="form-item">
             <text>报价金额</text>
-            <input v-model.number="quoteInput" type="digit" placeholder="请输入报价（元/框）" />
+            <input v-model="quoteInput" type="digit" placeholder="请输入报价（元/框）" />
           </view>
         </view>
         <button @click="saveQuote" class="save-btn">保存</button>
@@ -127,23 +116,23 @@
               <view class="settings-group">
                 <view class="form-item">
                   <text>收货大框斤数</text>
-                  <input v-model.number="settingsForm.receiptBigBoxWeight" type="number" placeholder="请输入" />
+                  <input v-model="settingsForm.receiptBigBoxWeight" type="digit" placeholder="请输入" />
                 </view>
                 <view class="form-item">
                   <text>交货大框斤数</text>
-                  <input v-model.number="settingsForm.deliveryBigBoxWeight" type="number" placeholder="请输入" />
+                  <input v-model="settingsForm.deliveryBigBoxWeight" type="digit" placeholder="请输入" />
                 </view>
                 <view class="form-item">
                   <text>默认小框斤数</text>
-                  <input v-model.number="settingsForm.smallBoxWeight" type="number" placeholder="请输入" />
+                  <input v-model="settingsForm.smallBoxWeight" type="digit" placeholder="请输入" />
                 </view>
                 <view class="form-item">
                   <text>默认大箱斤数</text>
-                  <input v-model.number="settingsForm.depotCartonBoxesBig" type="number" placeholder="请输入" />
+                  <input v-model="settingsForm.depotCartonBoxesBig" type="digit" placeholder="请输入" />
                 </view>
                 <view class="form-item">
                   <text>默认小箱斤数</text>
-                  <input v-model.number="settingsForm.depotCartonBoxesSmall" type="number" placeholder="请输入" />
+                  <input v-model="settingsForm.depotCartonBoxesSmall" type="digit" placeholder="请输入" />
                 </view>
               </view>
             </uni-collapse-item>
@@ -151,27 +140,27 @@
               <view class="settings-group">
                 <view class="form-item">
                   <text>装车费</text>
-                  <input v-model.number="settingsForm.loadingFee" type="digit" placeholder="请输入" />
+                  <input v-model="settingsForm.loadingFee" type="digit" placeholder="请输入" />
                 </view>
                 <view class="form-item">
                   <text>卸车费</text>
-                  <input v-model.number="settingsForm.unloadingFee" type="digit" placeholder="请输入" />
+                  <input v-model="settingsForm.unloadingFee" type="digit" placeholder="请输入" />
                 </view>
                 <view class="form-item">
                   <text>发车费</text>
-                  <input v-model.number="settingsForm.departureFee" type="digit" placeholder="请输入" />
+                  <input v-model="settingsForm.departureFee" type="digit" placeholder="请输入" />
                 </view>
                 <view class="form-item">
                   <text>过路费</text>
-                  <input v-model.number="settingsForm.tollFee" type="digit" placeholder="请输入" />
+                  <input v-model="settingsForm.tollFee" type="digit" placeholder="请输入" />
                 </view>
                 <view class="form-item">
                   <text>进门费</text>
-                  <input v-model.number="settingsForm.entryFee" type="digit" placeholder="请输入" />
+                  <input v-model="settingsForm.entryFee" type="digit" placeholder="请输入" />
                 </view>
                 <view class="form-item">
                   <text>油费</text>
-                  <input v-model.number="settingsForm.oilFee" type="digit" placeholder="请输入" />
+                  <input v-model="settingsForm.oilFee" type="digit" placeholder="请输入" />
                 </view>
               </view>
             </uni-collapse-item>

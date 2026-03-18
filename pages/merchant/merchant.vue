@@ -34,7 +34,7 @@
 				<uni-easyinput type="tel" v-model="form.phone" placeholder="请输入手机号" />
 			</uni-forms-item>
 			<uni-forms-item label="差额" name="margin">
-				<uni-easyinput type="number" v-model="form.margin" placeholder="差额（元/框）" />
+				<uni-easyinput type="digit" v-model="form.margin" placeholder="差额（元/框）" />
 			</uni-forms-item>
 		</uni-forms>
         <view class="modal-actions">
@@ -73,10 +73,18 @@ const closeModal = () => {
   editingMerchant.value = null
   form.name = ''
   form.phone = ''
-  form.margin = 0
+  form.margin = null
 }
 
 const saveMerchant = () => {
+  // 校验差额必填
+  if (!form.margin) {
+    uni.showToast({
+      title: '差额不能为空',
+      icon: 'none'
+    })
+    return
+  }
   const data = {
     name: form.name,
     phone: form.phone,

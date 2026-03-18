@@ -18,7 +18,7 @@
 
       <view class="form-item mt-section">
         <text>金额（元）</text>
-        <input v-model.number="form.amount" type="digit" placeholder="请输入金额" />
+        <input v-model="form.amount" type="digit" placeholder="请输入金额" />
       </view>
 
       <view class="form-item">

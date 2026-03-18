@@ -3,17 +3,17 @@ import { ref } from 'vue'
 import { dbOps } from '@/utils/db'
 
 export const useSettingsStore = defineStore('settings', () => {
-  const receiptBigBoxWeight = ref(45)  // 收货大框斤数
-  const deliveryBigBoxWeight = ref(44)  // 交货大框斤数
-  const smallBoxWeight = ref(29.5)  // 默认小框斤数
-  const depotCartonBoxesBig = ref(43)  // 默认大箱斤数
-  const depotCartonBoxesSmall = ref(30)  // 默认小箱斤数
-  const loadingFee = ref(300)      // 装车费
-  const unloadingFee = ref(200)    // 卸车费
-  const departureFee = ref(200)    // 发车费
-  const tollFee = ref(50)         // 过路费
-  const entryFee = ref(50)        // 进门费
-  const oilFee = ref(50)          // 油费
+  const receiptBigBoxWeight = ref<number>(45)  // 收货大框斤数
+  const deliveryBigBoxWeight = ref<number>(44)  // 交货大框斤数
+  const smallBoxWeight = ref<number>(29.5)  // 默认小框斤数
+  const depotCartonBoxesBig = ref<number>(43)  // 默认大箱斤数
+  const depotCartonBoxesSmall = ref<number>(30)  // 默认小箱斤数
+  const loadingFee = ref<number>(300)      // 装车费
+  const unloadingFee = ref<number>(200)    // 卸车费
+  const departureFee = ref<number>(200)    // 发车费
+  const tollFee = ref<number>(50)         // 过路费
+  const entryFee = ref<number>(50)        // 进门费
+  const oilFee = ref<number>(50)          // 油费
 
   const loadSettings = async () => {
     try {
@@ -71,17 +71,17 @@ export const useSettingsStore = defineStore('settings', () => {
   const saveSettings = async () => {
     const settings = {
       id: 1,
-      receiptBigBoxWeight: receiptBigBoxWeight.value,
-      deliveryBigBoxWeight: deliveryBigBoxWeight.value,
-      smallBoxWeight: smallBoxWeight.value,
-      depotCartonBoxesBig: depotCartonBoxesBig.value,
-      depotCartonBoxesSmall: depotCartonBoxesSmall.value,
-      loadingFee: loadingFee.value,
-      unloadingFee: unloadingFee.value,
-      departureFee: departureFee.value,
-      tollFee: tollFee.value,
-      entryFee: entryFee.value,
-      oilFee: oilFee.value
+      receiptBigBoxWeight: Number(receiptBigBoxWeight.value),
+      deliveryBigBoxWeight: Number(deliveryBigBoxWeight.value),
+      smallBoxWeight: Number(smallBoxWeight.value),
+      depotCartonBoxesBig: Number(depotCartonBoxesBig.value),
+      depotCartonBoxesSmall: Number(depotCartonBoxesSmall.value),
+      loadingFee: Number(loadingFee.value),
+      unloadingFee: Number(unloadingFee.value),
+      departureFee: Number(departureFee.value),
+      tollFee: Number(tollFee.value),
+      entryFee: Number(entryFee.value),
+      oilFee: Number(oilFee.value)
     }
 
     try {
@@ -93,73 +93,73 @@ export const useSettingsStore = defineStore('settings', () => {
     }
   }
 
-  const setReceiptBigBoxWeight = (weight) => {
+  const setReceiptBigBoxWeight = (weight: number) => {
     receiptBigBoxWeight.value = weight
     saveSettings()
   }
 
-  const setDeliveryBigBoxWeight = (weight) => {
+  const setDeliveryBigBoxWeight = (weight: number) => {
     deliveryBigBoxWeight.value = weight
     saveSettings()
   }
 
-  const setSmallBoxWeight = (weight) => {
+  const setSmallBoxWeight = (weight: number) => {
     smallBoxWeight.value = weight
     saveSettings()
   }
 
-  const setDepotCartonBoxesBig = (weight) => {
+  const setDepotCartonBoxesBig = (weight: number) => {
     depotCartonBoxesBig.value = weight
     saveSettings()
   }
 
-  const setDepotCartonBoxesSmall = (weight) => {
+  const setDepotCartonBoxesSmall = (weight: number) => {
     depotCartonBoxesSmall.value = weight
     saveSettings()
   }
 
-  const setLoadingFee = (fee) => {
+  const setLoadingFee = (fee: number) => {
     loadingFee.value = fee
     saveSettings()
   }
 
-  const setUnloadingFee = (fee) => {
+  const setUnloadingFee = (fee: number) => {
     unloadingFee.value = fee
     saveSettings()
   }
 
-  const setDepartureFee = (fee) => {
+  const setDepartureFee = (fee: number) => {
     departureFee.value = fee
     saveSettings()
   }
 
-  const setTollFee = (fee) => {
+  const setTollFee = (fee: number) => {
     tollFee.value = fee
     saveSettings()
   }
 
-  const setEntryFee = (fee) => {
+  const setEntryFee = (fee: number) => {
     entryFee.value = fee
     saveSettings()
   }
 
-  const setOilFee = (fee) => {
+  const setOilFee = (fee: number) => {
     oilFee.value = fee
     saveSettings()
   }
 
   const updateAllSettings = (params) => {
-    if (params.receiptBigBoxWeight !== undefined) receiptBigBoxWeight.value = params.receiptBigBoxWeight
-    if (params.deliveryBigBoxWeight !== undefined) deliveryBigBoxWeight.value = params.deliveryBigBoxWeight
-    if (params.smallBoxWeight !== undefined) smallBoxWeight.value = params.smallBoxWeight
-    if (params.depotCartonBoxesBig !== undefined) depotCartonBoxesBig.value = params.depotCartonBoxesBig
-    if (params.depotCartonBoxesSmall !== undefined) depotCartonBoxesSmall.value = params.depotCartonBoxesSmall
-    if (params.loadingFee !== undefined) loadingFee.value = params.loadingFee
-    if (params.unloadingFee !== undefined) unloadingFee.value = params.unloadingFee
-    if (params.departureFee !== undefined) departureFee.value = params.departureFee
-    if (params.tollFee !== undefined) tollFee.value = params.tollFee
-    if (params.entryFee !== undefined) entryFee.value = params.entryFee
-    if (params.oilFee !== undefined) oilFee.value = params.oilFee
+    if (params.receiptBigBoxWeight !== undefined) receiptBigBoxWeight.value = Number(params.receiptBigBoxWeight)
+    if (params.deliveryBigBoxWeight !== undefined) deliveryBigBoxWeight.value = Number(params.deliveryBigBoxWeight)
+    if (params.smallBoxWeight !== undefined) smallBoxWeight.value = Number(params.smallBoxWeight)
+    if (params.depotCartonBoxesBig !== undefined) depotCartonBoxesBig.value = Number(params.depotCartonBoxesBig)
+    if (params.depotCartonBoxesSmall !== undefined) depotCartonBoxesSmall.value = Number(params.depotCartonBoxesSmall)
+    if (params.loadingFee !== undefined) loadingFee.value = Number(params.loadingFee)
+    if (params.unloadingFee !== undefined) unloadingFee.value = Number(params.unloadingFee)
+    if (params.departureFee !== undefined) departureFee.value = Number(params.departureFee)
+    if (params.tollFee !== undefined) tollFee.value = Number(params.tollFee)
+    if (params.entryFee !== undefined) entryFee.value = Number(params.entryFee)
+    if (params.oilFee !== undefined) oilFee.value = Number(params.oilFee)
     saveSettings()
   }
 
