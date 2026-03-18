@@ -204,21 +204,22 @@
       <view class="section result">
         <text class="section-title">计算结果</text>
         <view class="flex-start mb-10">
-          本次共拉（<text class="font-bold">{{ calculated.allMerchantWeight }} 斤数</text>）
+          本次共拉 <text class="font-bold color-fa8c16">{{ calculated.allMerchantWeight }} </text> 斤
         </view>
         <view class="flex-start">
-          <text class="w-pre25 font-bold">{{ calculated.merchantBigTotal }} 大框</text>
-          <text class="w-pre25 font-bold">{{ calculated.merchantSmallTotal }} 小框</text>
-          <text class="w-pre25 font-bold">{{ calculated.merchantUnitOfWeightTotal }} 斤</text>
+          <view class="w-pre25 font-bold">
+            <text class="color-fa8c16">{{ calculated.merchantBigTotal }}</text> 大框</view>
+          <view class="w-pre25 font-bold"><text class="color-fa8c16">{{ calculated.merchantSmallTotal }}</text> 小框</view>
+          <view class="w-pre25 font-bold"><text class="color-fa8c16">{{ calculated.merchantUnitOfWeightTotal }}</text> 斤</view>
         </view>
         <view class="flex-start mt-15 mb-10">
-          货车共装（<text class="font-bold">{{ calculated.truckWeightTotal }} 斤数</text>）
+          货车共装 <text class="font-bold color-fa8c16">{{ calculated.truckWeightTotal }}</text> 斤
         </view>
         <view class="flex-start">
-          <text class="w-pre25 font-bold">{{ calculated.truckBig }} 大框</text>
-          <text class="w-pre25 font-bold">{{ calculated.truckSmall }} 小框</text>
-          <text class="w-pre25 font-bold">{{ calculated.truckCartonBoxesBig }} 大箱</text>
-          <text class="w-pre25 font-bold">{{ calculated.truckCartonBoxesSmall }} 小箱</text>
+          <view class="w-pre25 font-bold"><text class="color-fa8c16">{{ calculated.truckBig }}</text> 大框</view>
+          <view class="w-pre25 font-bold"><text class="color-fa8c16">{{ calculated.truckSmall }}</text> 小框</view>
+          <view class="w-pre25 font-bold"><text class="color-fa8c16">{{ calculated.truckCartonBoxesBig }}</text> 大箱</view>
+          <view class="w-pre25 font-bold"><text class="color-fa8c16">{{ calculated.truckCartonBoxesSmall }}</text> 小箱</view>
         </view>
         <view class="flex-start mt-15 mb-10">
           回框数量合计
@@ -373,12 +374,14 @@ const calculated = computed(() => {
   })
 
   // 最低差价： A: 差价4， B:差价是3
-  const minMargin = Math.min(...form.merchantDetails.map(m => m.margin))
+  const minMargin = form.merchantDetails.length > 0 ? Math.min(...form.merchantDetails.map(m => m.margin)) : 0
   // 留存单价 = (当日报价 - minMargin）/ 收货大框斤数
   const reservedPrice = (Number(form.dailyQuote) - minMargin) / Number(settingsStore.receiptBigBoxWeight)
   // 留存合计 = （留货大框 * 大框斤数 + 留货小框 * 小框斤数 + 鸡场散斤数）* 留存单价
   const reservedTotalWeight = reservedBigBoxesTotal * Number(settingsStore.receiptBigBoxWeight) + reservedSmallBoxesTotal * smallWeight + merchantUnitOfWeightTotal
-  const reservedTotal = Number((reservedTotalWeight * reservedPrice).toFixed(2))
+  const reservedTotal = Number(((reservedTotalWeight || 0) * (reservedPrice || 0)).toFixed(2))
+  console.log('留存合计', reservedTotal, reservedTotalWeight, reservedPrice);
+  
 
   // 本趟盈利 = 交货价 - 收货价 - 油费 - 进门费 - 过路费 - 装车费 - 卸车费 - 发车费
   const profit = Number((totalDeliveryPrice - totalReceivePrice - totalOilFee - totalEntryFee - totalTollFee - totalLoadingFee - totalUnloadingFee - totalDepartureFee).toFixed(2))
@@ -534,6 +537,7 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.color-fa8c16 { color: #fa8c16; }
 .form-page { padding: 15px; padding-bottom: 50px; }
 .section { background: #fff; border-radius: 8px; padding: 15px; margin-bottom: 15px; }
 .section-title { font-size: 16px; font-weight: bold; margin-bottom: 10px; display: block; }
