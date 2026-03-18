@@ -1,9 +1,36 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { dbOps } from '@/utils/db'
+import { useUserStore } from './user'
+import { ROLES } from './user'
 
 export const useWorkerStore = defineStore('worker', () => {
   const workers = ref([])
+
+  // 根据用户角色过滤员工
+  const filteredWorkers = computed(() => {
+    const userStore = useUserStore()
+    const user = userStore.currentUser
+
+    if (!user) return []
+
+    // 管理员：返回全部
+    if (user.role === ROLES.ADMIN) {
+      return workers.value
+    }
+
+    // 中间商：返回自己创建的
+    if (user.role === ROLES.MIDDLEMAN) {
+      return workers.value.filter(w => w.userId === user.id)
+    }
+
+    // 装发车：返回中间商的员工
+    if (user.parentId) {
+      return workers.value.filter(w => w.userId === user.parentId)
+    }
+
+    return []
+  })
 
   const loadWorkers = async () => {
     try {
@@ -36,9 +63,11 @@ export const useWorkerStore = defineStore('worker', () => {
   }
 
   const addWorker = async (worker) => {
+    const userStore = useUserStore()
     const newWorker = {
       ...worker,
       id: Date.now().toString(),
+      userId: userStore.currentUser?.id || null,
       createdAt: new Date().toISOString()
     }
     workers.value.push(newWorker)
@@ -74,6 +103,7 @@ export const useWorkerStore = defineStore('worker', () => {
 
   return {
     workers,
+    filteredWorkers,
     departureWorkers,
     loadingWorkers,
     addWorker,

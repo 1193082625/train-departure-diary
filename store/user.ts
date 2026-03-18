@@ -1,0 +1,478 @@
+import { defineStore } from 'pinia'
+import { ref, computed } from 'vue'
+import { userDbOps, inviteDbOps, merchantUserDbOps, merchantFarmDbOps, merchantWorkerDbOps, dbOps } from '@/utils/db'
+
+// 生成UUID
+const generateUUID = () => {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0
+    const v = c === 'x' ? r : (r & 0x3 | 0x8)
+    return v.toString(16)
+  })
+}
+
+// 生成邀请码
+const generateInviteCode = () => {
+  return Math.floor(100000 + Math.random() * 900000).toString()
+}
+
+// 生成6位数字邀请码
+const generateCode = () => {
+  return Math.floor(100000 + Math.random() * 900000).toString()
+}
+
+// 角色类型
+export const ROLES = {
+  ADMIN: 'admin',      // 管理员
+  MIDDLEMAN: 'middleman', // 中间商
+  LOADER: 'loader',    // 装发车
+  FARM: 'farm'         // 鸡场
+}
+
+// 角色名称映射
+export const ROLE_NAMES = {
+  [ROLES.ADMIN]: '管理员',
+  [ROLES.MIDDLEMAN]: '中间商',
+  [ROLES.LOADER]: '装发车',
+  [ROLES.FARM]: '鸡场'
+}
+
+// 预设管理员信息
+const ADMIN_PHONE = '15369375170'
+const ADMIN_CODE = '888888'
+
+// 测试用户数据
+const TEST_USERS = [
+  { phone: '13800000001', role: ROLES.MIDDLEMAN, inviteCode: '111111', nickname: '中间商A' },
+  { phone: '13800000002', role: ROLES.LOADER, inviteCode: '222222', nickname: '装发车A', parentId: null },
+  { phone: '13800000003', role: ROLES.FARM, inviteCode: '333333', nickname: '鸡场A', parentId: null },
+  { phone: '13800000004', role: ROLES.MIDDLEMAN, inviteCode: '444444', nickname: '中间商B' }
+]
+
+// 测试邀请码
+const TEST_INVITE_CODES = [
+  { code: '111111', type: ROLES.MIDDLEMAN },
+  { code: '222222', type: ROLES.LOADER },
+  { code: '333333', type: ROLES.FARM },
+  { code: '444444', type: ROLES.MIDDLEMAN }
+]
+
+// 初始化测试数据
+const initTestData = async () => {
+  try {
+    // 创建测试用户
+    for (const testUser of TEST_USERS) {
+      const existingUsers = await userDbOps.getUserByPhone(testUser.phone)
+      if (!existingUsers || existingUsers.length === 0) {
+        const newUser = {
+          id: generateUUID(),
+          phone: testUser.phone,
+          nickname: testUser.nickname,
+          role: testUser.role,
+          inviteCode: testUser.inviteCode,
+          invitedBy: null,
+          parentId: testUser.parentId || null,
+          createdAt: new Date().toISOString()
+        }
+        await userDbOps.createUser(newUser)
+      }
+    }
+
+    // 创建测试邀请码
+    for (const testCode of TEST_INVITE_CODES) {
+      const existingCodes = await inviteDbOps.getByCode(testCode.code)
+      if (!existingCodes || existingCodes.length === 0) {
+        // 查找创建者
+        const creatorPhone = testCode.type === ROLES.MIDDLEMAN ?
+          (testCode.code === '111111' ? '13800000001' : '13800000004') : null
+
+        let creatorId = null
+        if (creatorPhone) {
+          const creators = await userDbOps.getUserByPhone(creatorPhone)
+          creatorId = creators && creators.length > 0 ? creators[0].id : null
+        }
+
+        const codeData = {
+          id: generateUUID(),
+          code: testCode.code,
+          type: testCode.type,
+          creatorId: creatorId,
+          usedBy: null,
+          usedAt: null,
+          createdAt: new Date().toISOString()
+        }
+        await inviteDbOps.create(codeData)
+      }
+    }
+
+    // 建立中间商A和装发车A、鸡场A的关联
+    const middlemanA = await userDbOps.getUserByPhone('13800000001')
+    const loaderA = await userDbOps.getUserByPhone('13800000002')
+    const farmA = await userDbOps.getUserByPhone('13800000003')
+
+    if (middlemanA && middlemanA.length > 0 && loaderA && loaderA.length > 0) {
+      // 更新装发车A的parentId
+      await userDbOps.updateUser(loaderA[0].id, { parentId: middlemanA[0].id })
+
+      // 添加到中间商的下级用户
+      await merchantUserDbOps.add({
+        id: generateUUID(),
+        middlemanId: middlemanA[0].id,
+        userId: loaderA[0].id,
+        userPhone: '13800000002',
+        userRole: ROLES.LOADER,
+        createdAt: new Date().toISOString()
+      })
+    }
+
+    if (middlemanA && middlemanA.length > 0 && farmA && farmA.length > 0) {
+      // 更新鸡场A的parentId
+      await userDbOps.updateUser(farmA[0].id, { parentId: middlemanA[0].id })
+
+      // 添加到中间商的下级用户
+      await merchantUserDbOps.add({
+        id: generateUUID(),
+        middlemanId: middlemanA[0].id,
+        userId: farmA[0].id,
+        userPhone: '13800000003',
+        userRole: ROLES.FARM,
+        createdAt: new Date().toISOString()
+      })
+    }
+  } catch (e) {
+    console.error('初始化测试数据失败:', e)
+  }
+}
+
+export const useUserStore = defineStore('user', () => {
+  const currentUser = ref(null)
+  const isLoggedIn = ref(false)
+
+  // 计算是否为管理员
+  const isAdmin = computed(() => currentUser.value?.role === ROLES.ADMIN)
+
+  // 计算是否为中间商
+  const isMiddleman = computed(() => currentUser.value?.role === ROLES.MIDDLEMAN)
+
+  // 计算是否为装发车
+  const isLoader = computed(() => currentUser.value?.role === ROLES.LOADER)
+
+  // 计算是否为鸡场
+  const isFarm = computed(() => currentUser.value?.role === ROLES.FARM)
+
+  // 初始化 - 从本地存储恢复登录状态
+  const init = async () => {
+    // 先初始化测试数据
+    await initTestData()
+
+    const userData = uni.getStorageSync('currentUser')
+    if (userData) {
+      currentUser.value = JSON.parse(userData)
+      isLoggedIn.value = true
+    }
+  }
+
+  // 登录
+  const login = async (phone, code) => {
+    try {
+      // 检查是否为预设管理员
+      if (phone === ADMIN_PHONE && code === ADMIN_CODE) {
+        const adminUsers = await userDbOps.getUserByPhone(phone)
+        if (adminUsers && adminUsers.length > 0) {
+          // 已有管理员账号，直接登录
+          currentUser.value = adminUsers[0]
+          isLoggedIn.value = true
+          uni.setStorageSync('currentUser', JSON.stringify(currentUser.value))
+          return { success: true, user: currentUser.value }
+        } else {
+          // 创建管理员账号
+          const newUser = {
+            id: generateUUID(),
+            phone: phone,
+            nickname: '管理员',
+            role: ROLES.ADMIN,
+            inviteCode: generateInviteCode(),
+            invitedBy: null,
+            parentId: null,
+            createdAt: new Date().toISOString()
+          }
+          await userDbOps.createUser(newUser)
+          currentUser.value = newUser
+          isLoggedIn.value = true
+          uni.setStorageSync('currentUser', JSON.stringify(currentUser.value))
+          return { success: true, user: newUser }
+        }
+      }
+
+      // 检查邀请码
+      if (code) {
+        // 验证邀请码
+        const invCodes = await inviteDbOps.getByCode(code)
+        if (invCodes && invCodes.length > 0) {
+          const inv = invCodes[0]
+          // 邀请码已被使用
+          if (inv.usedBy) {
+            return { success: false, message: '邀请码已被使用' }
+          }
+
+          // 检查手机号是否已注册
+          const existingUsers = await userDbOps.getUserByPhone(phone)
+          if (existingUsers && existingUsers.length > 0) {
+            // 手机号已注册，检查是否是第一次用这个邀请码
+            const user = existingUsers[0]
+            if (user.invitedBy === code) {
+              // 正常登录
+              currentUser.value = user
+              isLoggedIn.value = true
+              uni.setStorageSync('currentUser', JSON.stringify(currentUser.value))
+              return { success: true, user: user }
+            } else {
+              return { success: false, message: '该手机号已注册' }
+            }
+          }
+
+          // 新用户注册
+          const newUser = {
+            id: generateUUID(),
+            phone: phone,
+            nickname: '',
+            role: inv.type, // 根据邀请码类型决定角色
+            inviteCode: generateInviteCode(),
+            invitedBy: code,
+            parentId: inv.creatorId, // 上级中间商ID
+            createdAt: new Date().toISOString()
+          }
+          await userDbOps.createUser(newUser)
+
+          // 标记邀请码已使用
+          await inviteDbOps.useCode(code, newUser.id)
+
+          // 如果是中间商邀请的装发车或鸡场，添加到中间商的下级用户
+          if (inv.creatorId && (inv.type === ROLES.LOADER || inv.type === ROLES.FARM)) {
+            await merchantUserDbOps.add({
+              id: generateUUID(),
+              middlemanId: inv.creatorId,
+              userId: newUser.id,
+              userPhone: phone,
+              userRole: inv.type,
+              createdAt: new Date().toISOString()
+            })
+          }
+
+          currentUser.value = newUser
+          isLoggedIn.value = true
+          uni.setStorageSync('currentUser', JSON.stringify(currentUser.value))
+          return { success: true, user: newUser }
+        } else {
+          return { success: false, message: '邀请码无效' }
+        }
+      }
+
+      // 无邀请码，检查手机号是否已注册
+      const users = await userDbOps.getUserByPhone(phone)
+      if (users && users.length > 0) {
+        // 已注册用户，无邀请码登录需要选择角色（首次登录）
+        const user = users[0]
+        if (user.role) {
+          // 已有角色，直接登录
+          currentUser.value = user
+          isLoggedIn.value = true
+          uni.setStorageSync('currentUser', JSON.stringify(currentUser.value))
+          return { success: true, user }
+        } else {
+          // 需要选择角色
+          return { success: false, message: '需要选择角色', needSelectRole: true }
+        }
+      }
+
+      // 新用户且无邀请码，需要选择角色
+      return { success: false, message: '需要选择角色', needSelectRole: true }
+    } catch (e) {
+      console.error('登录失败:', e)
+      return { success: false, message: '登录失败' }
+    }
+  }
+
+  // 首次登录选择角色
+  const selectRole = async (phone, role) => {
+    try {
+      const newUser = {
+        id: generateUUID(),
+        phone: phone,
+        nickname: '',
+        role: role,
+        inviteCode: generateInviteCode(),
+        invitedBy: null,
+        parentId: null,
+        createdAt: new Date().toISOString()
+      }
+      await userDbOps.createUser(newUser)
+      currentUser.value = newUser
+      isLoggedIn.value = true
+      uni.setStorageSync('currentUser', JSON.stringify(currentUser.value))
+      return { success: true, user: newUser }
+    } catch (e) {
+      console.error('创建用户失败:', e)
+      return { success: false, message: '创建用户失败' }
+    }
+  }
+
+  // 更新用户信息
+  const updateUser = async (updates) => {
+    if (!currentUser.value) return
+    try {
+      await userDbOps.updateUser(currentUser.value.id, updates)
+      currentUser.value = { ...currentUser.value, ...updates }
+      uni.setStorageSync('currentUser', JSON.stringify(currentUser.value))
+    } catch (e) {
+      console.error('更新用户失败:', e)
+    }
+  }
+
+  // 登出
+  const logout = () => {
+    currentUser.value = null
+    isLoggedIn.value = false
+    uni.removeStorageSync('currentUser')
+  }
+
+  // 生成邀请码
+  const generateCode = async (type) => {
+    if (!currentUser.value) return null
+
+    // 检查权限
+    if (currentUser.value.role !== ROLES.ADMIN && currentUser.value.role !== ROLES.MIDDLEMAN) {
+      return null
+    }
+
+    try {
+      const code = generateCode()
+      const codeData = {
+        id: generateUUID(),
+        code: code,
+        type: type, // loader/farm/middleman
+        creatorId: currentUser.value.id,
+        usedBy: null,
+        usedAt: null,
+        createdAt: new Date().toISOString()
+      }
+      await inviteDbOps.create(codeData)
+      return code
+    } catch (e) {
+      console.error('生成邀请码失败:', e)
+      return null
+    }
+  }
+
+  // 获取自己生成的邀请码列表
+  const getMyCodes = async () => {
+    if (!currentUser.value) return []
+    try {
+      return await inviteDbOps.getByCreator(currentUser.value.id)
+    } catch (e) {
+      console.error('获取邀请码列表失败:', e)
+      return []
+    }
+  }
+
+  // 获取当前用户的所有下级用户
+  const getSubUsers = async () => {
+    if (!currentUser.value) return []
+    if (currentUser.value.role !== ROLES.ADMIN && currentUser.value.role !== ROLES.MIDDLEMAN) {
+      return []
+    }
+    try {
+      return await merchantUserDbOps.getByMiddleman(currentUser.value.id)
+    } catch (e) {
+      console.error('获取下级用户失败:', e)
+      return []
+    }
+  }
+
+  // 获取当前用户的parentId（中间商ID）
+  const getParentId = () => {
+    return currentUser.value?.parentId || null
+  }
+
+  // 获取当前用户的中间商ID（装发车和鸡场返回parentId，中间商返回自己的ID）
+  const getMiddlemanId = () => {
+    if (!currentUser.value) return null
+    if (currentUser.value.role === ROLES.MIDDLEMAN || currentUser.value.role === ROLES.ADMIN) {
+      return currentUser.value.id
+    }
+    return currentUser.value.parentId
+  }
+
+  // 获取当前用户可访问的商户ID列表
+  const getMyMerchantIds = async () => {
+    if (!currentUser.value) return []
+
+    // 管理员：返回所有商户
+    if (currentUser.value.role === ROLES.ADMIN) {
+      return null // null 表示全部
+    }
+
+    // 中间商：返回自己创建的商户
+    if (currentUser.value.role === ROLES.MIDDLEMAN) {
+      const results = await dbOps.queryBy('merchants', 'userId', currentUser.value.id)
+      return results ? results.map(m => m.id) : []
+    }
+
+    // 装发车和鸡场：返回中间商的商户
+    if (currentUser.value.parentId) {
+      const results = await dbOps.queryBy('merchants', 'userId', currentUser.value.parentId)
+      return results ? results.map(m => m.id) : []
+    }
+
+    return []
+  }
+
+  // 获取当前用户可访问的员工ID列表
+  const getMyWorkerIds = async () => {
+    if (!currentUser.value) return []
+
+    // 管理员：返回所有员工
+    if (currentUser.value.role === ROLES.ADMIN) {
+      return null // null 表示全部
+    }
+
+    // 中间商：返回自己创建的人员
+    if (currentUser.value.role === ROLES.MIDDLEMAN) {
+      const results = await dbOps.queryBy('workers', 'userId', currentUser.value.id)
+      return results ? results.map(w => w.id) : []
+    }
+
+    // 装发车：返回中间商的人员
+    if (currentUser.value.parentId) {
+      const results = await dbOps.queryBy('workers', 'userId', currentUser.value.parentId)
+      return results ? results.map(w => w.id) : []
+    }
+
+    return []
+  }
+
+  // 初始化
+  init()
+
+  return {
+    currentUser,
+    isLoggedIn,
+    isAdmin,
+    isMiddleman,
+    isLoader,
+    isFarm,
+    login,
+    selectRole,
+    logout,
+    updateUser,
+    generateCode,
+    getMyCodes,
+    getSubUsers,
+    getParentId,
+    getMiddlemanId,
+    getMyMerchantIds,
+    getMyWorkerIds,
+    ROLES,
+    ROLE_NAMES
+  }
+})

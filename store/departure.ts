@@ -1,9 +1,37 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { dbOps } from '@/utils/db'
+import { useUserStore } from './user'
+import { ROLES } from './user'
 
 export const useDepartureStore = defineStore('departure', () => {
   const records = ref([])
+
+  // 根据用户角色过滤发车记录
+  const filteredRecords = computed(() => {
+    const userStore = useUserStore()
+    const user = userStore.currentUser
+
+    if (!user) return []
+
+    // 管理员：返回全部
+    if (user.role === ROLES.ADMIN) {
+      return records.value
+    }
+
+    // 中间商：返回自己的
+    if (user.role === ROLES.MIDDLEMAN) {
+      return records.value.filter(r => r.userId === user.id)
+    }
+
+    // 装发车：返回自己的
+    if (user.role === ROLES.LOADER) {
+      return records.value.filter(r => r.userId === user.id)
+    }
+
+    // 鸡场：无发车记录
+    return []
+  })
 
   const loadRecords = async () => {
     try {
@@ -54,9 +82,11 @@ export const useDepartureStore = defineStore('departure', () => {
   }
 
   const addRecord = async (record) => {
+    const userStore = useUserStore()
     const newRecord = {
       ...record,
       id: Date.now().toString(),
+      userId: userStore.currentUser?.id || null,
       createdAt: new Date().toISOString()
     }
     records.value.push(newRecord)
@@ -98,6 +128,7 @@ export const useDepartureStore = defineStore('departure', () => {
 
   return {
     records,
+    filteredRecords,
     addRecord,
     updateRecord,
     deleteRecord,

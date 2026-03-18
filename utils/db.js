@@ -42,6 +42,49 @@ const createTables = () => {
     }
 
     const tables = [
+      // 用户表
+      `CREATE TABLE IF NOT EXISTS users (
+        id TEXT PRIMARY KEY,
+        phone TEXT UNIQUE NOT NULL,
+        nickname TEXT,
+        role TEXT DEFAULT 'admin',
+        inviteCode TEXT,
+        invitedBy TEXT,
+        parentId TEXT,
+        createdAt TEXT
+      )`,
+      // 邀请码表
+      `CREATE TABLE IF NOT EXISTS invitation_codes (
+        id TEXT PRIMARY KEY,
+        code TEXT UNIQUE NOT NULL,
+        type TEXT NOT NULL,
+        creatorId TEXT,
+        usedBy TEXT,
+        usedAt TEXT,
+        createdAt TEXT
+      )`,
+      // 中间商的装发车人员关联表
+      `CREATE TABLE IF NOT EXISTS merchant_workers (
+        id TEXT PRIMARY KEY,
+        middlemanId TEXT,
+        workerId TEXT
+      )`,
+      // 中间商的鸡场关联表
+      `CREATE TABLE IF NOT EXISTS merchant_farms (
+        id TEXT PRIMARY KEY,
+        middlemanId TEXT,
+        merchantId TEXT,
+        userId TEXT
+      )`,
+      // 中间商的下级用户表
+      `CREATE TABLE IF NOT EXISTS merchant_users (
+        id TEXT PRIMARY KEY,
+        middlemanId TEXT,
+        userId TEXT,
+        userPhone TEXT,
+        userRole TEXT,
+        createdAt TEXT
+      )`,
       // 鸡场表
       `CREATE TABLE IF NOT EXISTS merchants (
         id TEXT PRIMARY KEY,
@@ -51,6 +94,7 @@ const createTables = () => {
         phone TEXT,
         address TEXT,
         note TEXT,
+        userId TEXT,
         createdAt TEXT
       )`,
       // 员工表
@@ -60,6 +104,7 @@ const createTables = () => {
         type TEXT DEFAULT 'both',
         phone TEXT,
         note TEXT,
+        userId TEXT,
         createdAt TEXT
       )`,
       // 发车记录表
@@ -84,6 +129,7 @@ const createTables = () => {
         returnedSmallBoxes INTEGER DEFAULT 0,
         merchantAmount TEXT,
         getMoney REAL DEFAULT 0,
+        userId TEXT,
         note TEXT,
         createdAt TEXT
       )`,
@@ -95,6 +141,7 @@ const createTables = () => {
         targetType TEXT,
         amount REAL DEFAULT 0,
         type TEXT,
+        userId TEXT,
         note TEXT,
         createdAt TEXT
       )`,
@@ -128,6 +175,306 @@ const createTables = () => {
 
 // 检查数据库是否可用
 export const isDBAvailable = () => !!db
+
+// 用户相关查询
+export const userDbOps = {
+  // 根据手机号查询用户
+  getUserByPhone: (phone) => {
+    return new Promise((resolve, reject) => {
+      if (!db) {
+        const data = uni.getStorageSync('users')
+        const list = data ? JSON.parse(data) : []
+        const result = list.filter(item => item.phone === phone)
+        resolve(result)
+        return
+      }
+
+      db.executeSql({
+        sql: 'SELECT * FROM users WHERE phone = ?',
+        args: [phone]
+      }, (result) => {
+        resolve(result.result || [])
+      }, (err) => {
+        console.error('查询用户失败:', err)
+        reject(err)
+      })
+    })
+  },
+
+  // 根据ID查询用户
+  getUserById: (id) => {
+    return new Promise((resolve, reject) => {
+      if (!db) {
+        const data = uni.getStorageSync('users')
+        const list = data ? JSON.parse(data) : []
+        const result = list.filter(item => item.id === id)
+        resolve(result)
+        return
+      }
+
+      db.executeSql({
+        sql: 'SELECT * FROM users WHERE id = ?',
+        args: [id]
+      }, (result) => {
+        resolve(result.result || [])
+      }, (err) => {
+        console.error('查询用户失败:', err)
+        reject(err)
+      })
+    })
+  },
+
+  // 根据邀请码查询
+  getUserByInviteCode: (inviteCode) => {
+    return new Promise((resolve, reject) => {
+      if (!db) {
+        const data = uni.getStorageSync('users')
+        const list = data ? JSON.parse(data) : []
+        const result = list.filter(item => item.inviteCode === inviteCode)
+        resolve(result)
+        return
+      }
+
+      db.executeSql({
+        sql: 'SELECT * FROM users WHERE inviteCode = ?',
+        args: [inviteCode]
+      }, (result) => {
+        resolve(result.result || [])
+      }, (err) => {
+        console.error('查询用户失败:', err)
+        reject(err)
+      })
+    })
+  },
+
+  // 创建用户
+  createUser: (userData) => {
+    return new Promise((resolve, reject) => {
+      if (!db) {
+        const key = 'users'
+        const list = uni.getStorageSync(key) ? JSON.parse(uni.getStorageSync(key)) : []
+        list.push(userData)
+        uni.setStorageSync(key, JSON.stringify(list))
+        resolve(userData)
+        return
+      }
+
+      const keys = Object.keys(userData)
+      const values = Object.values(userData)
+      const placeholders = keys.map(() => '?').join(', ')
+      const fields = keys.join(', ')
+
+      db.executeSql({
+        sql: `INSERT INTO users (${fields}) VALUES (${placeholders})`,
+        args: values
+      }, (result) => {
+        resolve(userData)
+      }, (err) => {
+        console.error('创建用户失败:', err)
+        reject(err)
+      })
+    })
+  },
+
+  // 更新用户
+  updateUser: (id, data) => {
+    return new Promise((resolve, reject) => {
+      if (!db) {
+        const key = 'users'
+        const list = uni.getStorageSync(key) ? JSON.parse(uni.getStorageSync(key)) : []
+        const index = list.findIndex(item => item.id === id)
+        if (index !== -1) {
+          list[index] = { ...list[index], ...data }
+          uni.setStorageSync(key, JSON.stringify(list))
+        }
+        resolve(data)
+        return
+      }
+
+      const updates = Object.entries(data)
+        .map(([key, val]) => `${key} = ?`)
+        .join(', ')
+      const values = Object.values(data)
+
+      db.executeSql({
+        sql: `UPDATE users SET ${updates} WHERE id = ?`,
+        args: [...values, id]
+      }, (result) => {
+        resolve(data)
+      }, (err) => {
+        console.error('更新用户失败:', err)
+        reject(err)
+      })
+    })
+  },
+
+  // 查询所有用户
+  getAllUsers: () => {
+    return dbOps.queryAll('users')
+  }
+}
+
+// 邀请码相关查询
+export const inviteDbOps = {
+  // 根据邀请码查询
+  getByCode: (code) => {
+    return new Promise((resolve, reject) => {
+      if (!db) {
+        const data = uni.getStorageSync('invitation_codes')
+        const list = data ? JSON.parse(data) : []
+        const result = list.filter(item => item.code === code && !item.usedBy)
+        resolve(result)
+        return
+      }
+
+      db.executeSql({
+        sql: 'SELECT * FROM invitation_codes WHERE code = ? AND usedBy IS NULL',
+        args: [code]
+      }, (result) => {
+        resolve(result.result || [])
+      }, (err) => {
+        console.error('查询邀请码失败:', err)
+        reject(err)
+      })
+    })
+  },
+
+  // 创建邀请码
+  create: (data) => {
+    return new Promise((resolve, reject) => {
+      if (!db) {
+        const key = 'invitation_codes'
+        const list = uni.getStorageSync(key) ? JSON.parse(uni.getStorageSync(key)) : []
+        list.push(data)
+        uni.setStorageSync(key, JSON.stringify(list))
+        resolve(data)
+        return
+      }
+
+      const keys = Object.keys(data)
+      const values = Object.values(data)
+      const placeholders = keys.map(() => '?').join(', ')
+      const fields = keys.join(', ')
+
+      db.executeSql({
+        sql: `INSERT INTO invitation_codes (${fields}) VALUES (${placeholders})`,
+        args: values
+      }, (result) => {
+        resolve(data)
+      }, (err) => {
+        console.error('创建邀请码失败:', err)
+        reject(err)
+      })
+    })
+  },
+
+  // 使用邀请码
+  useCode: (code, userId) => {
+    return new Promise((resolve, reject) => {
+      if (!db) {
+        const key = 'invitation_codes'
+        const list = uni.getStorageSync(key) ? JSON.parse(uni.getStorageSync(key)) : []
+        const index = list.findIndex(item => item.code === code)
+        if (index !== -1) {
+          list[index].usedBy = userId
+          list[index].usedAt = new Date().toISOString()
+          uni.setStorageSync(key, JSON.stringify(list))
+        }
+        resolve()
+        return
+      }
+
+      db.executeSql({
+        sql: 'UPDATE invitation_codes SET usedBy = ?, usedAt = ? WHERE code = ?',
+        args: [userId, new Date().toISOString(), code]
+      }, (result) => {
+        resolve()
+      }, (err) => {
+        console.error('使用邀请码失败:', err)
+        reject(err)
+      })
+    })
+  },
+
+  // 查询创建者的邀请码列表
+  getByCreator: (creatorId) => {
+    return dbOps.queryBy('invitation_codes', 'creatorId', creatorId)
+  },
+
+  // 查询所有邀请码
+  getAll: () => {
+    return dbOps.queryAll('invitation_codes')
+  }
+}
+
+// 商户关联相关查询
+export const merchantUserDbOps = {
+  // 添加下级用户
+  add: (data) => {
+    return dbOps.insert('merchant_users', data)
+  },
+
+  // 根据中间商ID查询下级用户
+  getByMiddleman: (middlemanId) => {
+    return dbOps.queryBy('merchant_users', 'middlemanId', middlemanId)
+  },
+
+  // 根据用户ID查询
+  getByUser: (userId) => {
+    return dbOps.queryBy('merchant_users', 'userId', userId)
+  },
+
+  // 删除
+  delete: (id) => {
+    return dbOps.delete('merchant_users', id)
+  }
+}
+
+// 商户鸡场关联
+export const merchantFarmDbOps = {
+  // 关联
+  add: (data) => {
+    return dbOps.insert('merchant_farms', data)
+  },
+
+  // 根据中间商查询
+  getByMiddleman: (middlemanId) => {
+    return dbOps.queryBy('merchant_farms', 'middlemanId', middlemanId)
+  },
+
+  // 根据用户查询
+  getByUser: (userId) => {
+    return dbOps.queryBy('merchant_farms', 'userId', userId)
+  },
+
+  // 删除
+  delete: (id) => {
+    return dbOps.delete('merchant_farms', id)
+  }
+}
+
+// 商户员工关联
+export const merchantWorkerDbOps = {
+  // 关联
+  add: (data) => {
+    return dbOps.insert('merchant_workers', data)
+  },
+
+  // 根据中间商查询
+  getByMiddleman: (middlemanId) => {
+    return dbOps.queryBy('merchant_workers', 'middlemanId', middlemanId)
+  },
+
+  // 根据用户查询
+  getByUser: (userId) => {
+    return dbOps.queryBy('merchant_workers', 'userId', userId)
+  },
+
+  // 删除
+  delete: (id) => {
+    return dbOps.delete('merchant_workers', id)
+  }
+}
 
 // 通用的 CRUD 操作
 export const dbOps = {
@@ -289,5 +636,10 @@ export const dbOps = {
 export default {
   initDB,
   isDBAvailable,
-  dbOps
+  dbOps,
+  userDbOps,
+  inviteDbOps,
+  merchantUserDbOps,
+  merchantFarmDbOps,
+  merchantWorkerDbOps
 }

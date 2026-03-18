@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { dbOps } from '@/utils/db'
+import { useUserStore } from './user'
+import { ROLES } from './user'
 
 export const useTransactionStore = defineStore('transaction', () => {
   const transactions = ref([])
@@ -40,9 +42,11 @@ export const useTransactionStore = defineStore('transaction', () => {
   }
 
   const addTransaction = async (transaction) => {
+    const userStore = useUserStore()
     const newTransaction = {
       ...transaction,
       id: Date.now().toString(),
+      userId: userStore.currentUser?.id || null,
       createdAt: new Date().toISOString()
     }
     transactions.value.push(newTransaction)
@@ -65,6 +69,41 @@ export const useTransactionStore = defineStore('transaction', () => {
   const getTransactionsByDateRange = (startDate, endDate) =>
     transactions.value.filter(t => t.date >= startDate && t.date <= endDate)
 
+  // 根据用户角色过滤交易记录
+  const getFilteredTransactions = async () => {
+    const userStore = useUserStore()
+    const user = userStore.currentUser
+
+    if (!user) return []
+
+    // 管理员：返回全部
+    if (user.role === ROLES.ADMIN) {
+      return transactions.value
+    }
+
+    // 中间商：返回自己的
+    if (user.role === ROLES.MIDDLEMAN) {
+      return transactions.value.filter(t => t.userId === user.id)
+    }
+
+    // 装发车：返回关联自己的（通过targetId关联到自己的商户）
+    if (user.role === ROLES.LOADER) {
+      if (user.parentId) {
+        const merchantResults = await dbOps.queryBy('merchants', 'userId', user.parentId)
+        const merchantIds = merchantResults ? merchantResults.map(m => m.id) : []
+        return transactions.value.filter(t => merchantIds.includes(t.targetId))
+      }
+      return []
+    }
+
+    // 鸡场：返回自己的
+    if (user.role === ROLES.FARM) {
+      return transactions.value.filter(t => t.userId === user.id)
+    }
+
+    return []
+  }
+
   // 初始化加载
   loadTransactions()
 
@@ -74,6 +113,7 @@ export const useTransactionStore = defineStore('transaction', () => {
     deleteTransaction,
     getTransactionsByTarget,
     getTransactionsByDateRange,
+    getFilteredTransactions,
     loadTransactions
   }
 })

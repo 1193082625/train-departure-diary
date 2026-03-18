@@ -1,9 +1,36 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { dbOps } from '@/utils/db'
+import { useUserStore } from './user'
+import { ROLES } from './user'
 
 export const useMerchantStore = defineStore('merchant', () => {
   const merchants = ref([])
+
+  // 根据用户角色过滤商户
+  const filteredMerchants = computed(() => {
+    const userStore = useUserStore()
+    const user = userStore.currentUser
+
+    if (!user) return []
+
+    // 管理员：返回全部
+    if (user.role === ROLES.ADMIN) {
+      return merchants.value
+    }
+
+    // 中间商：返回自己创建的
+    if (user.role === ROLES.MIDDLEMAN) {
+      return merchants.value.filter(m => m.userId === user.id)
+    }
+
+    // 装发车和鸡场：返回中间商的商户
+    if (user.parentId) {
+      return merchants.value.filter(m => m.userId === user.parentId)
+    }
+
+    return []
+  })
 
   const loadMerchants = async () => {
     try {
@@ -40,9 +67,11 @@ export const useMerchantStore = defineStore('merchant', () => {
   }
 
   const addMerchant = async (merchant) => {
+    const userStore = useUserStore()
     const newMerchant = {
       ...merchant,
       id: Date.now().toString(),
+      userId: userStore.currentUser?.id || null,
       createdAt: new Date().toISOString()
     }
     merchants.value.push(newMerchant)
@@ -70,6 +99,7 @@ export const useMerchantStore = defineStore('merchant', () => {
 
   return {
     merchants,
+    filteredMerchants,
     addMerchant,
     updateMerchant,
     deleteMerchant,

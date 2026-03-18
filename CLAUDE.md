@@ -18,3 +18,5 @@
 - 本项目不是基于 vite 构建的
 - 本项目是通过 HBuilderX 直接创建的 uniapp+uni-ui 项目
 - 不要修改本项目结构
+- pages.json 中 tab list 不能超过 5 个
+- .json 文件中不能有注释
