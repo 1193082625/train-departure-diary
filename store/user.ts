@@ -536,12 +536,12 @@ export const useUserStore = defineStore('user', () => {
   // 检查手机号是否已注册
   const checkPhoneExists = async (phone) => {
     try {
-      // 先确保数据库初始化完成
-      await initDB()
+      console.log('【checkPhoneExists】开始检查手机号:', phone)
       const existingUsers = await userDbOps.getUserByPhone(phone)
+      console.log('【checkPhoneExists】查询结果:', existingUsers)
       return existingUsers && existingUsers.length > 0
     } catch (e) {
-      console.error('检查手机号失败:', e)
+      console.error('【checkPhoneExists】检查失败:', e)
       return false
     }
   }
@@ -608,8 +608,13 @@ export const useUserStore = defineStore('user', () => {
     return []
   }
 
-  // 初始化
+  // 自动调用 init() 确保初始化完成
   init()
+
+  // 导出初始化函数供外部使用（备用）
+  const initUserStore = async () => {
+    await init()
+  }
 
   return {
     currentUser,
@@ -634,6 +639,7 @@ export const useUserStore = defineStore('user', () => {
     getMyMerchantIds,
     getMyWorkerIds,
     checkPhoneExists,
+    initUserStore,
     ROLES,
     ROLE_NAMES
   }

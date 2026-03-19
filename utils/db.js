@@ -9,6 +9,17 @@ let initPromise = null // 缓存初始化 Promise（只在成功时缓存）
 // 获取数据库初始化状态
 export const getDbInitStatus = () => dbInitStatus
 
+// 等待数据库就绪的辅助函数
+export const waitForDB = async (timeout = 10000) => {
+  const startTime = Date.now()
+  while (Date.now() - startTime < timeout) {
+    const dbInstance = await initDB()
+    if (dbInstance) return dbInstance
+    await new Promise(resolve => setTimeout(resolve, 200))
+  }
+  throw new Error('数据库初始化超时')
+}
+
 // 初始化数据库连接（幂等，成功后缓存）
 export const initDB = () => {
   // 如果已有初始化 Promise 且数据库已就绪，直接返回
@@ -23,8 +34,8 @@ export const initDB = () => {
 
   initPromise = new Promise((resolve, reject) => {
     // 等待 uniCloud 初始化完成
-    const maxRetries = 30  // 增加重试次数
-    const retryInterval = 200  // 减少间隔
+    const maxRetries = 300     // 增加到 300 次（300 次 × 200ms = 60 秒）
+    const retryInterval = 200
     let retryCount = 0
 
     const tryInit = () => {
@@ -41,10 +52,10 @@ export const initDB = () => {
               return
             }
           } catch (e) {
-            console.warn('【数据库】uniCloud 初始化中，重试...', retryCount, e.message)
+            console.warn('【数据库】初始化中...', retryCount)
           }
         } else {
-          console.warn('【数据库】uniCloud 还未初始化，重试...', retryCount)
+          console.warn('【数据库】等待 uniCloud...', retryCount)
         }
 
         if (retryCount < maxRetries) {
@@ -53,7 +64,7 @@ export const initDB = () => {
         } else {
           dbInitStatus = 'failed'
           initPromise = null  // 清除缓存，允许下次重试
-          console.error('【数据库】uniCloud 初始化失败，数据库不可用')
+          console.error('【数据库】初始化超时')
           resolve(null)
         }
       }, retryInterval)
@@ -77,25 +88,23 @@ export const userDbOps = {
   // 根据手机号查询用户
   getUserByPhone: (phone) => {
     return new Promise(async (resolve, reject) => {
-      // 先确保数据库初始化完成
-      await initDB()
+      // 关键操作：必须确保云端数据库就绪
+      const dbInstance = await initDB()
 
-      // 数据库不可用时，使用本地存储
-      if (!db) {
-        console.warn('【getUserByPhone】数据库不可用，使用本地存储')
-        const data = uni.getStorageSync('users')
-        const list = data ? JSON.parse(data) : []
-        const result = list.filter(item => item.phone === phone)
-        resolve(result)
+      // 数据库不可用时，直接返回空（禁止降级到本地存储）
+      if (!dbInstance) {
+        console.error('【getUserByPhone】云端数据库不可用，拒绝返回本地存储数据')
+        resolve([])
         return
       }
 
-      db.collection('users').where({ phone: dbCmd.eq(phone) }).get()
+      // 云端查询
+      dbInstance.collection('users').where({ phone: dbInstance.command.eq(phone) }).get()
         .then(res => {
           resolve(res.result ? res.result.data : res.data || [])
         })
         .catch(err => {
-          console.error('查询用户失败:', err)
+          console.error('云端查询失败:', err)
           reject(err)
         })
     })
@@ -104,19 +113,17 @@ export const userDbOps = {
   // 根据ID查询用户
   getUserById: (id) => {
     return new Promise(async (resolve, reject) => {
-      // 先确保数据库初始化完成
-      await initDB()
+      // 关键操作：必须确保云端数据库就绪
+      const dbInstance = await initDB()
 
-      // 数据库不可用时，使用本地存储
-      if (!db) {
-        const data = uni.getStorageSync('users')
-        const list = data ? JSON.parse(data) : []
-        const result = list.filter(item => item.id === id)
-        resolve(result)
+      // 数据库不可用时，直接返回空（禁止降级到本地存储）
+      if (!dbInstance) {
+        console.error('【getUserById】云端数据库不可用，拒绝返回本地存储数据')
+        resolve([])
         return
       }
 
-      db.collection('users').doc(id).get()
+      dbInstance.collection('users').doc(id).get()
         .then(res => {
           resolve(res.result ? res.result.data : res.data || [])
         })
@@ -130,19 +137,17 @@ export const userDbOps = {
   // 根据邀请码查询
   getUserByInviteCode: (inviteCode) => {
     return new Promise(async (resolve, reject) => {
-      // 先确保数据库初始化完成
-      await initDB()
+      // 关键操作：必须确保云端数据库就绪
+      const dbInstance = await initDB()
 
-      // 数据库不可用时，使用本地存储
-      if (!db) {
-        const data = uni.getStorageSync('users')
-        const list = data ? JSON.parse(data) : []
-        const result = list.filter(item => item.inviteCode === inviteCode)
-        resolve(result)
+      // 数据库不可用时，直接返回空（禁止降级到本地存储）
+      if (!dbInstance) {
+        console.error('【getUserByInviteCode】云端数据库不可用，拒绝返回本地存储数据')
+        resolve([])
         return
       }
 
-      db.collection('users').where({ inviteCode: dbCmd.eq(inviteCode) }).get()
+      dbInstance.collection('users').where({ inviteCode: dbInstance.command.eq(inviteCode) }).get()
         .then(res => {
           resolve(res.result ? res.result.data : res.data || [])
         })
@@ -155,58 +160,50 @@ export const userDbOps = {
 
   // 创建用户
   createUser: (userData) => {
-    return new Promise((resolve, reject) => {
-      // 如果数据库未初始化或不可用，直接使用本地存储
-      if (!db) {
-        const key = 'users'
-        const list = uni.getStorageSync(key) ? JSON.parse(uni.getStorageSync(key)) : []
-        list.push(userData)
-        uni.setStorageSync(key, JSON.stringify(list))
-        resolve(userData)
+    return new Promise(async (resolve, reject) => {
+      // 关键操作：必须确保云端数据库就绪
+      const dbInstance = await initDB()
+
+      // 数据库不可用时，直接拒绝（禁止降级到本地存储）
+      if (!dbInstance) {
+        console.error('【createUser】云端数据库不可用，拒绝写入本地存储')
+        reject(new Error('云端数据库不可用'))
         return
       }
 
-      db.collection('users').add(userData)
+      dbInstance.collection('users').add(userData)
         .then(res => {
           resolve(userData)
         })
         .catch(err => {
-          console.error('创建用户到云端失败，降级到本地存储:', err)
-          // 云端写入失败时，降级到本地存储
-          const key = 'users'
-          const list = uni.getStorageSync(key) ? JSON.parse(uni.getStorageSync(key)) : []
-          list.push(userData)
-          uni.setStorageSync(key, JSON.stringify(list))
-          resolve(userData)
+          console.error('创建用户到云端失败:', err)
+          reject(err)
         })
     })
   },
 
   // 更新用户
   updateUser: (id, data) => {
-    return new Promise((resolve, reject) => {
-      // 如果数据库未初始化或不可用，直接使用本地存储
-      if (!db) {
-        const key = 'users'
-        const list = uni.getStorageSync(key) ? JSON.parse(uni.getStorageSync(key)) : []
-        const index = list.findIndex(item => item.id === id)
-        if (index !== -1) {
-          list[index] = { ...list[index], ...data }
-          uni.setStorageSync(key, JSON.stringify(list))
-        }
-        resolve(data)
+    return new Promise(async (resolve, reject) => {
+      // 关键操作：必须确保云端数据库就绪
+      const dbInstance = await initDB()
+
+      // 数据库不可用时，直接拒绝（禁止降级到本地存储）
+      if (!dbInstance) {
+        console.error('【updateUser】云端数据库不可用，拒绝写入本地存储')
+        reject(new Error('云端数据库不可用'))
         return
       }
 
       // 先查询用户的云端 _id
-      db.collection('users').where({ id: dbCmd.eq(id) }).get()
+      dbInstance.collection('users').where({ id: dbInstance.command.eq(id) }).get()
         .then(res => {
           const userData = res.result ? res.result.data : res.data || []
           if (userData.length > 0 && userData[0]._id) {
             // 使用云端的 _id 进行更新
-            return db.collection('users').doc(userData[0]._id).update(data)
+            return dbInstance.collection('users').doc(userData[0]._id).update(data)
           } else {
-            // 用户不存在于云端，降级到本地存储
+            // 用户不存在于云端
             return Promise.reject(new Error('USER_NOT_IN_CLOUD'))
           }
         })
@@ -214,16 +211,8 @@ export const userDbOps = {
           resolve(data)
         })
         .catch(err => {
-          console.error('更新用户到云端失败，降级到本地存储:', err)
-          // 云端更新失败时，降级到本地存储
-          const key = 'users'
-          const list = uni.getStorageSync(key) ? JSON.parse(uni.getStorageSync(key)) : []
-          const index = list.findIndex(item => item.id === id)
-          if (index !== -1) {
-            list[index] = { ...list[index], ...data }
-            uni.setStorageSync(key, JSON.stringify(list))
-          }
-          resolve(data)
+          console.error('更新用户到云端失败:', err)
+          reject(err)
         })
     })
   },
@@ -238,18 +227,20 @@ export const userDbOps = {
 export const inviteDbOps = {
   // 根据邀请码查询
   getByCode: (code) => {
-    return new Promise((resolve, reject) => {
-      if (!db) {
-        const data = uni.getStorageSync('invitation_codes')
-        const list = data ? JSON.parse(data) : []
-        const result = list.filter(item => item.code === code && !item.usedBy)
-        resolve(result)
+    return new Promise(async (resolve, reject) => {
+      // 关键操作：必须确保云端数据库就绪
+      const dbInstance = await initDB()
+
+      // 数据库不可用时，直接返回空（禁止降级到本地存储）
+      if (!dbInstance) {
+        console.error('【getByCode】云端数据库不可用，拒绝返回本地存储数据')
+        resolve([])
         return
       }
 
-      db.collection('invitation_codes').where({
+      dbInstance.collection('invitation_codes').where({
         code: code,
-        usedBy: dbCmd.eq(null)
+        usedBy: dbInstance.command.eq(null)
       }).get()
         .then(res => {
           resolve(res.result ? res.result.data : res.data || [])
@@ -263,17 +254,18 @@ export const inviteDbOps = {
 
   // 创建邀请码
   create: (data) => {
-    return new Promise((resolve, reject) => {
-      if (!db) {
-        const key = 'invitation_codes'
-        const list = uni.getStorageSync(key) ? JSON.parse(uni.getStorageSync(key)) : []
-        list.push(data)
-        uni.setStorageSync(key, JSON.stringify(list))
-        resolve(data)
+    return new Promise(async (resolve, reject) => {
+      // 关键操作：必须确保云端数据库就绪
+      const dbInstance = await initDB()
+
+      // 数据库不可用时，直接拒绝（禁止降级到本地存储）
+      if (!dbInstance) {
+        console.error('【create】云端数据库不可用，拒绝写入本地存储')
+        reject(new Error('云端数据库不可用'))
         return
       }
 
-      db.collection('invitation_codes').add(data)
+      dbInstance.collection('invitation_codes').add(data)
         .then(res => {
           resolve(data)
         })
@@ -286,21 +278,18 @@ export const inviteDbOps = {
 
   // 使用邀请码
   useCode: (code, userId) => {
-    return new Promise((resolve, reject) => {
-      if (!db) {
-        const key = 'invitation_codes'
-        const list = uni.getStorageSync(key) ? JSON.parse(uni.getStorageSync(key)) : []
-        const index = list.findIndex(item => item.code === code)
-        if (index !== -1) {
-          list[index].usedBy = userId
-          list[index].usedAt = new Date().toISOString()
-          uni.setStorageSync(key, JSON.stringify(list))
-        }
-        resolve()
+    return new Promise(async (resolve, reject) => {
+      // 关键操作：必须确保云端数据库就绪
+      const dbInstance = await initDB()
+
+      // 数据库不可用时，直接拒绝（禁止降级到本地存储）
+      if (!dbInstance) {
+        console.error('【useCode】云端数据库不可用，拒绝操作本地存储')
+        reject(new Error('云端数据库不可用'))
         return
       }
 
-      db.collection('invitation_codes').where({ code: dbCmd.eq(code) }).update({
+      dbInstance.collection('invitation_codes').where({ code: dbInstance.command.eq(code) }).update({
         usedBy: userId,
         usedAt: new Date().toISOString()
       })
@@ -398,14 +387,19 @@ export const merchantWorkerDbOps = {
 export const dbOps = {
   // 查询所有记录
   queryAll: (table, limit = 500) => {
-    return new Promise((resolve, reject) => {
-      if (!db) {
-        const data = uni.getStorageSync(table)
-        resolve(data ? JSON.parse(data) : [])
+    return new Promise(async (resolve, reject) => {
+      // 关键操作：必须确保云端数据库就绪
+      const dbInstance = await initDB()
+
+      // 数据库不可用时，直接返回空（禁止降级到本地存储）
+      if (!dbInstance) {
+        console.error(`【queryAll:${table}】云端数据库不可用，拒绝返回本地存储数据`)
+        resolve([])
         return
       }
 
-      db.collection(table).limit(limit).get()
+      // 云端查询
+      dbInstance.collection(table).limit(limit).get()
         .then(res => {
           resolve(res.result ? res.result.data : res.data || [])
         })
@@ -418,13 +412,14 @@ export const dbOps = {
 
   // 插入记录
   insert: (table, data) => {
-    return new Promise((resolve, reject) => {
-      if (!db) {
-        const key = table
-        const list = uni.getStorageSync(key) ? JSON.parse(uni.getStorageSync(key)) : []
-        list.push(data)
-        uni.setStorageSync(key, JSON.stringify(list))
-        resolve(data)
+    return new Promise(async (resolve, reject) => {
+      // 关键操作：必须确保云端数据库就绪
+      const dbInstance = await initDB()
+
+      // 数据库不可用时，直接拒绝（禁止降级到本地存储）
+      if (!dbInstance) {
+        console.error(`【insert:${table}】云端数据库不可用，拒绝写入本地存储`)
+        reject(new Error('云端数据库不可用'))
         return
       }
 
@@ -432,7 +427,7 @@ export const dbOps = {
       const dataToInsert = { ...data }
       delete dataToInsert._id
 
-      db.collection(table).add(dataToInsert)
+      dbInstance.collection(table).add(dataToInsert)
         .then(res => {
           // 云端插入成功，保存云端的 _id 到返回数据中
           const resultData = { ...data }
@@ -442,29 +437,22 @@ export const dbOps = {
           resolve(resultData)
         })
         .catch(err => {
-          console.error(`插入 ${table} 到云端失败，降级到本地存储:`, err)
-          // 云端插入失败时，降级到本地存储
-          const key = table
-          const list = uni.getStorageSync(key) ? JSON.parse(uni.getStorageSync(key)) : []
-          list.push(data)
-          uni.setStorageSync(key, JSON.stringify(list))
-          resolve(data)
+          console.error(`插入 ${table} 到云端失败:`, err)
+          reject(err)
         })
     })
   },
 
   // 更新记录
   update: (table, id, data) => {
-    return new Promise((resolve, reject) => {
-      if (!db) {
-        const key = table
-        const list = uni.getStorageSync(key) ? JSON.parse(uni.getStorageSync(key)) : []
-        const index = list.findIndex(item => item.id === id)
-        if (index !== -1) {
-          list[index] = { ...list[index], ...data }
-          uni.setStorageSync(key, JSON.stringify(list))
-        }
-        resolve(data)
+    return new Promise(async (resolve, reject) => {
+      // 关键操作：必须确保云端数据库就绪
+      const dbInstance = await initDB()
+
+      // 数据库不可用时，直接拒绝（禁止降级到本地存储）
+      if (!dbInstance) {
+        console.error(`【update:${table}】云端数据库不可用，拒绝写入本地存储`)
+        reject(new Error('云端数据库不可用'))
         return
       }
 
@@ -472,55 +460,48 @@ export const dbOps = {
       const dataToUpdate = { ...data }
       delete dataToUpdate._id
 
-
       // 先查询云端是否有该记录，获取云端的 _id
-      db.collection(table).where({ id: dbCmd.eq(id) }).get()
+      dbInstance.collection(table).where({ id: dbInstance.command.eq(id) }).get()
         .then(res => {
           const existingData = res.result ? res.result.data : res.data || []
           if (existingData.length > 0 && existingData[0]._id) {
             // 使用云端的 _id 进行更新
-            return db.collection(table).doc(existingData[0]._id).update(dataToUpdate)
+            return dbInstance.collection(table).doc(existingData[0]._id).update(dataToUpdate)
           } else {
             // 记录不存在于云端，尝试插入新记录
-            return db.collection(table).add(dataToUpdate)
+            return dbInstance.collection(table).add(dataToUpdate)
           }
         })
         .then(res => {
           resolve(data)
         })
         .catch(err => {
-          // 云端更新失败时，降级到本地存储
-          const key = table
-          const list = uni.getStorageSync(key) ? JSON.parse(uni.getStorageSync(key)) : []
-          const index = list.findIndex(item => item.id === id)
-          if (index !== -1) {
-            list[index] = { ...list[index], ...data }
-            uni.setStorageSync(key, JSON.stringify(list))
-          }
-          resolve(data)
+          console.error(`更新 ${table} 到云端失败:`, err)
+          reject(err)
         })
     })
   },
 
   // 删除记录
   delete: (table, id) => {
-    return new Promise((resolve, reject) => {
-      if (!db) {
-        const key = table
-        let list = uni.getStorageSync(key) ? JSON.parse(uni.getStorageSync(key)) : []
-        list = list.filter(item => item.id !== id)
-        uni.setStorageSync(key, JSON.stringify(list))
-        resolve()
+    return new Promise(async (resolve, reject) => {
+      // 关键操作：必须确保云端数据库就绪
+      const dbInstance = await initDB()
+
+      // 数据库不可用时，直接拒绝（禁止降级到本地存储）
+      if (!dbInstance) {
+        console.error(`【delete:${table}】云端数据库不可用，拒绝操作本地存储`)
+        reject(new Error('云端数据库不可用'))
         return
       }
 
       // 先查询云端是否有该记录，获取云端的 _id
-      db.collection(table).where({ id: dbCmd.eq(id) }).get()
+      dbInstance.collection(table).where({ id: dbInstance.command.eq(id) }).get()
         .then(res => {
           const existingData = res.result ? res.result.data : res.data || []
           if (existingData.length > 0 && existingData[0]._id) {
             // 使用云端的 _id 进行删除
-            return db.collection(table).doc(existingData[0]._id).remove()
+            return dbInstance.collection(table).doc(existingData[0]._id).remove()
           } else {
             // 记录不存在于云端，视为删除成功
             return Promise.resolve()
@@ -538,49 +519,51 @@ export const dbOps = {
 
   // 根据条件查询
   queryBy: (table, field, value) => {
-    return new Promise((resolve, reject) => {
-      if (!db) {
-        const data = uni.getStorageSync(table)
-        const list = data ? JSON.parse(data) : []
-        const result = list.filter(item => item[field] === value)
-        resolve(result)
+    return new Promise(async (resolve, reject) => {
+      // 关键操作：必须确保云端数据库就绪
+      const dbInstance = await initDB()
+
+      // 数据库不可用时，直接返回空（禁止降级到本地存储）
+      if (!dbInstance) {
+        console.error(`【queryBy:${table}】云端数据库不可用，拒绝返回本地存储数据`)
+        resolve([])
         return
       }
 
       const whereObj = {}
-      whereObj[field] = dbCmd.eq(value)
+      whereObj[field] = dbInstance.command.eq(value)
 
-      db.collection(table).where(whereObj).get()
+      dbInstance.collection(table).where(whereObj).get()
         .then(res => {
           resolve(res.result ? res.result.data : res.data || [])
         })
         .catch(err => {
-          console.error(`查询 ${table} 从云端失败，降级到本地存储:`, err)
-          // 云端查询失败时，降级到本地存储
-          const data = uni.getStorageSync(table)
-          const list = data ? JSON.parse(data) : []
-          const result = list.filter(item => item[field] === value)
-          resolve(result)
+          console.error(`查询 ${table} 失败:`, err)
+          reject(err)
         })
     })
   },
 
   // 删除表中所有记录
   deleteAll: (table) => {
-    return new Promise((resolve, reject) => {
-      if (!db) {
-        uni.removeStorageSync(table)
-        resolve()
+    return new Promise(async (resolve, reject) => {
+      // 关键操作：必须确保云端数据库就绪
+      const dbInstance = await initDB()
+
+      // 数据库不可用时，直接拒绝（禁止降级到本地存储）
+      if (!dbInstance) {
+        console.error('【deleteAll】云端数据库不可用，拒绝操作本地存储')
+        reject(new Error('云端数据库不可用'))
         return
       }
 
       // 获取所有记录并删除
-      db.collection(table).get()
+      dbInstance.collection(table).get()
         .then(res => {
           const data = res.result ? res.result.data : res.data
           if (data && data.length > 0) {
             const promises = data.map(item => {
-              return db.collection(table).doc(item._id || item.id).remove()
+              return dbInstance.collection(table).doc(item._id || item.id).remove()
             })
             return Promise.all(promises)
           }
@@ -599,6 +582,7 @@ export default {
   initDB,
   isDBAvailable,
   getDbInitStatus,
+  waitForDB,
   dbOps,
   userDbOps,
   inviteDbOps,

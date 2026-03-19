@@ -199,7 +199,7 @@
 </template>
 
 <script setup>
-import { ref, computed, reactive, onMounted, watch, nextTick } from 'vue'
+import { ref, computed, reactive, onMounted, onShow, watch, nextTick } from 'vue'
 import { useDepartureStore } from '@/store/departure'
 import { useSettingsStore } from '@/store/settings'
 import { useUserStore } from '@/store/user'
@@ -643,6 +643,12 @@ onMounted(() => {
     }
   }
 })
+
+// 页面显示时不再需要显式调用，store 初始化时会自动加载数据
+// onShow(() => {
+//   departureStore.loadRecords()
+//   userStore.loadUsers()
+// })
 
 const openSettingsPopup = () => {
   settingsPopup.value.open('center')

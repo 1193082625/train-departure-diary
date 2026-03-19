@@ -143,7 +143,7 @@ export const useDepartureStore = defineStore('departure', () => {
     return filteredRecords.value.filter(r => r.date === today)
   }
 
-  // 初始化加载
+  // 自动调用 loadRecords() 加载发车记录
   loadRecords()
 
   return {

@@ -101,6 +101,7 @@ const phoneChecked = ref(false) // 是否已检查过手机号
 const handlePhoneInput = async () => {
   // 当手机号达到11位时，检查是否已注册
   if (validatePhone(phone.value)) {
+    // checkPhoneExists 内部会确保数据库就绪
     const exists = await userStore.checkPhoneExists(phone.value)
     phoneChecked.value = true
     if (exists) {
