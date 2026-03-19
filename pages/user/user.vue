@@ -71,9 +71,11 @@
 import { ref, reactive, computed, watch } from 'vue'
 import { useDepartureStore } from '@/store/departure'
 import { useMerchantStore } from '@/store/merchant'
+import { useUserStore } from '@/store/user'
 
 const departureStore = useDepartureStore()
 const merchantStore = useMerchantStore()
+const userStore = useUserStore()
 
 // 快捷日期类型
 const quickRangeType = ref('month')

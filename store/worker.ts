@@ -35,17 +35,10 @@ export const useWorkerStore = defineStore('worker', () => {
   const loadWorkers = async () => {
     try {
       const results = await dbOps.queryAll('workers')
-      if (results && results.length > 0) {
-        workers.value = results
-      } else {
-        // 兼容：从 localStorage 读取
-        const data = uni.getStorageSync('workers')
-        workers.value = data ? JSON.parse(data) : []
-      }
+      workers.value = results || []
     } catch (e) {
-      // 兼容：localStorage 读取
-      const data = uni.getStorageSync('workers')
-      workers.value = data ? JSON.parse(data) : []
+      console.error('加载员工列表失败:', e)
+      workers.value = []
     }
   }
 

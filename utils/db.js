@@ -404,11 +404,21 @@ export const dbOps = {
 
       db.collection(table).add(dataToInsert)
         .then(res => {
-          resolve(data)
+          // 云端插入成功，保存云端的 _id 到返回数据中
+          const resultData = { ...data }
+          if (res.result && res.result._id) {
+            resultData._id = res.result._id
+          }
+          resolve(resultData)
         })
         .catch(err => {
-          console.error(`插入 ${table} 失败:`, err)
-          reject(err)
+          console.error(`插入 ${table} 到云端失败，降级到本地存储:`, err)
+          // 云端插入失败时，降级到本地存储
+          const key = table
+          const list = uni.getStorageSync(key) ? JSON.parse(uni.getStorageSync(key)) : []
+          list.push(data)
+          uni.setStorageSync(key, JSON.stringify(list))
+          resolve(data)
         })
     })
   },
@@ -432,13 +442,40 @@ export const dbOps = {
       const dataToUpdate = { ...data }
       delete dataToUpdate._id
 
-      db.collection(table).doc(id).update(dataToUpdate)
+      console.log(`【DB】开始更新 ${table}，id:`, id, 'data keys:', Object.keys(dataToUpdate), 'note:', dataToUpdate.note)
+
+      // 先查询云端是否有该记录，获取云端的 _id
+      db.collection(table).where({ id: dbCmd.eq(id) }).get()
         .then(res => {
+          console.log(`【DB】查询 ${table} 结果:`, res)
+          const existingData = res.result ? res.result.data : res.data || []
+          console.log(`【DB】云端现有数据:`, existingData[0], 'note字段值:', existingData[0]?.note)
+          if (existingData.length > 0 && existingData[0]._id) {
+            console.log(`【DB】找到云端记录，_id:`, existingData[0]._id, '，开始更新')
+            console.log(`【DB】dataToUpdate 包含的字段:`, Object.keys(dataToUpdate), 'note值:', dataToUpdate.note)
+            // 使用云端的 _id 进行更新
+            return db.collection(table).doc(existingData[0]._id).update(dataToUpdate)
+          } else {
+            console.log(`【DB】未找到云端记录，id:`, id, '，尝试插入新记录')
+            // 记录不存在于云端，尝试插入新记录
+            return db.collection(table).add(dataToUpdate)
+          }
+        })
+        .then(res => {
+          console.log(`【DB】更新 ${table} 成功:`, res, 'updated:', res.result?.updated)
           resolve(data)
         })
         .catch(err => {
-          console.error(`更新 ${table} 失败:`, err)
-          reject(err)
+          console.error(`【DB】更新 ${table} 到云端失败:`, err.message, '，降级到本地存储')
+          // 云端更新失败时，降级到本地存储
+          const key = table
+          const list = uni.getStorageSync(key) ? JSON.parse(uni.getStorageSync(key)) : []
+          const index = list.findIndex(item => item.id === id)
+          if (index !== -1) {
+            list[index] = { ...list[index], ...data }
+            uni.setStorageSync(key, JSON.stringify(list))
+          }
+          resolve(data)
         })
     })
   },
@@ -455,12 +492,23 @@ export const dbOps = {
         return
       }
 
-      db.collection(table).doc(id).remove()
+      // 先查询云端是否有该记录，获取云端的 _id
+      db.collection(table).where({ id: dbCmd.eq(id) }).get()
+        .then(res => {
+          const existingData = res.result ? res.result.data : res.data || []
+          if (existingData.length > 0 && existingData[0]._id) {
+            // 使用云端的 _id 进行删除
+            return db.collection(table).doc(existingData[0]._id).remove()
+          } else {
+            // 记录不存在于云端，视为删除成功
+            return Promise.resolve()
+          }
+        })
         .then(res => {
           resolve()
         })
         .catch(err => {
-          console.error(`删除 ${table} 失败:`, err)
+          console.error(`删除 ${table} 从云端失败:`, err)
           reject(err)
         })
     })
@@ -478,15 +526,19 @@ export const dbOps = {
       }
 
       const whereObj = {}
-      whereObj[field] = value
+      whereObj[field] = dbCmd.eq(value)
 
       db.collection(table).where(whereObj).get()
         .then(res => {
           resolve(res.result ? res.result.data : res.data || [])
         })
         .catch(err => {
-          console.error(`查询 ${table} 失败:`, err)
-          reject(err)
+          console.error(`查询 ${table} 从云端失败，降级到本地存储:`, err)
+          // 云端查询失败时，降级到本地存储
+          const data = uni.getStorageSync(table)
+          const list = data ? JSON.parse(data) : []
+          const result = list.filter(item => item[field] === value)
+          resolve(result)
         })
     })
   },

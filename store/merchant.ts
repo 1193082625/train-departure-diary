@@ -35,17 +35,10 @@ export const useMerchantStore = defineStore('merchant', () => {
   const loadMerchants = async () => {
     try {
       const results = await dbOps.queryAll('merchants')
-      if (results && results.length > 0) {
-        merchants.value = results
-      } else {
-        // 兼容：从 localStorage 读取
-        const data = uni.getStorageSync('merchants')
-        merchants.value = data ? JSON.parse(data) : []
-      }
+      merchants.value = results || []
     } catch (e) {
-      // 兼容：localStorage 读取
-      const data = uni.getStorageSync('merchants')
-      merchants.value = data ? JSON.parse(data) : []
+      console.error('加载商户列表失败:', e)
+      merchants.value = []
     }
   }
 

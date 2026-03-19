@@ -150,6 +150,7 @@ const initTestData = async () => {
 export const useUserStore = defineStore('user', () => {
   const currentUser = ref(null)
   const isLoggedIn = ref(false)
+  const users = ref([])  // 云端加载的所有用户
 
   // 计算是否为管理员
   const isAdmin = computed(() => currentUser.value?.role === ROLES.ADMIN)
@@ -163,10 +164,24 @@ export const useUserStore = defineStore('user', () => {
   // 计算是否为鸡场
   const isFarm = computed(() => currentUser.value?.role === ROLES.FARM)
 
+  // 加载所有用户
+  const loadUsers = async () => {
+    try {
+      const results = await userDbOps.getAllUsers()
+      users.value = results || []
+    } catch (e) {
+      console.error('加载用户列表失败:', e)
+      users.value = []
+    }
+  }
+
   // 初始化 - 从本地存储恢复登录状态
   const init = async () => {
     // 先初始化测试数据
     await initTestData()
+
+    // 加载所有用户
+    await loadUsers()
 
     const userData = uni.getStorageSync('currentUser')
     if (userData) {
@@ -594,10 +609,12 @@ export const useUserStore = defineStore('user', () => {
   return {
     currentUser,
     isLoggedIn,
+    users,
     isAdmin,
     isMiddleman,
     isLoader,
     isFarm,
+    loadUsers,
     login,
     selectRole,
     logout,

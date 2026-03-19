@@ -10,17 +10,10 @@ export const useTransactionStore = defineStore('transaction', () => {
   const loadTransactions = async () => {
     try {
       const results = await dbOps.queryAll('transactions')
-      if (results && results.length > 0) {
-        transactions.value = results
-      } else {
-        // 兼容：从 localStorage 读取
-        const data = uni.getStorageSync('transactions')
-        transactions.value = data ? JSON.parse(data) : []
-      }
+      transactions.value = results || []
     } catch (e) {
-      // 兼容：localStorage 读取
-      const data = uni.getStorageSync('transactions')
-      transactions.value = data ? JSON.parse(data) : []
+      console.error('加载交易记录失败:', e)
+      transactions.value = []
     }
   }
 

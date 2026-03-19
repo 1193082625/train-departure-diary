@@ -12,6 +12,10 @@
 		"deliveryBigBoxWeight": { "description": "发货大箱重量", "bsonType": "double", "defaultValue": 44 },
 		"smallBoxWeight": { "description": "小箱重量", "bsonType": "double", "defaultValue": 29.5 },
 		"loadingFee": { "description": "装车费", "bsonType": "double", "defaultValue": 0 },
+		"depotCartonBoxesBig": { "description": "大箱斤数", "bsonType": "double", "defaultValue": 43 },
+		"depotCartonBoxesSmall": { "description": "小箱斤数", "bsonType": "double", "defaultValue": 30 },
+		"unloadingFee": { "description": "卸车费", "bsonType": "double", "defaultValue": 0 },
+		"departureFee": { "description": "发车费", "bsonType": "double", "defaultValue": 0 },
 		"tollFee": { "description": "过路费", "bsonType": "double", "defaultValue": 0 },
 		"entryFee": { "description": "入场费", "bsonType": "double", "defaultValue": 0 },
 		"oilFee": { "description": "油费", "bsonType": "double", "defaultValue": 0 }

@@ -23,15 +23,14 @@ export const useDepartureStore = defineStore('departure', () => {
     // 中间商：返回自己的 + 名下所有装发车用户添加的记录
     // 逻辑：通过 parentId 关联，找到所有 parentId = 当前中间商ID 的装发车用户
     if (user.role === ROLES.MIDDLEMAN) {
-      // 同步获取所有用户，然后过滤
-      const allUsers = uni.getStorageSync('users') ? JSON.parse(uni.getStorageSync('users')) : []
-      console.log(111, allUsers);
-      
+      // 使用 userStore.users（已从云端加载）
+      const allUsers = userStore.users
+
       // 找出 parentId = 当前中间商ID 的装发车用户ID列表
       const loaderUserIds = allUsers
         .filter(u => u.role === ROLES.LOADER && u.parentId === user.id)
         .map(u => u.id)
-      console.log(222, loaderUserIds);
+
       // 返回自己或自己员工添加的记录
       return records.value.filter(r =>
         r.userId === user.id || loaderUserIds.includes(r.userId)
@@ -60,14 +59,11 @@ export const useDepartureStore = defineStore('departure', () => {
           merchantAmount: r.merchantAmount ? JSON.parse(r.merchantAmount) : []
         }))
       } else {
-        // 兼容：从 localStorage 读取
-        const data = uni.getStorageSync('departureRecords')
-        records.value = data ? JSON.parse(data) : []
+        records.value = []
       }
     } catch (e) {
-      // 兼容：localStorage 读取
-      const data = uni.getStorageSync('departureRecords')
-      records.value = data ? JSON.parse(data) : []
+      console.error('加载发车记录失败:', e)
+      records.value = []
     }
   }
 
@@ -82,14 +78,28 @@ export const useDepartureStore = defineStore('departure', () => {
           truckRows: JSON.stringify(record.truckRows || []),
           merchantAmount: JSON.stringify(record.merchantAmount || [])
         }
+        console.log('【Departure】保存记录，id:', record.id, 'note:', record.note)
         const existing = await dbOps.queryBy('departures', 'id', record.id)
+        console.log('【Departure】查询现有记录结果:', existing.length > 0 ? '存在' : '不存在')
         if (existing && existing.length > 0) {
+          console.log('【Departure】执行更新操作')
           await dbOps.update('departures', record.id, dbRecord)
         } else {
-          await dbOps.insert('departures', dbRecord)
+          console.log('【Departure】执行插入操作')
+          // 插入后保存云端返回的 _id
+          const inserted = await dbOps.insert('departures', dbRecord)
+          console.log('【Departure】插入结果:', inserted)
+          if (inserted._id) {
+            // 更新本地记录的云端 _id
+            const index = records.value.findIndex(r => r.id === record.id)
+            if (index !== -1) {
+              records.value[index]._id = inserted._id
+            }
+          }
         }
       }
     } catch (e) {
+      console.error('【Departure】保存发车记录失败:', e)
       // 兼容：保存到 localStorage
       uni.setStorageSync('departureRecords', JSON.stringify(records.value))
     }
