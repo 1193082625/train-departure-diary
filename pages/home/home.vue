@@ -13,13 +13,17 @@
     </view>
 
     <view class="quick-actions">
-      <view class="action-btn" @click="goToDeparture">
+      <!-- <view class="action-btn" @click="goToDeparture">
         <text class="icon">🚚</text>
         <text>发车记录</text>
-      </view>
+      </view> -->
       <view class="action-btn" @click="goToTransaction">
         <text class="icon">💰</text>
         <text>单次结账</text>
+      </view>
+      <view class="action-btn" @click="goToStatistics">
+        <text class="icon">🚚</text>
+        <text>结账</text>
       </view>
     </view>
 
@@ -193,6 +197,8 @@ const popupDate = ref('')
 const popupHasRecordQuote = ref(false)
 const popupRecordQuote = ref(0)
 const quoteInput = ref(null)
+
+const goToStatistics = () => uni.navigateTo({ url: '/pages/statistics/statistics' })
 
 // 获取日历的开始和结束日期
 const initCalendarRange = () => {

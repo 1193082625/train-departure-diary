@@ -2,55 +2,73 @@
   <view class="login-container">
     <view class="login-header">
       <text class="title">发车日记</text>
-      <text class="subtitle">登录您的账号</text>
+      <text class="subtitle">{{ showSetPassword ? '设置密码' : '登录您的账号' }}</text>
     </view>
 
     <view class="login-form">
-      <view class="form-item">
-        <text class="label">手机号</text>
-        <input
-          class="input"
-          v-model="phone"
-          type="number"
-          placeholder="请输入手机号"
-          maxlength="11"
-        />
-      </view>
-
-      <view class="form-item" v-if="!showRoleSelect">
-        <text class="label">邀请码</text>
-        <input
-          class="input"
-          v-model="inviteCode"
-          type="number"
-          placeholder="请输入邀请码(选填)"
-          maxlength="6"
-        />
-      </view>
-
-      <!-- 角色选择 -->
-      <view class="form-item" v-if="showRoleSelect">
-        <text class="label">选择角色</text>
-        <view class="role-list">
-          <view
-            v-for="role in roles"
-            :key="role.value"
-            class="role-item"
-            :class="{ active: selectedRole === role.value }"
-            @click="selectedRole = role.value"
-          >
-            <text class="role-name">{{ role.label }}</text>
-            <text class="role-desc">{{ role.desc }}</text>
-          </view>
+      <!-- 设置密码页面 -->
+      <view v-if="showSetPassword">
+        <view class="form-item">
+          <text class="label">请输入密码</text>
+          <input
+            class="input"
+            v-model="password"
+            type="text"
+            password
+            placeholder="请输入6位以上密码"
+            maxlength="20"
+          />
+        </view>
+        <view class="form-item">
+          <text class="label">请再次输入密码</text>
+          <input
+            class="input"
+            v-model="confirmPassword"
+            type="text"
+            password
+            placeholder="请再次输入密码"
+            maxlength="20"
+          />
+        </view>
+        <view class="login-btn" @click="handleSetPassword">
+          <text class="btn-text">确认设置</text>
         </view>
       </view>
 
-      <view class="login-btn" @click="handleLogin">
-        <text class="btn-text">{{ showRoleSelect ? '注册并登录' : '登录' }}</text>
-      </view>
+      <!-- 登录页面 -->
+      <view v-else>
+        <view class="form-item">
+          <text class="label">手机号</text>
+          <input
+            class="input"
+            v-model="phone"
+            type="number"
+            placeholder="请输入手机号"
+            maxlength="11"
+            @input="handlePhoneInput"
+          />
+        </view>
 
-      <view class="tips" v-if="!showRoleSelect">
-        <text class="tip-text">首次登录请输入邀请码，或选择角色注册</text>
+        <view class="form-item">
+          <text class="label">{{ loginType === 'invite' ? '邀请码' : '密码' }}</text>
+          <input
+            class="input"
+            v-model="inviteCode"
+            :type="loginType === 'invite' ? 'number' : 'text'"
+            :password="loginType !== 'invite'"
+            :placeholder="loginType === 'invite' ? '请输入邀请码' : '请输入密码'"
+            maxlength="20"
+          />
+        </view>
+
+        <view class="login-btn" @click="handleLogin">
+          <text class="btn-text">登录</text>
+        </view>
+
+        <view class="tips">
+          <text class="tip-text" v-if="loginType === 'invite'">首次登录请输入邀请码</text>
+          <text class="tip-text" v-else>请输入密码登录</text>
+        </view>
       </view>
     </view>
 
@@ -73,6 +91,28 @@ const inviteCode = ref('')
 const selectedRole = ref('')
 const showRoleSelect = ref(false)
 const message = ref('')
+const loginType = ref('invite') // 'invite' 或 'password'
+const showSetPassword = ref(false)
+const password = ref('')
+const confirmPassword = ref('')
+const phoneChecked = ref(false) // 是否已检查过手机号
+
+// 监听手机号输入变化
+const handlePhoneInput = async () => {
+  // 当手机号达到11位时，检查是否已注册
+  if (phone.value.length === 11) {
+    const exists = await userStore.checkPhoneExists(phone.value)
+    phoneChecked.value = true
+    if (exists) {
+      loginType.value = 'password'
+    } else {
+      loginType.value = 'invite'
+    }
+  } else {
+    phoneChecked.value = false
+    loginType.value = 'invite'
+  }
+}
 
 const roles = [
   { value: ROLES.MIDDLEMAN, label: '中间商', desc: '管理装发车人员和鸡场' },
@@ -111,35 +151,57 @@ const validatePhone = () => {
 const handleLogin = async () => {
   if (!validatePhone()) return
 
-  // 如果显示角色选择
-  if (showRoleSelect.value) {
-    if (!selectedRole.value) {
-      showMessage('请选择角色')
-      return
-    }
-    const result = await userStore.selectRole(phone.value, selectedRole.value)
-    if (result.success) {
-      uni.switchTab({
-        url: '/pages/home/home'
-      })
-    } else {
-      showMessage(result.message || '登录失败')
-    }
+  // 检查是否只输入了手机号
+  if (!inviteCode.value) {
+    showMessage('请输入邀请码或密码')
     return
   }
 
-  // 正常登录
   const result = await userStore.login(phone.value, inviteCode.value)
 
+  if (result.success) {
+    // 需要设置密码
+    if (result.needSetPassword) {
+      showSetPassword.value = true
+    } else {
+      uni.switchTab({
+        url: '/pages/home/home'
+      })
+    }
+  } else {
+    // 登录失败，检查是否需要切换登录方式
+    if (result.message === '请输入密码') {
+      loginType.value = 'password'
+      inviteCode.value = ''
+    } else if (result.message === '请输入邀请码') {
+      loginType.value = 'invite'
+      inviteCode.value = ''
+    }
+    showMessage(result.message || '登录失败')
+  }
+}
+
+const handleSetPassword = async () => {
+  if (!password.value) {
+    showMessage('请输入密码')
+    return
+  }
+  if (password.value.length < 6) {
+    showMessage('密码至少6位')
+    return
+  }
+  if (password.value !== confirmPassword.value) {
+    showMessage('两次密码不一致')
+    return
+  }
+
+  const result = await userStore.setPassword(password.value)
   if (result.success) {
     uni.switchTab({
       url: '/pages/home/home'
     })
-  } else if (result.needSelectRole) {
-    // 需要选择角色
-    showRoleSelect.value = true
   } else {
-    showMessage(result.message || '登录失败')
+    showMessage(result.message || '设置密码失败')
   }
 }
 </script>

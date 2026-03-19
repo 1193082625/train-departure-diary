@@ -112,10 +112,10 @@
 				"selectedIconPath": "static/icon/user-active.png"
 			},
 			{
-				"pagePath": "pages/statistics/statistics",
-				"text": "结账",
-				"iconPath": "static/icon/accounts.png",
-				"selectedIconPath": "static/icon/accounts-active.png"
+				"pagePath": "pages/profile/profile",
+				"text": "我的",
+				"iconPath": "static/icon/user.png",
+				"selectedIconPath": "static/icon/user-active.png"
 			}
 		]
 	}

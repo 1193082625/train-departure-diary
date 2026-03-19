@@ -7,11 +7,18 @@ let db = null
 // 初始化数据库
 export const initDB = () => {
   return new Promise((resolve, reject) => {
-    // 使用 uni-sqlite 插件
-    const sqlite = uni.requireNativePlugin('uni-sqlite')
+    // 使用 uni-sqlite 插件（仅在原生 App 环境中可用）
+    let sqlite = null
+    try {
+      if (typeof uni.requireNativePlugin === 'function') {
+        sqlite = uni.requireNativePlugin('uni-sqlite')
+      }
+    } catch (e) {
+      console.warn('uni-sqlite 插件加载失败:', e)
+    }
 
     if (!sqlite) {
-      console.warn('uni-sqlite 插件未安装，使用 localStorage 兼容模式')
+      console.warn('uni-sqlite 插件未安装或不可用，使用 localStorage 兼容模式')
       resolve(null)
       return
     }
@@ -47,6 +54,7 @@ const createTables = () => {
         id TEXT PRIMARY KEY,
         phone TEXT UNIQUE NOT NULL,
         nickname TEXT,
+        password TEXT,
         role TEXT DEFAULT 'admin',
         inviteCode TEXT,
         invitedBy TEXT,

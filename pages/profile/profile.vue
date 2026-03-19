@@ -20,7 +20,7 @@
           <text class="menu-icon">&#xe7ee;</text>
           <text class="menu-text">邀请码管理</text>
         </view>
-        <text class="arrow">></text>
+        <text class="arrow" decode>&gt;</text>
       </view>
 
       <!-- 我的邀请码 -->
@@ -31,7 +31,7 @@
         </view>
         <view class="code-display">
           <text>{{ currentUser?.inviteCode || '无' }}</text>
-          <text class="arrow">></text>
+          <text class="arrow" decode>&gt;</text>
         </view>
       </view>
 
@@ -41,7 +41,7 @@
           <text class="menu-icon">&#xe7f0;</text>
           <text class="menu-text">编辑资料</text>
         </view>
-        <text class="arrow">></text>
+        <text class="arrow" decode>&gt;</text>
       </view>
     </view>
 

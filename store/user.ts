@@ -43,18 +43,17 @@ const ADMIN_CODE = '888888'
 
 // 测试用户数据
 const TEST_USERS = [
-  { phone: '13800000001', role: ROLES.MIDDLEMAN, inviteCode: '111111', nickname: '中间商A' },
-  { phone: '13800000002', role: ROLES.LOADER, inviteCode: '222222', nickname: '装发车A', parentId: null },
-  { phone: '13800000003', role: ROLES.FARM, inviteCode: '333333', nickname: '鸡场A', parentId: null },
-  { phone: '13800000004', role: ROLES.MIDDLEMAN, inviteCode: '444444', nickname: '中间商B' }
+  { phone: '15369375170', role: ROLES.ADMIN, inviteCode: '888888', nickname: '管理员', password: '123456' },
+  { phone: '13800000001', role: ROLES.MIDDLEMAN, inviteCode: '111111', nickname: '中间商A', password: '123456' },
+  { phone: '13800000002', role: ROLES.LOADER, inviteCode: '222222', nickname: '装发车A', parentId: null, password: '123456' },
+  { phone: '13800000003', role: ROLES.FARM, inviteCode: '333333', nickname: '鸡场A', parentId: null, password: '123456' }
 ]
 
 // 测试邀请码
 const TEST_INVITE_CODES = [
   { code: '111111', type: ROLES.MIDDLEMAN },
   { code: '222222', type: ROLES.LOADER },
-  { code: '333333', type: ROLES.FARM },
-  { code: '444444', type: ROLES.MIDDLEMAN }
+  { code: '333333', type: ROLES.FARM }
 ]
 
 // 初始化测试数据
@@ -68,6 +67,7 @@ const initTestData = async () => {
           id: generateUUID(),
           phone: testUser.phone,
           nickname: testUser.nickname,
+          password: testUser.password || null,
           role: testUser.role,
           inviteCode: testUser.inviteCode,
           invitedBy: null,
@@ -84,7 +84,7 @@ const initTestData = async () => {
       if (!existingCodes || existingCodes.length === 0) {
         // 查找创建者
         const creatorPhone = testCode.type === ROLES.MIDDLEMAN ?
-          (testCode.code === '111111' ? '13800000001' : '13800000004') : null
+          '13800000001' : null
 
         let creatorId = null
         if (creatorPhone) {
@@ -175,12 +175,14 @@ export const useUserStore = defineStore('user', () => {
   // 登录
   const login = async (phone, code) => {
     try {
+      // 检查手机号是否已注册
+      const existingUsers = await userDbOps.getUserByPhone(phone)
+
       // 检查是否为预设管理员
       if (phone === ADMIN_PHONE && code === ADMIN_CODE) {
-        const adminUsers = await userDbOps.getUserByPhone(phone)
-        if (adminUsers && adminUsers.length > 0) {
+        if (existingUsers && existingUsers.length > 0) {
           // 已有管理员账号，直接登录
-          currentUser.value = adminUsers[0]
+          currentUser.value = existingUsers[0]
           isLoggedIn.value = true
           uni.setStorageSync('currentUser', JSON.stringify(currentUser.value))
           return { success: true, user: currentUser.value }
@@ -204,92 +206,111 @@ export const useUserStore = defineStore('user', () => {
         }
       }
 
-      // 检查邀请码
-      if (code) {
-        // 验证邀请码
-        const invCodes = await inviteDbOps.getByCode(code)
-        if (invCodes && invCodes.length > 0) {
-          const inv = invCodes[0]
-          // 邀请码已被使用
-          if (inv.usedBy) {
-            return { success: false, message: '邀请码已被使用' }
+      // 如果用户已存在且设置了密码，必须使用密码登录
+      if (existingUsers && existingUsers.length > 0) {
+        const user = existingUsers[0]
+        if (user.password) {
+          // 需要密码登录
+          if (!code) {
+            return { success: false, message: '请输入密码' }
           }
-
-          // 检查手机号是否已注册
-          const existingUsers = await userDbOps.getUserByPhone(phone)
-          if (existingUsers && existingUsers.length > 0) {
-            // 手机号已注册，检查是否是第一次用这个邀请码
-            const user = existingUsers[0]
-            if (user.invitedBy === code) {
-              // 正常登录
-              currentUser.value = user
-              isLoggedIn.value = true
-              uni.setStorageSync('currentUser', JSON.stringify(currentUser.value))
-              return { success: true, user: user }
-            } else {
-              return { success: false, message: '该手机号已注册' }
-            }
+          // 验证密码
+          if (user.password !== code) {
+            return { success: false, message: '密码错误' }
           }
-
-          // 新用户注册
-          const newUser = {
-            id: generateUUID(),
-            phone: phone,
-            nickname: '',
-            role: inv.type, // 根据邀请码类型决定角色
-            inviteCode: generateInviteCode(),
-            invitedBy: code,
-            parentId: inv.creatorId, // 上级中间商ID
-            createdAt: new Date().toISOString()
-          }
-          await userDbOps.createUser(newUser)
-
-          // 标记邀请码已使用
-          await inviteDbOps.useCode(code, newUser.id)
-
-          // 如果是中间商邀请的装发车或鸡场，添加到中间商的下级用户
-          if (inv.creatorId && (inv.type === ROLES.LOADER || inv.type === ROLES.FARM)) {
-            await merchantUserDbOps.add({
-              id: generateUUID(),
-              middlemanId: inv.creatorId,
-              userId: newUser.id,
-              userPhone: phone,
-              userRole: inv.type,
-              createdAt: new Date().toISOString()
-            })
-          }
-
-          currentUser.value = newUser
-          isLoggedIn.value = true
-          uni.setStorageSync('currentUser', JSON.stringify(currentUser.value))
-          return { success: true, user: newUser }
-        } else {
-          return { success: false, message: '邀请码无效' }
-        }
-      }
-
-      // 无邀请码，检查手机号是否已注册
-      const users = await userDbOps.getUserByPhone(phone)
-      if (users && users.length > 0) {
-        // 已注册用户，无邀请码登录需要选择角色（首次登录）
-        const user = users[0]
-        if (user.role) {
-          // 已有角色，直接登录
+          // 密码正确，登录成功
           currentUser.value = user
           isLoggedIn.value = true
           uni.setStorageSync('currentUser', JSON.stringify(currentUser.value))
-          return { success: true, user }
+          return { success: true, user: user }
         } else {
-          // 需要选择角色
-          return { success: false, message: '需要选择角色', needSelectRole: true }
+          // 用户存在但未设置密码，必须使用邀请码
+          if (!code) {
+            return { success: false, message: '请输入邀请码' }
+          }
         }
       }
 
-      // 新用户且无邀请码，需要选择角色
-      return { success: false, message: '需要选择角色', needSelectRole: true }
+      // 以下是邀请码登录逻辑（首次登录或未设置密码的用户）
+
+      // 无邀请码且无密码，直接拒绝
+      if (!code) {
+        return { success: false, message: '请输入邀请码' }
+      }
+
+      // 验证邀请码
+      const invCodes = await inviteDbOps.getByCode(code)
+      if (!invCodes || invCodes.length === 0) {
+        return { success: false, message: '邀请码无效' }
+      }
+
+      const inv = invCodes[0]
+      // 邀请码已被使用
+      if (inv.usedBy) {
+        return { success: false, message: '邀请码已被使用' }
+      }
+
+      // 如果用户已存在但用不同的邀请码，拒绝
+      if (existingUsers && existingUsers.length > 0) {
+        const user = existingUsers[0]
+        if (user.invitedBy !== code) {
+          return { success: false, message: '该手机号已注册' }
+        }
+        // 用户已存在且邀请码正确，应该有密码了（前面已处理），这里不应该到达
+        return { success: false, message: '账号异常，请联系管理员' }
+      }
+
+      // 新用户注册
+      const newUser = {
+        id: generateUUID(),
+        phone: phone,
+        nickname: '',
+        password: null, // 未设置密码，需要设置密码
+        role: inv.type, // 根据邀请码类型决定角色
+        inviteCode: generateInviteCode(),
+        invitedBy: code,
+        parentId: inv.creatorId, // 上级中间商ID
+        createdAt: new Date().toISOString()
+      }
+      await userDbOps.createUser(newUser)
+
+      // 标记邀请码已使用
+      await inviteDbOps.useCode(code, newUser.id)
+
+      // 如果是中间商邀请的装发车或鸡场，添加到中间商的下级用户
+      if (inv.creatorId && (inv.type === ROLES.LOADER || inv.type === ROLES.FARM)) {
+        await merchantUserDbOps.add({
+          id: generateUUID(),
+          middlemanId: inv.creatorId,
+          userId: newUser.id,
+          userPhone: phone,
+          userRole: inv.type,
+          createdAt: new Date().toISOString()
+        })
+      }
+
+      // 首次登录需要设置密码
+      currentUser.value = newUser
+      isLoggedIn.value = true
+      uni.setStorageSync('currentUser', JSON.stringify(currentUser.value))
+      return { success: true, needSetPassword: true, user: newUser }
     } catch (e) {
       console.error('登录失败:', e)
       return { success: false, message: '登录失败' }
+    }
+  }
+
+  // 设置密码
+  const setPassword = async (password) => {
+    if (!currentUser.value) return { success: false, message: '未登录' }
+    try {
+      await userDbOps.updateUser(currentUser.value.id, { password: password })
+      currentUser.value = { ...currentUser.value, password: password }
+      uni.setStorageSync('currentUser', JSON.stringify(currentUser.value))
+      return { success: true }
+    } catch (e) {
+      console.error('设置密码失败:', e)
+      return { success: false, message: '设置密码失败' }
     }
   }
 
@@ -389,6 +410,17 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
+  // 检查手机号是否已注册
+  const checkPhoneExists = async (phone) => {
+    try {
+      const existingUsers = await userDbOps.getUserByPhone(phone)
+      return existingUsers && existingUsers.length > 0
+    } catch (e) {
+      console.error('检查手机号失败:', e)
+      return false
+    }
+  }
+
   // 获取当前用户的parentId（中间商ID）
   const getParentId = () => {
     return currentUser.value?.parentId || null
@@ -465,6 +497,7 @@ export const useUserStore = defineStore('user', () => {
     selectRole,
     logout,
     updateUser,
+    setPassword,
     generateCode,
     getMyCodes,
     getSubUsers,
@@ -472,6 +505,7 @@ export const useUserStore = defineStore('user', () => {
     getMiddlemanId,
     getMyMerchantIds,
     getMyWorkerIds,
+    checkPhoneExists,
     ROLES,
     ROLE_NAMES
   }
