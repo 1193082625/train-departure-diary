@@ -44,6 +44,14 @@
 		"createdAt": {
 			"description": "创建时间",
 			"bsonType": "string"
+		},
+		"workerId": {
+			"description": "关联的员工ID",
+			"bsonType": "string"
+		},
+		"workerType": {
+			"description": "员工类型(departure/loading/both)",
+			"bsonType": "string"
 		}
 	}
 }

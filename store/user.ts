@@ -271,6 +271,11 @@ export const useUserStore = defineStore('user', () => {
         return { success: false, message: '邀请码已被使用' }
       }
 
+      // 校验手机号一致性：如果邀请码关联了员工手机号，必须使用同一个手机号
+      if (inv.workerPhone && inv.workerPhone !== phone) {
+        return { success: false, message: '请使用生成邀请码时的手机号登录' }
+      }
+
       // 如果用户已存在但用不同的邀请码，拒绝
       if (existingUsers && existingUsers.length > 0) {
         const user = existingUsers[0]
@@ -285,13 +290,16 @@ export const useUserStore = defineStore('user', () => {
       const newUser = {
         id: generateUUID(),
         phone: phone,
-        nickname: '',
+        nickname: inv.workerName || '', // 继承员工姓名
         password: null, // 未设置密码，需要设置密码
         role: inv.type, // 根据邀请码类型决定角色
         inviteCode: generateInviteCode(),
         invitedBy: code,
         parentId: inv.creatorId, // 上级中间商ID
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        // 继承员工信息
+        workerId: inv.workerId || null,
+        workerType: inv.workerType || null
       }
       await userDbOps.createUser(newUser)
 
@@ -413,11 +421,17 @@ export const useUserStore = defineStore('user', () => {
   }
 
   // 生成邀请码
-  const generateCode = async (type) => {
+  const generateCode = async (type, workerInfo) => {
     if (!currentUser.value) return null
 
     // 检查权限
     if (currentUser.value.role !== ROLES.ADMIN && currentUser.value.role !== ROLES.MIDDLEMAN) {
+      return null
+    }
+
+    // 如果是装发车角色，必须选择员工
+    if (type === ROLES.LOADER && !workerInfo) {
+      console.error('生成装发车邀请码需要选择员工')
       return null
     }
 
@@ -430,7 +444,12 @@ export const useUserStore = defineStore('user', () => {
         creatorId: currentUser.value.id,
         usedBy: null,
         usedAt: null,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        // 员工信息（装发车角色时）
+        workerId: workerInfo ? workerInfo.id : null,
+        workerPhone: workerInfo ? workerInfo.phone : null,
+        workerName: workerInfo ? workerInfo.name : null,
+        workerType: workerInfo ? workerInfo.type : null
       }
       await inviteDbOps.create(codeData)
       return code

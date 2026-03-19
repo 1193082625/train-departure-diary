@@ -33,6 +33,7 @@
           <view class="code-info">
             <text class="code-value">{{ code.code }}</text>
             <text class="code-type">{{ getRoleName(code.type) }}</text>
+            <text v-if="code.workerName" class="code-worker">{{ code.workerName }}({{ code.workerPhone }})</text>
           </view>
           <view class="code-status" :class="{ used: code.usedBy }">
             <text>{{ code.usedBy ? '已使用' : '未使用' }}</text>
@@ -92,7 +93,14 @@ const loadCodes = async () => {
 }
 
 const handleGenerate = async () => {
-  const code = await userStore.generateCode(selectedRole.value)
+  // 如果是装发车角色，必须先选择员工
+  if (selectedRole.value === ROLES.LOADER && !selectedDepartureWorker.value) {
+    showMessage('请先选择员工')
+    return
+  }
+
+  const workerInfo = selectedRole.value === ROLES.LOADER ? selectedDepartureWorker.value : null
+  const code = await userStore.generateCode(selectedRole.value, workerInfo)
   if (code) {
     uni.showModal({
       title: '邀请码',
@@ -235,6 +243,11 @@ onMounted(() => {
       background: #007aff;
       padding: 4rpx 12rpx;
       border-radius: 8rpx;
+    }
+
+    .code-worker {
+      font-size: 22rpx;
+      color: #666;
     }
   }
 
