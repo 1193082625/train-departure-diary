@@ -41,6 +41,9 @@ export const ROLE_NAMES = {
 const ADMIN_PHONE = '15369375170'
 const ADMIN_CODE = '888888'
 
+// 会话有效期：7 天（毫秒）
+const SESSION_EXPIRY = 7 * 24 * 60 * 60 * 1000
+
 // 测试用户数据
 const TEST_USERS = [
   { phone: '15369375170', role: ROLES.ADMIN, inviteCode: '888888', nickname: '管理员', password: '123456' },
@@ -167,6 +170,16 @@ export const useUserStore = defineStore('user', () => {
 
     const userData = uni.getStorageSync('currentUser')
     if (userData) {
+      // 检查会话是否过期
+      if (checkSessionExpiry()) {
+        // 会话过期，清除登录状态
+        logout()
+        return
+      }
+      // 兼容旧用户：没有 loginTime 但有 currentUser，设置登录时间
+      if (!uni.getStorageSync('loginTime')) {
+        uni.setStorageSync('loginTime', Date.now())
+      }
       currentUser.value = JSON.parse(userData)
       isLoggedIn.value = true
     }
@@ -185,6 +198,7 @@ export const useUserStore = defineStore('user', () => {
           currentUser.value = existingUsers[0]
           isLoggedIn.value = true
           uni.setStorageSync('currentUser', JSON.stringify(currentUser.value))
+          uni.setStorageSync('loginTime', Date.now())
           return { success: true, user: currentUser.value }
         } else {
           // 创建管理员账号
@@ -202,6 +216,7 @@ export const useUserStore = defineStore('user', () => {
           currentUser.value = newUser
           isLoggedIn.value = true
           uni.setStorageSync('currentUser', JSON.stringify(currentUser.value))
+          uni.setStorageSync('loginTime', Date.now())
           return { success: true, user: newUser }
         }
       }
@@ -222,6 +237,7 @@ export const useUserStore = defineStore('user', () => {
           currentUser.value = user
           isLoggedIn.value = true
           uni.setStorageSync('currentUser', JSON.stringify(currentUser.value))
+          uni.setStorageSync('loginTime', Date.now())
           return { success: true, user: user }
         } else {
           // 用户存在但未设置密码，必须使用邀请码
@@ -308,6 +324,7 @@ export const useUserStore = defineStore('user', () => {
       currentUser.value = { ...currentUser.value, password: password }
       isLoggedIn.value = true
       uni.setStorageSync('currentUser', JSON.stringify(currentUser.value))
+      uni.setStorageSync('loginTime', Date.now())
       return { success: true }
     } catch (e) {
       console.error('设置密码失败:', e)
@@ -350,6 +367,7 @@ export const useUserStore = defineStore('user', () => {
       currentUser.value = newUser
       isLoggedIn.value = true
       uni.setStorageSync('currentUser', JSON.stringify(currentUser.value))
+      uni.setStorageSync('loginTime', Date.now())
       return { success: true, user: newUser }
     } catch (e) {
       console.error('创建用户失败:', e)
@@ -374,6 +392,7 @@ export const useUserStore = defineStore('user', () => {
     currentUser.value = null
     isLoggedIn.value = false
     uni.removeStorageSync('currentUser')
+    uni.removeStorageSync('loginTime')
   }
 
   // 生成邀请码
@@ -427,6 +446,17 @@ export const useUserStore = defineStore('user', () => {
       console.error('获取下级用户失败:', e)
       return []
     }
+  }
+
+  // 检查会话是否过期
+  const checkSessionExpiry = () => {
+    const loginTime = uni.getStorageSync('loginTime')
+    // 无登录时间记录，说明是旧用户迁移，视为有效会话
+    if (!loginTime) return false
+
+    const now = Date.now()
+    const diff = now - loginTime
+    return diff > SESSION_EXPIRY
   }
 
   // 检查手机号是否已注册

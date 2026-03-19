@@ -17,28 +17,17 @@
       <!-- 邀请码管理 - 中间商和管理员可见 -->
       <view class="menu-item" @click="goToInvitation" v-if="canGenerateCode">
         <view class="menu-left">
-          <text class="menu-icon">&#xe7ee;</text>
+          <!-- 使用SVG图标 -->
+          <image class="menu-icon-svg" src="/static/svg/invite.svg" mode="aspectFit"></image>
           <text class="menu-text">邀请码管理</text>
         </view>
-        <text class="arrow" decode>&gt;</text>
-      </view>
-
-      <!-- 我的邀请码 -->
-      <view class="menu-item" @click="showMyCode">
-        <view class="menu-left">
-          <text class="menu-icon">&#xe7ef;</text>
-          <text class="menu-text">我的邀请码</text>
-        </view>
-        <view class="code-display">
-          <text>{{ currentUser?.inviteCode || '无' }}</text>
-          <text class="arrow" decode>&gt;</text>
-        </view>
+        <image class="menu-icon-svg" src="/static/svg/invite.svg" mode="aspectFit"></image>
       </view>
 
       <!-- 修改密码 -->
       <view class="menu-item" @click="changePassword">
         <view class="menu-left">
-          <text class="menu-icon">&#xe7e1;</text>
+          <image class="menu-icon-svg" src="/static/svg/password.svg" mode="aspectFit"></image>
           <text class="menu-text">修改密码</text>
         </view>
         <text class="arrow" decode>&gt;</text>
@@ -47,7 +36,7 @@
       <!-- 编辑资料 -->
       <view class="menu-item" @click="editProfile">
         <view class="menu-left">
-          <text class="menu-icon">&#xe7f0;</text>
+          <image class="menu-icon-svg" src="/static/svg/edit.svg" mode="aspectFit"></image>
           <text class="menu-text">编辑资料</text>
         </view>
         <text class="arrow" decode>&gt;</text>
@@ -140,20 +129,16 @@ const changePassword = () => {
     placeholderText: '请输入原密码',
     editable: true,
     success: async (res) => {
-      console.log('修改密码结果:', res);
-      
-      if (res.confirm && res.value) {
-        const oldPassword = res.value
+      if (res.confirm && res.content) {
+        const oldPassword = res.content
         // 弹出输入新密码
         uni.showModal({
           title: '输入新密码',
           placeholderText: '请输入新密码（6位以上）',
           editable: true,
           success: async (res2) => {
-            console.log(222);
-            
-            if (res2.confirm && res2.value) {
-              const newPassword = res2.value
+            if (res2.confirm && res2.content) {
+              const newPassword = res2.content
               if (newPassword.length < 6) {
                 showMessage('密码至少6位')
                 return
@@ -262,6 +247,11 @@ const handleLogout = () => {
 
   &:last-child {
     border-bottom: none;
+  }
+
+  .menu-icon-svg {
+    width: 40rpx;
+    height: 40rpx;
   }
 
   .menu-left {

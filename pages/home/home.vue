@@ -6,24 +6,20 @@
         <text class="icon">⚙️</text>
         <text>参数设置</text>
       </view>
-      <view class="action-btn" @click="goToUserStats">
-        <text class="stat-value">¥{{ todayStats.income }}</text>
-        <text>今日收入</text>
+      <view class="action-btn" @click="goToDeparture">
+        <text class="icon">🚚</text>
+        <text>发车记录</text>
       </view>
     </view>
 
     <view class="quick-actions">
-      <!-- <view class="action-btn" @click="goToDeparture">
-        <text class="icon">🚚</text>
-        <text>发车记录</text>
-      </view> -->
-      <view class="action-btn" @click="goToTransaction">
-        <text class="icon">💰</text>
-        <text>单次结账</text>
+      <view class="action-btn" @click="goToMerchant">
+        <text class="icon">🐔</text>
+        <text>管理鸡场</text>
       </view>
-      <view class="action-btn" @click="goToStatistics">
-        <text class="icon">🚚</text>
-        <text>结账</text>
+      <view class="action-btn" @click="goToWorker">
+        <text class="icon">👤</text>
+        <text>管理人员</text>
       </view>
     </view>
 
@@ -198,7 +194,9 @@ const popupHasRecordQuote = ref(false)
 const popupRecordQuote = ref(0)
 const quoteInput = ref(null)
 
-const goToStatistics = () => uni.navigateTo({ url: '/pages/statistics/statistics' })
+const goToDeparture = () => uni.navigateTo({ url: '/pages/departure/departure' })
+const goToMerchant = () => uni.navigateTo({ url: '/pages/merchant/merchant' })
+const goToWorker = () => uni.navigateTo({ url: '/pages/worker/worker' })
 
 // 获取日历的开始和结束日期
 const initCalendarRange = () => {
@@ -581,9 +579,6 @@ const todayStats = computed(() => {
   }
 })
 
-const goToDeparture = () => uni.switchTab({ url: '/pages/departure/departure' })
-const goToTransaction = () => uni.navigateTo({ url: '/pages/transaction/transaction' })
-const goToUserStats = () => uni.navigateTo({ url: '/pages/user/user' })
 
 // 初始化
 onMounted(() => {

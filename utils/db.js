@@ -53,7 +53,9 @@ export const userDbOps = {
 
       db.collection('users').where({ phone: dbCmd.eq(phone) }).get()
         .then(res => {
-          resolve(res.data || [])
+          console.log('查询用户结果:', res);
+          
+          resolve(res.result ? res.result.data : res.data || [])
         })
         .catch(err => {
           console.error('查询用户失败:', err)
@@ -75,7 +77,7 @@ export const userDbOps = {
 
       db.collection('users').doc(id).get()
         .then(res => {
-          resolve(res.data || [])
+          resolve(res.result ? res.result.data : res.data || [])
         })
         .catch(err => {
           console.error('查询用户失败:', err)
@@ -97,7 +99,7 @@ export const userDbOps = {
 
       db.collection('users').where({ inviteCode: dbCmd.eq(inviteCode) }).get()
         .then(res => {
-          resolve(res.data || [])
+          resolve(res.result ? res.result.data : res.data || [])
         })
         .catch(err => {
           console.error('查询用户失败:', err)
@@ -179,7 +181,7 @@ export const inviteDbOps = {
         usedBy: dbCmd.eq(null)
       }).get()
         .then(res => {
-          resolve(res.data || [])
+          resolve(res.result ? res.result.data : res.data || [])
         })
         .catch(err => {
           console.error('查询邀请码失败:', err)
@@ -334,7 +336,7 @@ export const dbOps = {
 
       db.collection(table).get()
         .then(res => {
-          resolve(res.data || [])
+          resolve(res.result ? res.result.data : res.data || [])
         })
         .catch(err => {
           console.error(`查询 ${table} 失败:`, err)
@@ -431,7 +433,7 @@ export const dbOps = {
 
       db.collection(table).where(whereObj).get()
         .then(res => {
-          resolve(res.data || [])
+          resolve(res.result ? res.result.data : res.data || [])
         })
         .catch(err => {
           console.error(`查询 ${table} 失败:`, err)
@@ -452,8 +454,9 @@ export const dbOps = {
       // 获取所有记录并删除
       db.collection(table).get()
         .then(res => {
-          if (res.data && res.data.length > 0) {
-            const promises = res.data.map(item => {
+          const data = res.result ? res.result.data : res.data
+          if (data && data.length > 0) {
+            const promises = data.map(item => {
               return db.collection(table).doc(item._id || item.id).remove()
             })
             return Promise.all(promises)

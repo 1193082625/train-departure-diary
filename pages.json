@@ -94,22 +94,16 @@
 				"selectedIconPath": "static/icon/home-active.png"
 			},
 			{
-				"pagePath": "pages/departure/departure",
-				"text": "发车",
-				"iconPath": "static/icon/car.png",
-				"selectedIconPath": "static/icon/car-active.png"
+				"pagePath": "pages/user/user",
+				"text": "盈利",
+				"iconPath": "static/icon/yingli.png",
+				"selectedIconPath": "static/icon/yingli-active.png"
 			},
 			{
-				"pagePath": "pages/merchant/merchant",
-				"text": "鸡场",
-				"iconPath": "static/icon/egg.png",
-				"selectedIconPath": "static/icon/egg-active.png"
-			},
-			{
-				"pagePath": "pages/worker/worker",
-				"text": "人员",
-				"iconPath": "static/icon/user.png",
-				"selectedIconPath": "static/icon/user-active.png"
+				"pagePath": "pages/statistics/statistics",
+				"text": "结账",
+				"iconPath": "static/icon/jiezhang.png",
+				"selectedIconPath": "static/icon/jiezhang-active.png"
 			},
 			{
 				"pagePath": "pages/profile/profile",

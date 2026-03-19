@@ -49,7 +49,7 @@
           />
         </view>
 
-        <view class="form-item">
+        <view class="form-item" v-if="loginType !== ''">
           <text class="label">{{ loginType === 'invite' ? '邀请码' : '密码' }}</text>
           <input
             class="input"
@@ -83,24 +83,24 @@
 import { ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { useUserStore, ROLES } from '@/store/user'
+import { validatePhone } from '@/utils/validate'
 
 const userStore = useUserStore()
 
 const phone = ref('')
 const inviteCode = ref('')
-const selectedRole = ref('')
-const showRoleSelect = ref(false)
 const message = ref('')
-const loginType = ref('invite') // 'invite' 或 'password'
+const loginType = ref('') // 'invite' 或 'password'
 const showSetPassword = ref(false)
 const password = ref('')
 const confirmPassword = ref('')
+// 是否为完整正确的手机号
 const phoneChecked = ref(false) // 是否已检查过手机号
 
 // 监听手机号输入变化
 const handlePhoneInput = async () => {
   // 当手机号达到11位时，检查是否已注册
-  if (phone.value.length === 11) {
+  if (validatePhone(phone.value)) {
     const exists = await userStore.checkPhoneExists(phone.value)
     phoneChecked.value = true
     if (exists) {
@@ -110,7 +110,7 @@ const handlePhoneInput = async () => {
     }
   } else {
     phoneChecked.value = false
-    loginType.value = 'invite'
+    loginType.value = ''
   }
 }
 
@@ -122,7 +122,9 @@ const roles = [
 
 // 检查是否已登录
 onShow(() => {
-  if (userStore.isLoggedIn) {
+  const userData = uni.getStorageSync('currentUser')
+  // serStore.isLoggedIn
+  if (userData) {
     uni.switchTab({
       url: '/pages/home/home'
     })
@@ -136,12 +138,12 @@ const showMessage = (msg) => {
   }, 2000)
 }
 
-const validatePhone = () => {
+const validatePhoneInput = () => {
   if (!phone.value) {
     showMessage('请输入手机号')
     return false
   }
-  if (phone.value.length !== 11) {
+  if (!validatePhone(phone.value)) {
     showMessage('请输入正确的手机号')
     return false
   }
@@ -149,7 +151,7 @@ const validatePhone = () => {
 }
 
 const handleLogin = async () => {
-  if (!validatePhone()) return
+  if (!validatePhoneInput()) return
 
   // 检查是否只输入了手机号
   if (!inviteCode.value) {

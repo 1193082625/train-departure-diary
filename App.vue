@@ -2,6 +2,20 @@
 	import { initDB } from '@/utils/db'
 	import { useUserStore } from '@/store/user'
 
+	// 会话有效期：7 天（毫秒）
+	const SESSION_EXPIRY = 7 * 24 * 60 * 60 * 1000
+
+	// 检查会话是否过期
+	const isSessionExpired = () => {
+		const loginTime = uni.getStorageSync('loginTime')
+		// 无登录时间记录，说明是旧用户迁移，视为有效会话
+		if (!loginTime) return false
+
+		const now = Date.now()
+		const diff = now - loginTime
+		return diff > SESSION_EXPIRY
+	}
+
 	export default {
 		onLaunch: function() {
 			console.warn('当前组件仅支持 uni_modules 目录结构 ，请升级 HBuilderX 到 3.1.0 版本以上！')
@@ -26,6 +40,20 @@
 				uni.reLaunch({
 					url: '/pages/login/login'
 				})
+				return
+			}
+
+			// 检查会话是否过期
+			if (isSessionExpired()) {
+				// 会话过期，清除登录状态并跳转到登录页
+				uni.removeStorageSync('currentUser')
+				uni.removeStorageSync('loginTime')
+				uni.reLaunch({
+					url: '/pages/login/login'
+				})
+			} else if (!uni.getStorageSync('loginTime') && userData) {
+				// 兼容旧用户：没有 loginTime 但有 currentUser，设置登录时间
+				uni.setStorageSync('loginTime', Date.now())
 			}
 		},
 		onHide: function() {
