@@ -50,6 +50,10 @@
 
         <!-- uCharts 渐变色曲线区域图 -->
         <view class="chart-container">
+          <!-- 全屏按钮 -->
+          <view class="chart-fullscreen-btn" @click="openChartFullscreen">
+            <text>全屏</text>
+          </view>
           <view v-if="chartData && chartData.series && chartData.series.length > 0" class="chart-wrapper">
             <!-- 图表 -->
             <qiun-data-charts
@@ -171,6 +175,24 @@
           </uni-collapse>
         </view>
         <button @click="saveSettings" class="save-btn">保存设置</button>
+      </view>
+    </uni-popup>
+
+    <!-- 图表全屏弹窗 -->
+    <uni-popup ref="chartFullscreenPopup" type="center" :mask-click="true">
+      <view class="fullscreen-chart-popup">
+        <view class="fullscreen-chart-header">
+          <text class="fullscreen-chart-title">{{ chartRange === 'week' ? '周' : chartRange === 'month' ? '月' : '年' }}报价统计</text>
+          <text class="fullscreen-chart-close" @click="chartFullscreenPopup.close()">×</text>
+        </view>
+        <qiun-data-charts
+          type="area"
+          canvasId="quoteChartFullscreen"
+          :chartData="chartData"
+          :opts="chartOpts"
+          :width="fullscreenChartWidth"
+          :height="fullscreenChartHeight"
+        />
       </view>
     </uni-popup>
   </view>
@@ -340,6 +362,19 @@ const chartRange = ref('month')
 const chartPoints = ref([])
 const chartWidth = ref(320)
 const chartHeight = ref(220)
+
+// 全屏图表相关
+const chartFullscreenPopup = ref(null)
+const fullscreenChartWidth = ref(350)
+const fullscreenChartHeight = ref(350)
+
+const openChartFullscreen = () => {
+  // 获取屏幕尺寸，设置合适的图表宽高
+  const sysInfo = uni.getSystemInfoSync()
+  fullscreenChartWidth.value = sysInfo.windowWidth - 80
+  fullscreenChartHeight.value = sysInfo.windowHeight - 150
+  chartFullscreenPopup.value.open()
+}
 
 // 图表配置（适配 uCharts 格式）
 const chartOpts = ref({
@@ -717,7 +752,8 @@ const saveSettings = () => {
 .chart-range { display: flex; gap: 10px; margin-bottom: 15px; }
 .chart-range .range-btn { padding: 8px 16px; background: #fff; border-radius: 4px; border: 1px solid #ddd; font-size: 14px; }
 .chart-range .range-btn.active { background: #007aff; color: #fff; border-color: #007aff; }
-.chart-container { background: #fff; border-radius: 8px; padding-top: 15px; padding-bottom: 15px; }
+.chart-container { background: #fff; border-radius: 8px; padding-top: 15px; padding-bottom: 15px; position: relative; }
+.chart-fullscreen-btn { position: absolute; top: 10px; right: 10px; z-index: 10; padding: 5px 10px; background: rgba(0, 0, 0, 0.5); color: white; border-radius: 4px; font-size: 12px; }
 .quote-chart { width: 100%; height: 250px; }
 .no-data { text-align: center; padding: 30px; color: #999; background: #fff; border-radius: 8px; }
 
@@ -743,4 +779,10 @@ const saveSettings = () => {
 .data-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f0f0f0; font-size: 14px; }
 .data-item:last-child { border-bottom: none; }
 .data-value { color: #1890ff; font-weight: bold; }
+
+/* 全屏图表弹窗样式 */
+.fullscreen-chart-popup { width: 90vw; max-width: 400px; background: white; border-radius: 12px; padding: 20px; }
+.fullscreen-chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+.fullscreen-chart-title { font-size: 16px; font-weight: bold; }
+.fullscreen-chart-close { font-size: 24px; color: #999; }
 </style>
