@@ -73,7 +73,6 @@ const selectedDepartureWorker = ref(null)
 const departureWorkerOptions = computed(() => workerStore.departureWorkers.filter(worker => worker.phone !== userStore.currentUser.phone))
 const onDepartureWorkerChange = (worker) => {
   selectedDepartureWorker.value = worker
-  console.log('选择的发车人员', selectedDepartureWorker.value);
 }
 
 

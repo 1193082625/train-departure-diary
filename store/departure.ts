@@ -7,10 +7,9 @@ import { ROLES } from './user'
 
 export const useDepartureStore = defineStore('departure', () => {
   const records = ref([])
-
+  const userStore = useUserStore()
   // 根据用户角色过滤发车记录
   const filteredRecords = computed(() => {
-    const userStore = useUserStore()
     const user = userStore.currentUser
 
     if (!user) return []
@@ -30,7 +29,6 @@ export const useDepartureStore = defineStore('departure', () => {
       const loaderUserIds = allUsers
         .filter(u => u.role === ROLES.LOADER && u.parentId === user.id)
         .map(u => u.id)
-
       // 返回自己或自己员工添加的记录
       return records.value.filter(r =>
         r.userId === user.id || loaderUserIds.includes(r.userId)
@@ -48,6 +46,8 @@ export const useDepartureStore = defineStore('departure', () => {
 
   const loadRecords = async () => {
     try {
+      // 先刷新用户列表，确保中间商能看到最新的下级用户
+      await userStore.loadUsers()
       const results = await dbOps.queryAll('departures')
       if (results && results.length > 0) {
         // 解析 JSON 字符串字段
@@ -78,17 +78,12 @@ export const useDepartureStore = defineStore('departure', () => {
           truckRows: JSON.stringify(record.truckRows || []),
           merchantAmount: JSON.stringify(record.merchantAmount || [])
         }
-        console.log('【Departure】保存记录，id:', record.id, 'note:', record.note)
         const existing = await dbOps.queryBy('departures', 'id', record.id)
-        console.log('【Departure】查询现有记录结果:', existing.length > 0 ? '存在' : '不存在')
         if (existing && existing.length > 0) {
-          console.log('【Departure】执行更新操作')
           await dbOps.update('departures', record.id, dbRecord)
         } else {
-          console.log('【Departure】执行插入操作')
           // 插入后保存云端返回的 _id
           const inserted = await dbOps.insert('departures', dbRecord)
-          console.log('【Departure】插入结果:', inserted)
           if (inserted._id) {
             // 更新本地记录的云端 _id
             const index = records.value.findIndex(r => r.id === record.id)
@@ -145,7 +140,6 @@ export const useDepartureStore = defineStore('departure', () => {
 
   const getTodayRecords = () => {
     const today = new Date().toISOString().split('T')[0]
-    console.log('今日记录:', filteredRecords.value);
     return filteredRecords.value.filter(r => r.date === today)
   }
 

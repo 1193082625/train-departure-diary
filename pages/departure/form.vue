@@ -424,7 +424,6 @@ const calculated = computed(() => {
   // 留存合计 = （留货大框 * 大框斤数 + 留货小框 * 小框斤数 + 鸡场散斤数）* 留存单价
   const reservedTotalWeight = reservedBigBoxesTotal * Number(settingsStore.receiptBigBoxWeight) + reservedSmallBoxesTotal * smallWeight + merchantUnitOfWeightTotal
   const reservedTotal = Number(((reservedTotalWeight || 0) * (reservedPrice || 0)).toFixed(2))
-  console.log('留存合计', reservedTotal, reservedTotalWeight, reservedPrice);
   
 
   // 本趟盈利 = 交货价 - 收货价 - 油费 - 进门费 - 过路费 - 装车费 - 卸车费 - 发车费
@@ -564,10 +563,8 @@ const saveRecord = () => {
   }
 
   if (form.id) {
-    console.log('更新记录', record);
     departureStore.updateRecord(form.id, record)
   } else {
-    console.log('新增记录', record);
     departureStore.addRecord(record)
   }
 
@@ -592,11 +589,8 @@ onMounted(() => {
 
   if (options.id) {
     const record = departureStore.records.find(r => r.id === options.id)
-    console.log('数据返显', record);
-
     if (record) {
       Object.assign(form, record)
-      console.log('打印form数据', form);
     }
   } else {
     // 非编辑模式，自动带出当日报价
