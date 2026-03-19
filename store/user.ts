@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { userDbOps, inviteDbOps, merchantUserDbOps, merchantFarmDbOps, merchantWorkerDbOps, dbOps } from '@/utils/db'
+import { userDbOps, inviteDbOps, merchantUserDbOps, merchantFarmDbOps, merchantWorkerDbOps, dbOps, initDB } from '@/utils/db'
 
 // 生成UUID
 const generateUUID = () => {
@@ -177,6 +177,9 @@ export const useUserStore = defineStore('user', () => {
 
   // 初始化 - 从本地存储恢复登录状态
   const init = async () => {
+    // 先确保数据库初始化完成
+    await initDB()
+
     // 先初始化测试数据
     await initTestData()
 
@@ -533,6 +536,8 @@ export const useUserStore = defineStore('user', () => {
   // 检查手机号是否已注册
   const checkPhoneExists = async (phone) => {
     try {
+      // 先确保数据库初始化完成
+      await initDB()
       const existingUsers = await userDbOps.getUserByPhone(phone)
       return existingUsers && existingUsers.length > 0
     } catch (e) {

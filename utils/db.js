@@ -4,41 +4,64 @@
 let db = null
 let dbCmd = null
 let dbInitStatus = 'pending' // pending | success | failed
+let initPromise = null // 缓存初始化 Promise（只在成功时缓存）
 
 // 获取数据库初始化状态
 export const getDbInitStatus = () => dbInitStatus
 
-// 初始化数据库连接
+// 初始化数据库连接（幂等，成功后缓存）
 export const initDB = () => {
-  return new Promise((resolve, reject) => {
+  // 如果已有初始化 Promise 且数据库已就绪，直接返回
+  if (initPromise && db) {
+    return initPromise
+  }
+
+  // 如果已有初始化 Promise 但数据库还未就绪，返回该 Promise
+  if (initPromise) {
+    return initPromise
+  }
+
+  initPromise = new Promise((resolve, reject) => {
     // 等待 uniCloud 初始化完成
-    const tryInit = (retryCount = 0) => {
+    const maxRetries = 30  // 增加重试次数
+    const retryInterval = 200  // 减少间隔
+    let retryCount = 0
+
+    const tryInit = () => {
       setTimeout(() => {
         if (typeof uniCloud !== 'undefined' && uniCloud) {
           try {
-            db = uniCloud.database()
-            dbCmd = db.command
-            dbInitStatus = 'success'
-            resolve(db)
-          } catch (e) {
-            console.warn('【数据库】uniCloud 初始化中，重试...', retryCount)
-            if (retryCount < 3) {
-              tryInit(retryCount + 1)
-            } else {
-              dbInitStatus = 'failed'
-              console.error('【数据库】uniCloud 初始化失败，数据库不可用')
-              resolve(null)
+            const database = uniCloud.database()
+            if (database) {
+              db = database
+              dbCmd = db.command
+              dbInitStatus = 'success'
+              console.log('【数据库】初始化成功')
+              resolve(db)
+              return
             }
+          } catch (e) {
+            console.warn('【数据库】uniCloud 初始化中，重试...', retryCount, e.message)
           }
         } else {
+          console.warn('【数据库】uniCloud 还未初始化，重试...', retryCount)
+        }
+
+        if (retryCount < maxRetries) {
+          retryCount++
+          tryInit()
+        } else {
           dbInitStatus = 'failed'
-          console.error('【数据库】uniCloud 未初始化，数据库不可用')
+          initPromise = null  // 清除缓存，允许下次重试
+          console.error('【数据库】uniCloud 初始化失败，数据库不可用')
           resolve(null)
         }
-      }, 300 * (retryCount + 1))
+      }, retryInterval)
     }
     tryInit()
   })
+
+  return initPromise
 }
 
 // 检查数据库是否可用
@@ -53,8 +76,13 @@ export const isDBAvailable = () => {
 export const userDbOps = {
   // 根据手机号查询用户
   getUserByPhone: (phone) => {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
+      // 先确保数据库初始化完成
+      await initDB()
+
+      // 数据库不可用时，使用本地存储
       if (!db) {
+        console.warn('【getUserByPhone】数据库不可用，使用本地存储')
         const data = uni.getStorageSync('users')
         const list = data ? JSON.parse(data) : []
         const result = list.filter(item => item.phone === phone)
@@ -75,7 +103,11 @@ export const userDbOps = {
 
   // 根据ID查询用户
   getUserById: (id) => {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
+      // 先确保数据库初始化完成
+      await initDB()
+
+      // 数据库不可用时，使用本地存储
       if (!db) {
         const data = uni.getStorageSync('users')
         const list = data ? JSON.parse(data) : []
@@ -97,7 +129,11 @@ export const userDbOps = {
 
   // 根据邀请码查询
   getUserByInviteCode: (inviteCode) => {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
+      // 先确保数据库初始化完成
+      await initDB()
+
+      // 数据库不可用时，使用本地存储
       if (!db) {
         const data = uni.getStorageSync('users')
         const list = data ? JSON.parse(data) : []
