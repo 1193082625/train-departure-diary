@@ -109,7 +109,7 @@ const initTestData = async () => {
     }
 
     // 建立中间商A和装发车A、鸡场A的关联
-    const middlemanA = await userDbOps.getUserByPhone('13800000001')
+    const middlemanA = await userDbOps.getUserByPhone('18131172057')
     const loaderA = await userDbOps.getUserByPhone('13800000002')
     const farmA = await userDbOps.getUserByPhone('13800000003')
 

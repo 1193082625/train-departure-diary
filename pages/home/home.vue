@@ -1,8 +1,8 @@
 <template>
   <view class="home-page">
     <!-- 快捷操作 -->
-    <view class="stats-cards">
-      <view class="action-btn" @click="openSettingsPopup">
+    <view class="stats-cards" :class="{ 'stats-cards-all': userStore.isLoader }">
+      <view class="action-btn" @click="openSettingsPopup" v-if="userStore.isAdmin || userStore.isMiddleman">
         <text class="icon">⚙️</text>
         <text>参数设置</text>
       </view>
@@ -21,63 +21,67 @@
     </view>
 
     <!-- Tab 切换 -->
-    <view class="quote-tabs" v-if="userStore.isAdmin || userStore.isMiddleman">
-      <view :class="['tab', activeTab === 'calendar' && 'active']" @click="activeTab = 'calendar'">报价日历</view>
-      <view :class="['tab', activeTab === 'chart' && 'active']" @click="activeTab = 'chart'">报价统计</view>
-    </view>
-
-    <!-- Tab1: 报价日历 -->
-    <view v-if="activeTab === 'calendar'" class="tab-content">
-      <uni-calendar
-        :selected="calendarSelected"
-        :start-date="calendarStart"
-        :end-date="calendarEnd"
-        :show-month="true"
-        @change="onCalendarChange"
-      />
-
-    </view>
-
-    <!-- Tab2: 报价统计折线图 -->
-    <view v-if="activeTab === 'chart'" class="tab-content">
-      <!-- 时间范围切换 -->
-      <view class="chart-range">
-        <view @click="chartRange = 'week'" :class="['range-btn', chartRange === 'week' && 'active']">周</view>
-        <view @click="chartRange = 'month'" :class="['range-btn', chartRange === 'month' && 'active']">月</view>
-        <view @click="chartRange = 'year'" :class="['range-btn', chartRange === 'year' && 'active']">年</view>
+    <view v-if="userStore.isAdmin || userStore.isMiddleman">
+      <view class="quote-tabs">
+        <view :class="['tab', activeTab === 'calendar' && 'active']" @click="activeTab = 'calendar'">报价日历</view>
+        <view :class="['tab', activeTab === 'chart' && 'active']" @click="activeTab = 'chart'">报价统计</view>
       </view>
 
-      <!-- uCharts 渐变色曲线区域图 -->
-      <view class="chart-container">
-        <view v-if="chartData && chartData.series && chartData.series.length > 0" class="chart-wrapper">
-          <!-- 图表 -->
-          <qiun-data-charts
-            type="area"
-            canvasId="quoteChart"
-            :chartData="chartData"
-            :opts="chartOpts"
-            :width="chartWidth"
-            :height="chartHeight"
-          />
+      <!-- Tab1: 报价日历 -->
+      <view v-if="activeTab === 'calendar'" class="tab-content">
+        <uni-calendar
+          :selected="calendarSelected"
+          :start-date="calendarStart"
+          :end-date="calendarEnd"
+          :show-month="true"
+          @change="onCalendarChange"
+        />
+
+      </view>
+
+      <!-- Tab2: 报价统计折线图 -->
+      <view v-if="activeTab === 'chart'" class="tab-content">
+        <!-- 时间范围切换 -->
+        <view class="chart-range">
+          <view @click="chartRange = 'week'" :class="['range-btn', chartRange === 'week' && 'active']">周</view>
+          <view @click="chartRange = 'month'" :class="['range-btn', chartRange === 'month' && 'active']">月</view>
+          <view @click="chartRange = 'year'" :class="['range-btn', chartRange === 'year' && 'active']">年</view>
         </view>
-        <view v-else class="no-data">
-          <text>暂无数据</text>
+
+        <!-- uCharts 渐变色曲线区域图 -->
+        <view class="chart-container">
+          <view v-if="chartData && chartData.series && chartData.series.length > 0" class="chart-wrapper">
+            <!-- 图表 -->
+            <qiun-data-charts
+              type="area"
+              canvasId="quoteChart"
+              :chartData="chartData"
+              :opts="chartOpts"
+              :width="chartWidth"
+              :height="chartHeight"
+            />
+          </view>
+          <view v-else class="no-data">
+            <text>暂无数据</text>
+          </view>
         </view>
       </view>
-    </view>
+    </view> 
 
     <view class="recent-records">
       <view class="section-title-wrapper">
-        <text class="section-title">今日记录</text>
-        <view class="section-title-value-wrapper">
+        <view class="section-title-content">
+          <text class="section-title">今日记录</text>
           <text class="section-title-value" v-if="todayStats.count > 0">共{{ todayStats.count }}次</text>
+        </view>
+        <view class="section-title-value-wrapper">
           <image v-if="userStore.isAdmin || userStore.isMiddleman || userStore.isLoader" @click="goToDepartureForm" class="section-title-icon" src="/static/svg/add.svg" mode="aspectFit"></image>
         </view>
       </view>
       <view v-for="record in todayRecords" :key="record.id" class="record-item" @click="editRecord(record)">
         <view class="record-info">
           <text>{{ record.merchantDetails.map(m => m.merchantName).join(', ') || '未选择鸡场' }}</text>
-          <text class="record-profit" v-if="record.getMoney">盈利: ¥{{ record.getMoney.toFixed(2) }}</text>
+          <text class="record-profit" v-if="record.getMoney && (userStore.isAdmin || userStore.isMiddleman)">盈利: ¥{{ record.getMoney.toFixed(2) }}</text>
         </view>
       </view>
       <view v-if="todayRecords.length === 0" class="empty">暂无记录</view>
@@ -658,6 +662,7 @@ const saveSettings = () => {
 <style scoped>
 .home-page { padding: 20px; }
 .stats-cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 20px; }
+.stats-cards.stats-cards-all { grid-template-columns: repeat(1, 1fr); }
 .stat-card { flex: 1; background: #fff; padding: 20px; border-radius: 8px; text-align: center; }
 .stat-label { color: #999; font-size: 14px; display: block; }
 .stat-value { color: #007aff; font-size: 30px; font-weight: bold; display: block; margin-bottom: 10px; height: 42px; line-height: 42px; }
@@ -667,7 +672,7 @@ const saveSettings = () => {
 .recent-records { background: #fff; padding: 15px; border-radius: 8px; }
 .section-title-wrapper { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
 .section-title-content { display: flex; justify-content: start; align-items: center; }
-.section-title { font-weight: bold; display: block;}
+.section-title { font-weight: bold; display: block; margin-right: 10px; }
 .section-title-icon { width: 28px; height: 28px; margin-left: 10px; }
 .section-title-value-wrapper { display: flex; justify-content: space-between; align-items: center; }
 .section-title-value { color: #999; font-size: 14px; display: block; margin-right: 10px; }

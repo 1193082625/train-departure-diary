@@ -96,11 +96,11 @@ export const useWorkerStore = defineStore('worker', () => {
   const getWorkerById = (id) => workers.value.find(w => w.id === id)
 
   const departureWorkers = computed(() =>
-    workers.value.filter(w => w.type === 'departure' || w.type === 'both')
+    filteredWorkers.value.filter(w => w.type === 'departure' || w.type === 'both')
   )
 
   const loadingWorkers = computed(() =>
-    workers.value.filter(w => w.type === 'loading' || w.type === 'both')
+    filteredWorkers.value.filter(w => w.type === 'loading' || w.type === 'both')
   )
 
   // 初始化加载

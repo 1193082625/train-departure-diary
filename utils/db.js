@@ -338,7 +338,7 @@ export const merchantWorkerDbOps = {
 // 通用的 CRUD 操作
 export const dbOps = {
   // 查询所有记录
-  queryAll: (table) => {
+  queryAll: (table, limit = 500) => {
     return new Promise((resolve, reject) => {
       if (!db) {
         const data = uni.getStorageSync(table)
@@ -346,7 +346,7 @@ export const dbOps = {
         return
       }
 
-      db.collection(table).get()
+      db.collection(table).limit(limit).get()
         .then(res => {
           resolve(res.result ? res.result.data : res.data || [])
         })
@@ -399,7 +399,11 @@ export const dbOps = {
         return
       }
 
-      db.collection(table).doc(id).update(data)
+      // 删除 _id 字段，避免云端验证失败
+      const dataToUpdate = { ...data }
+      delete dataToUpdate._id
+
+      db.collection(table).doc(id).update(dataToUpdate)
         .then(res => {
           resolve(data)
         })

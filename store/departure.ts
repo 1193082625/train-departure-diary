@@ -112,15 +112,16 @@ export const useDepartureStore = defineStore('departure', () => {
   }
 
   // 计算相关
+  // 使用 filteredRecords 以确保按用户角色过滤
   const getRecordsByDate = (date) =>
-    records.value.filter(r => r.date === date)
+    filteredRecords.value.filter(r => r.date === date)
 
   const getRecordsByDateRange = (startDate, endDate) =>
-    records.value.filter(r => r.date >= startDate && r.date <= endDate)
+    filteredRecords.value.filter(r => r.date >= startDate && r.date <= endDate)
 
   const getTodayRecords = () => {
     const today = new Date().toISOString().split('T')[0]
-    return records.value.filter(r => r.date === today)
+    return filteredRecords.value.filter(r => r.date === today)
   }
 
   // 初始化加载

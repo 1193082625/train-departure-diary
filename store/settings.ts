@@ -17,8 +17,8 @@ export const useSettingsStore = defineStore('settings', () => {
 
   const loadSettings = async () => {
     try {
-      // 尝试从数据库加载
-      const results = await dbOps.queryAll('settings')
+      // 尝试从数据库加载（添加 limit 避免资源耗尽）
+      const results = await dbOps.queryAll('settings', 1)
       if (results && results.length > 0) {
         const settings = results[0]
         receiptBigBoxWeight.value = settings.receiptBigBoxWeight ?? 45
@@ -34,37 +34,31 @@ export const useSettingsStore = defineStore('settings', () => {
         oilFee.value = settings.oilFee ?? 0
       } else {
         // 如果数据库没有，从 localStorage 兼容读取
-        const data = uni.getStorageSync('settings')
-        if (data) {
-          const settings = JSON.parse(data)
-          receiptBigBoxWeight.value = settings.receiptBigBoxWeight ?? 45
-          deliveryBigBoxWeight.value = settings.deliveryBigBoxWeight ?? 44
-          smallBoxWeight.value = settings.smallBoxWeight ?? 29.5
-          loadingFee.value = settings.loadingFee ?? 0
-          unloadingFee.value = settings.unloadingFee ?? 0
-          departureFee.value = settings.departureFee ?? 0
-          tollFee.value = settings.tollFee ?? 0
-          entryFee.value = settings.entryFee ?? 0
-          oilFee.value = settings.oilFee ?? 0
-        }
+        loadFromLocalStorage()
       }
     } catch (e) {
+      console.error('加载设置失败，使用本地存储:', e)
       // 兼容：localStorage 读取
-      const data = uni.getStorageSync('settings')
-      if (data) {
-        const settings = JSON.parse(data)
-        receiptBigBoxWeight.value = settings.receiptBigBoxWeight ?? 45
-        deliveryBigBoxWeight.value = settings.deliveryBigBoxWeight ?? 44
-        smallBoxWeight.value = settings.smallBoxWeight ?? 30
-        depotCartonBoxesBig.value = settings.depotCartonBoxesBig ?? 43
-        depotCartonBoxesSmall.value = settings.depotCartonBoxesSmall ?? 30
-        loadingFee.value = settings.loadingFee ?? 0
-        unloadingFee.value = settings.unloadingFee ?? 0
-        departureFee.value = settings.departureFee ?? 0
-        tollFee.value = settings.tollFee ?? 0
-        entryFee.value = settings.entryFee ?? 0
-        oilFee.value = settings.oilFee ?? 0
-      }
+      loadFromLocalStorage()
+    }
+  }
+
+  // 从本地存储加载设置
+  const loadFromLocalStorage = () => {
+    const data = uni.getStorageSync('settings')
+    if (data) {
+      const settings = JSON.parse(data)
+      receiptBigBoxWeight.value = settings.receiptBigBoxWeight ?? 45
+      deliveryBigBoxWeight.value = settings.deliveryBigBoxWeight ?? 44
+      smallBoxWeight.value = settings.smallBoxWeight ?? 30
+      depotCartonBoxesBig.value = settings.depotCartonBoxesBig ?? 43
+      depotCartonBoxesSmall.value = settings.depotCartonBoxesSmall ?? 30
+      loadingFee.value = settings.loadingFee ?? 0
+      unloadingFee.value = settings.unloadingFee ?? 0
+      departureFee.value = settings.departureFee ?? 0
+      tollFee.value = settings.tollFee ?? 0
+      entryFee.value = settings.entryFee ?? 0
+      oilFee.value = settings.oilFee ?? 0
     }
   }
 

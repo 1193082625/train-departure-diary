@@ -204,7 +204,7 @@
       <view class="section result">
         <text class="section-title">计算结果</text>
         <view class="flex-start mb-10">
-          本次共拉 <text class="font-bold color-fa8c16">{{ calculated.allMerchantWeight }} </text> 斤
+          本次共拉 <text class="font-bold color-fa8c16 ml-4 mr-4">{{ calculated.allMerchantWeight }} </text> 斤
         </view>
         <view class="flex-start">
           <view class="w-pre25 font-bold">
@@ -213,7 +213,7 @@
           <view class="w-pre25 font-bold"><text class="color-fa8c16">{{ calculated.merchantUnitOfWeightTotal }}</text> 斤</view>
         </view>
         <view class="flex-start mt-15 mb-10">
-          货车共装 <text class="font-bold color-fa8c16">{{ calculated.truckWeightTotal }}</text> 斤
+          货车共装 <text class="font-bold color-fa8c16 ml-4 mr-4">{{ calculated.truckWeightTotal }}</text> 斤
         </view>
         <view class="flex-start">
           <view class="w-pre25 font-bold"><text class="color-fa8c16">{{ calculated.truckBig }}</text> 大框</view>
@@ -225,38 +225,50 @@
           回框数量合计
         </view>
         <view class="flex-start">
-          <text class="w-pre25 font-bold">{{calculated.totalBigBoxes  < 0 ? '欠' : ''}}{{ calculated.totalBigBoxes }} 大框</text>
-          <text class="w-pre25 font-bold">{{calculated.totalSmallBoxes  < 0 ? '欠' : ''}}{{ calculated.totalSmallBoxes }} 小框</text>
+          <view class="w-pre25 font-bold">
+            {{calculated.totalBigBoxes  < 0 ? '欠' : ''}}
+            <text class="ml-4 mr-4 font-bold color-fa8c16">{{ calculated.totalBigBoxes }}</text> 
+            大框
+          </view>
+          <view class="w-pre25 font-bold">
+            {{calculated.totalSmallBoxes  < 0 ? '欠' : ''}}
+            <text class="ml-4 mr-4 font-bold color-fa8c16">{{ calculated.totalSmallBoxes }}</text> 
+            小框
+          </view>
         </view>
 
         <!-- 鸡场金额明细 -->
-        <view v-if="calculated.merchantAmount.length > 0" class="result-subtitle">鸡场金额明细</view>
-        <view v-for="(item, index) in calculated.merchantAmount" :key="index" class="calc-item">
-          <text class="name">{{ item.name }}</text>
-          <text class="result-value">¥{{ item.amount }}</text>
+        <view v-if="isAdminOrMiddleman">
+          <view v-if="calculated.merchantAmount.length > 0" class="result-subtitle">鸡场金额明细</view>
+          <view v-for="(item, index) in calculated.merchantAmount" :key="index" class="calc-item">
+            <text class="name">{{ item.name }}</text>
+            <text class="result-value">¥{{ item.amount }}</text>
+          </view>
         </view>
 
         <!-- 新增：收货价、交货价、盈利 -->
-        <view class="result-divider"></view>
-        <view class="result-item highlight">
-          <text>拉货成本</text>
-          <text class="result-value">¥{{ calculated.totalReceivePrice }}</text>
-        </view>
-        <view class="result-item highlight">
-          <text>留存合计</text>
-          <text class="result-value">¥{{ calculated.reservedTotal }}</text>
-        </view>
-        <view class="result-item highlight">
-          <text>交货应回款</text>
-          <text class="result-value">¥{{ calculated.totalDeliveryPrice }}</text>
-        </view>
-        <view class="result-item total">
-          <view>本趟盈利</view>
-          <view class="result-value profit">¥{{ calculated.profit }}</view>
+        <view v-if="isAdminOrMiddleman">
+          <view class="result-divider"></view>
+          <view class="result-item highlight">
+            <text>拉货成本</text>
+            <text class="result-value">¥{{ calculated.totalReceivePrice }}</text>
+          </view>
+          <view class="result-item highlight">
+            <text>留存合计</text>
+            <text class="result-value">¥{{ calculated.reservedTotal }}</text>
+          </view>
+          <view class="result-item highlight">
+            <text>交货应回款</text>
+            <text class="result-value">¥{{ calculated.totalDeliveryPrice }}</text>
+          </view>
+          <view class="result-item total">
+            <view>本趟盈利</view>
+            <view class="result-value profit">¥{{ calculated.profit }}</view>
+          </view>
         </view>
       </view>
 
-      <view class="actions">
+      <view class="actions" v-if="showSaveButton">
         <button @click="saveRecord" class="save-btn">保存</button>
       </view>
     </view>
@@ -269,15 +281,28 @@ import { useDepartureStore } from '@/store/departure'
 import { useMerchantStore } from '@/store/merchant'
 import { useWorkerStore } from '@/store/worker'
 import { useSettingsStore } from '@/store/settings'
+import { useUserStore, ROLES } from '@/store/user'
 import { calculateMerchantCost } from '@/calc/index'
 
 const departureStore = useDepartureStore()
 const merchantStore = useMerchantStore()
 const workerStore = useWorkerStore()
 const settingsStore = useSettingsStore()
+const userStore = useUserStore()
+
+// 当前用户
+const currentUser = computed(() => userStore.currentUser)
+// 当前用户是否是装发车
+const isLoader = computed(() => currentUser.value?.role === ROLES.LOADER)
+// 当前用户是否是管理员或中间商
+const isAdminOrMiddleman = computed(() => {
+  const role = currentUser.value?.role
+  return role === ROLES.ADMIN || role === ROLES.MIDDLEMAN
+})
 
 const form = reactive({
   id: null,
+  userId: null, // 记录创建者ID
   date: new Date().toISOString().split('T')[0], // 日期 YYYY-MM-DD
   dailyQuote: null, // 当日报价（元/斤）
   smallBoxWeight: null, // 本趟小框斤数
@@ -287,7 +312,7 @@ const form = reactive({
   depotCartonBoxesBig: null, // 库房纸箱数
   depotCartonBoxesSmall: null, // 库房小箱数
   reservedBigBoxes: null, // 留货大框数
-  reservedSmallBoxes: null, // 留货小框数  
+  reservedSmallBoxes: null, // 留货小框数
   departureWorkerId: '', // 发车人员ID
   loadingWorkerIds: [], // 装车人员ID数组
   oilFee: 0, // 油费
@@ -297,6 +322,25 @@ const form = reactive({
   unloadingFee: 0, // 卸车费
   departureFee: 0, // 发车费
   truckRows: [], // 货车信息（一个记录可包含多个货车）
+})
+
+// 是否显示保存按钮
+// 规则：管理员/中间商始终显示；装发车只显示自己创建的记录
+const showSaveButton = computed(() => {
+  // 管理员或中间商，始终显示
+  if (isAdminOrMiddleman.value) {
+    return true
+  }
+  // 装发车：只显示自己创建的记录
+  if (isLoader.value) {
+    // 新增记录显示
+    if (!form.id) {
+      return true
+    }
+    // 编辑记录：只显示自己创建的
+    return form.userId === currentUser.value?.id
+  }
+  return true
 })
 
 // 鸡场选项

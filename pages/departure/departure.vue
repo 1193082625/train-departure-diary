@@ -94,7 +94,7 @@
         <text class="summary-label">斤数</text>
         <text class="summary-value">{{ totalWeight || '--' }}</text>
       </view>
-      <view class="summary-item">
+      <view class="summary-item" v-if="userStore.isAdmin || userStore.isMiddleman">
         <text class="summary-label">总盈利</text>
         <text class="summary-value profit">¥{{ totalProfit.toFixed(2) }}</text>
       </view>
@@ -107,9 +107,9 @@
         <view v-for="(group, groupKey) in groupedRecords" :key="groupKey" class="record-group">
           <view class="group-header">
             <text class="group-title">{{ groupKey }}</text>
-            <text class="group-summary">
-              {{ group.records.length }}车 | 大框{{ group.bigBoxes }} | 小框{{ group.smallBoxes }} | 斤数{{ group.weight }} | ¥{{ group.profit.toFixed(2) }}
-            </text>
+            <view class="group-summary">
+              {{ group.records.length }}车 | 大框{{ group.bigBoxes }} | 小框{{ group.smallBoxes }} | 斤数{{ group.weight }} <text v-if="userStore.isAdmin || userStore.isMiddleman"> | ¥{{ group.profit.toFixed(2) }}</text>
+            </view>
           </view>
           <view
             v-for="record in group.records"
@@ -130,7 +130,7 @@
               <text>大框: {{ calculateTotalBigBoxes(record) }}</text>
               <text>小框: {{ calculateTotalSmallBoxes(record) }}</text>
               <text>斤数: {{ calculateTotalWeight(record) }}</text>
-              <text class="profit" v-if="record.getMoney">盈利: ¥{{ parseFloat(record.getMoney).toFixed(2) }}</text>
+              <text class="profit" v-if="record.getMoney && (userStore.isAdmin || userStore.isMiddleman)">盈利: ¥{{ parseFloat(record.getMoney).toFixed(2) }}</text>
             </view>
           </view>
         </view>
@@ -157,7 +157,7 @@
             <text>大框: {{ calculateTotalBigBoxes(record) }}</text>
             <text>小框: {{ calculateTotalSmallBoxes(record) }}</text>
             <text>散装: {{ calculateTotalWeight(record) }} 斤</text>
-            <text class="profit" v-if="record.getMoney">盈利: ¥{{ parseFloat(record.getMoney).toFixed(2) }}</text>
+            <text class="profit" v-if="record.getMoney && (userStore.isAdmin || userStore.isMiddleman)">盈利: ¥{{ parseFloat(record.getMoney).toFixed(2) }}</text>
           </view>
         </view>
       </template>
@@ -173,9 +173,11 @@
 import { ref, computed, onMounted } from 'vue'
 import { useDepartureStore } from '@/store/departure'
 import { useWorkerStore } from '@/store/worker'
+import { useUserStore } from '@/store/user'
 
 const departureStore = useDepartureStore()
 const workerStore = useWorkerStore()
+const userStore = useUserStore()
 
 // 今天的日期
 const today = new Date().toISOString().split('T')[0]
