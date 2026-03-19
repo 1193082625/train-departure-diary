@@ -6,7 +6,6 @@
         <text class="avatar-text">{{ avatarText }}</text>
       </view>
       <view class="user-info">
-        <text class="nickname">{{ currentUser?.nickname || '未设置昵称' }}</text>
         <text class="role-tag">{{ roleName }}</text>
       </view>
       <view class="phone">{{ currentUser?.phone }}</view>
@@ -114,10 +113,15 @@ const editProfile = () => {
     title: '编辑资料',
     placeholderText: '请输入昵称',
     editable: true,
-    success: (res) => {
-      if (res.confirm && res.value) {
-        userStore.updateUser({ nickname: res.value })
-        showMessage('昵称已更新')
+    success: async (res) => {
+      if (res.confirm && res.content) {
+        const result = await userStore.updateUser({ nickname: res.content })
+        
+        if (result.success) {
+          showMessage('昵称已更新')
+        } else {
+          showMessage(result.message || '更新失败')
+        }
       }
     }
   })

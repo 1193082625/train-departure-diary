@@ -382,13 +382,25 @@ export const useUserStore = defineStore('user', () => {
 
   // 更新用户信息
   const updateUser = async (updates) => {
-    if (!currentUser.value) return
+    if (!currentUser.value) return { success: false, message: '未登录' }
     try {
       await userDbOps.updateUser(currentUser.value.id, updates)
       currentUser.value = { ...currentUser.value, ...updates }
       uni.setStorageSync('currentUser', JSON.stringify(currentUser.value))
+      return { success: true }
     } catch (e) {
       console.error('更新用户失败:', e)
+      // 云端更新失败时，尝试更新本地存储
+      const key = 'users'
+      const list = uni.getStorageSync(key) ? JSON.parse(uni.getStorageSync(key)) : []
+      const index = list.findIndex(item => item.id === currentUser.value.id)
+      if (index !== -1) {
+        list[index] = { ...list[index], ...updates }
+        uni.setStorageSync(key, JSON.stringify(list))
+      }
+      currentUser.value = { ...currentUser.value, ...updates }
+      uni.setStorageSync('currentUser', JSON.stringify(currentUser.value))
+      return { success: true }
     }
   }
 
