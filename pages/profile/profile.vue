@@ -35,6 +35,15 @@
         </view>
       </view>
 
+      <!-- 修改密码 -->
+      <view class="menu-item" @click="changePassword">
+        <view class="menu-left">
+          <text class="menu-icon">&#xe7e1;</text>
+          <text class="menu-text">修改密码</text>
+        </view>
+        <text class="arrow" decode>&gt;</text>
+      </view>
+
       <!-- 编辑资料 -->
       <view class="menu-item" @click="editProfile">
         <view class="menu-left">
@@ -120,6 +129,44 @@ const editProfile = () => {
       if (res.confirm && res.value) {
         userStore.updateUser({ nickname: res.value })
         showMessage('昵称已更新')
+      }
+    }
+  })
+}
+
+const changePassword = () => {
+  uni.showModal({
+    title: '修改密码',
+    placeholderText: '请输入原密码',
+    editable: true,
+    success: async (res) => {
+      console.log('修改密码结果:', res);
+      
+      if (res.confirm && res.value) {
+        const oldPassword = res.value
+        // 弹出输入新密码
+        uni.showModal({
+          title: '输入新密码',
+          placeholderText: '请输入新密码（6位以上）',
+          editable: true,
+          success: async (res2) => {
+            console.log(222);
+            
+            if (res2.confirm && res2.value) {
+              const newPassword = res2.value
+              if (newPassword.length < 6) {
+                showMessage('密码至少6位')
+                return
+              }
+              const result = await userStore.changePassword(oldPassword, newPassword)
+              if (result.success) {
+                showMessage('密码修改成功')
+              } else {
+                showMessage(result.message || '修改失败')
+              }
+            }
+          }
+        })
       }
     }
   })

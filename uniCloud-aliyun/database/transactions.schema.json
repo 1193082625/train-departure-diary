@@ -1,0 +1,20 @@
+{
+	"bsonType": "object",
+	"permission": {
+		"read": true,
+		"create": true,
+		"update": true,
+		"delete": true
+	},
+	"properties": {
+		"id": { "description": "ID" },
+		"date": { "description": "日期", "bsonType": "string" },
+		"targetId": { "description": "目标ID", "bsonType": "string" },
+		"targetType": { "description": "目标类型", "bsonType": "string" },
+		"amount": { "description": "金额", "bsonType": "double", "defaultValue": 0 },
+		"type": { "description": "类型", "bsonType": "string" },
+		"userId": { "description": "用户ID", "bsonType": "string" },
+		"note": { "description": "备注", "bsonType": "string" },
+		"createdAt": { "description": "创建时间", "bsonType": "string" }
+	}
+}

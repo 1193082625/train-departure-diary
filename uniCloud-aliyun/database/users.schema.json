@@ -1,0 +1,49 @@
+{
+	"bsonType": "object",
+	"required": ["phone"],
+	"permission": {
+		"read": true,
+		"create": true,
+		"update": true,
+		"delete": true
+	},
+	"properties": {
+		"id": {
+			"description": "用户ID"
+		},
+		"phone": {
+			"description": "手机号",
+			"bsonType": "string",
+			"unique": true
+		},
+		"nickname": {
+			"description": "昵称",
+			"bsonType": "string"
+		},
+		"password": {
+			"description": "密码",
+			"bsonType": "string"
+		},
+		"role": {
+			"description": "角色",
+			"bsonType": "string",
+			"defaultValue": "admin"
+		},
+		"inviteCode": {
+			"description": "邀请码",
+			"bsonType": "string"
+		},
+		"invitedBy": {
+			"description": "被谁邀请",
+			"bsonType": "string"
+		},
+		"parentId": {
+			"description": "上级用户ID",
+			"bsonType": "string"
+		},
+		"createdAt": {
+			"description": "创建时间",
+			"bsonType": "string"
+		}
+	}
+}

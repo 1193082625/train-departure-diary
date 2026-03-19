@@ -1,0 +1,18 @@
+{
+	"bsonType": "object",
+	"permission": {
+		"read": true,
+		"create": true,
+		"update": true,
+		"delete": true
+	},
+	"properties": {
+		"id": { "description": "ID" },
+		"name": { "description": "姓名", "bsonType": "string" },
+		"type": { "description": "类型", "bsonType": "string", "defaultValue": "both" },
+		"phone": { "description": "电话", "bsonType": "string" },
+		"note": { "description": "备注", "bsonType": "string" },
+		"userId": { "description": "所属用户ID", "bsonType": "string" },
+		"createdAt": { "description": "创建时间", "bsonType": "string" }
+	}
+}

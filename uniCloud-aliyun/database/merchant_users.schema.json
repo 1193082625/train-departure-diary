@@ -1,0 +1,17 @@
+{
+	"bsonType": "object",
+	"permission": {
+		"read": true,
+		"create": true,
+		"update": true,
+		"delete": true
+	},
+	"properties": {
+		"id": { "description": "ID" },
+		"middlemanId": { "description": "中间商ID", "bsonType": "string" },
+		"userId": { "description": "用户ID", "bsonType": "string" },
+		"userPhone": { "description": "用户手机号", "bsonType": "string" },
+		"userRole": { "description": "用户角色", "bsonType": "string" },
+		"createdAt": { "description": "创建时间", "bsonType": "string" }
+	}
+}

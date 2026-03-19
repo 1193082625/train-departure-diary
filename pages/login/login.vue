@@ -160,8 +160,10 @@ const handleLogin = async () => {
   const result = await userStore.login(phone.value, inviteCode.value)
 
   if (result.success) {
+    console.log('登录结果:', result);
+    
     // 需要设置密码
-    if (result.needSetPassword) {
+    if (!result.user.password) {
       showSetPassword.value = true
     } else {
       uni.switchTab({

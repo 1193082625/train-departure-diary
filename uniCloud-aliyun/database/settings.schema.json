@@ -1,0 +1,19 @@
+{
+	"bsonType": "object",
+	"permission": {
+		"read": true,
+		"create": true,
+		"update": true,
+		"delete": true
+	},
+	"properties": {
+		"id": { "description": "ID", "bsonType": "int" },
+		"receiptBigBoxWeight": { "description": "收货大箱重量", "bsonType": "double", "defaultValue": 45 },
+		"deliveryBigBoxWeight": { "description": "发货大箱重量", "bsonType": "double", "defaultValue": 44 },
+		"smallBoxWeight": { "description": "小箱重量", "bsonType": "double", "defaultValue": 29.5 },
+		"loadingFee": { "description": "装车费", "bsonType": "double", "defaultValue": 0 },
+		"tollFee": { "description": "过路费", "bsonType": "double", "defaultValue": 0 },
+		"entryFee": { "description": "入场费", "bsonType": "double", "defaultValue": 0 },
+		"oilFee": { "description": "油费", "bsonType": "double", "defaultValue": 0 }
+	}
+}

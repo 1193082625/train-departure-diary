@@ -17,7 +17,7 @@ const generateInviteCode = () => {
 }
 
 // 生成6位数字邀请码
-const generateCode = () => {
+const generateRandomCode = () => {
   return Math.floor(100000 + Math.random() * 900000).toString()
 }
 
@@ -44,7 +44,7 @@ const ADMIN_CODE = '888888'
 // 测试用户数据
 const TEST_USERS = [
   { phone: '15369375170', role: ROLES.ADMIN, inviteCode: '888888', nickname: '管理员', password: '123456' },
-  { phone: '13800000001', role: ROLES.MIDDLEMAN, inviteCode: '111111', nickname: '中间商A', password: '123456' },
+  { phone: '18131172057', role: ROLES.MIDDLEMAN, inviteCode: '111111', nickname: '中间商A', password: '123456' },
   { phone: '13800000002', role: ROLES.LOADER, inviteCode: '222222', nickname: '装发车A', parentId: null, password: '123456' },
   { phone: '13800000003', role: ROLES.FARM, inviteCode: '333333', nickname: '鸡场A', parentId: null, password: '123456' }
 ]
@@ -291,7 +291,7 @@ export const useUserStore = defineStore('user', () => {
 
       // 首次登录需要设置密码
       currentUser.value = newUser
-      isLoggedIn.value = true
+      // 不设置 isLoggedIn = true，等待设置密码后再登录
       uni.setStorageSync('currentUser', JSON.stringify(currentUser.value))
       return { success: true, needSetPassword: true, user: newUser }
     } catch (e) {
@@ -306,11 +306,30 @@ export const useUserStore = defineStore('user', () => {
     try {
       await userDbOps.updateUser(currentUser.value.id, { password: password })
       currentUser.value = { ...currentUser.value, password: password }
+      isLoggedIn.value = true
       uni.setStorageSync('currentUser', JSON.stringify(currentUser.value))
       return { success: true }
     } catch (e) {
       console.error('设置密码失败:', e)
       return { success: false, message: '设置密码失败' }
+    }
+  }
+
+  // 修改密码
+  const changePassword = async (oldPassword, newPassword) => {
+    if (!currentUser.value) return { success: false, message: '未登录' }
+    try {
+      // 验证旧密码
+      if (currentUser.value.password && currentUser.value.password !== oldPassword) {
+        return { success: false, message: '原密码错误' }
+      }
+      await userDbOps.updateUser(currentUser.value.id, { password: newPassword })
+      currentUser.value = { ...currentUser.value, password: newPassword }
+      uni.setStorageSync('currentUser', JSON.stringify(currentUser.value))
+      return { success: true }
+    } catch (e) {
+      console.error('修改密码失败:', e)
+      return { success: false, message: '修改密码失败' }
     }
   }
 
@@ -367,7 +386,7 @@ export const useUserStore = defineStore('user', () => {
     }
 
     try {
-      const code = generateCode()
+      const code = generateRandomCode()
       const codeData = {
         id: generateUUID(),
         code: code,
@@ -498,6 +517,7 @@ export const useUserStore = defineStore('user', () => {
     logout,
     updateUser,
     setPassword,
+    changePassword,
     generateCode,
     getMyCodes,
     getSubUsers,

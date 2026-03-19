@@ -1,0 +1,39 @@
+{
+	"bsonType": "object",
+	"required": ["code", "type"],
+	"permission": {
+		"read": true,
+		"create": true,
+		"update": true,
+		"delete": true
+	},
+	"properties": {
+		"id": {
+			"description": "ID"
+		},
+		"code": {
+			"description": "邀请码",
+			"bsonType": "string"
+		},
+		"type": {
+			"description": "类型",
+			"bsonType": "string"
+		},
+		"creatorId": {
+			"description": "创建者ID",
+			"bsonType": "string"
+		},
+		"usedBy": {
+			"description": "使用者ID",
+			"bsonType": "string"
+		},
+		"usedAt": {
+			"description": "使用时间",
+			"bsonType": "string"
+		},
+		"createdAt": {
+			"description": "创建时间",
+			"bsonType": "string"
+		}
+	}
+}

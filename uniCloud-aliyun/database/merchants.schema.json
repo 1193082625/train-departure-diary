@@ -1,0 +1,20 @@
+{
+	"bsonType": "object",
+	"permission": {
+		"read": true,
+		"create": true,
+		"update": true,
+		"delete": true
+	},
+	"properties": {
+		"id": { "description": "ID" },
+		"name": { "description": "名称", "bsonType": "string" },
+		"margin": { "description": "利润", "bsonType": "double", "defaultValue": 0 },
+		"contact": { "description": "联系人", "bsonType": "string" },
+		"phone": { "description": "电话", "bsonType": "string" },
+		"address": { "description": "地址", "bsonType": "string" },
+		"note": { "description": "备注", "bsonType": "string" },
+		"userId": { "description": "所属用户ID", "bsonType": "string" },
+		"createdAt": { "description": "创建时间", "bsonType": "string" }
+	}
+}

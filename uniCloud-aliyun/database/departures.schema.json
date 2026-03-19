@@ -1,0 +1,34 @@
+{
+	"bsonType": "object",
+	"permission": {
+		"read": true,
+		"create": true,
+		"update": true,
+		"delete": true
+	},
+	"properties": {
+		"id": { "description": "ID" },
+		"date": { "description": "日期", "bsonType": "string" },
+		"dailyQuote": { "description": "日报价", "bsonType": "double", "defaultValue": 0 },
+		"merchantDetails": { "description": "商户明细", "bsonType": "string" },
+		"reservedBigBoxes": { "description": "预留大箱", "bsonType": "int", "defaultValue": 0 },
+		"reservedSmallBoxes": { "description": "预留小箱", "bsonType": "int", "defaultValue": 0 },
+		"departureWorkerId": { "description": "发车人员ID", "bsonType": "string" },
+		"loadingWorkerIds": { "description": "装车人员ID列表", "bsonType": "string" },
+		"fuelCost": { "description": "油费", "bsonType": "double", "defaultValue": 0 },
+		"entryFee": { "description": "入场费", "bsonType": "double", "defaultValue": 0 },
+		"tollFee": { "description": "过路费", "bsonType": "double", "defaultValue": 0 },
+		"loadingFee": { "description": "装车费", "bsonType": "double", "defaultValue": 0 },
+		"oilFee": { "description": "油费2", "bsonType": "double", "defaultValue": 0 },
+		"truckRows": { "description": "车行", "bsonType": "string" },
+		"arrivalBigBoxes": { "description": "到达大箱", "bsonType": "int", "defaultValue": 0 },
+		"arrivalSmallBoxes": { "description": "到达小箱", "bsonType": "int", "defaultValue": 0 },
+		"returnedBigBoxes": { "description": "返回大箱", "bsonType": "int", "defaultValue": 0 },
+		"returnedSmallBoxes": { "description": "返回小箱", "bsonType": "int", "defaultValue": 0 },
+		"merchantAmount": { "description": "商户金额", "bsonType": "string" },
+		"getMoney": { "description": "收款金额", "bsonType": "double", "defaultValue": 0 },
+		"userId": { "description": "用户ID", "bsonType": "string" },
+		"note": { "description": "备注", "bsonType": "string" },
+		"createdAt": { "description": "创建时间", "bsonType": "string" }
+	}
+}
