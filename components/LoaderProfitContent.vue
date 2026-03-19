@@ -1,18 +1,13 @@
 <template>
-  <!-- 结账统计页面 -->
-  <view v-if="userStore.isLoader" class="developing-page">
+  <!-- 装发车盈利页面 -->
+  <view class="developing-page">
     <view class="developing-icon">🚧</view>
     <view class="developing-text">待上线</view>
     <view class="developing-desc">功能开发中，敬请期待...</view>
   </view>
-  <StatisticsContent v-else />
 </template>
 
 <script setup>
-import { useUserStore } from '@/store/user'
-import StatisticsContent from '@/components/StatisticsContent.vue'
-
-const userStore = useUserStore()
 </script>
 
 <style scoped>
