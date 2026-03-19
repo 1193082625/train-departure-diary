@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { dbOps } from '@/utils/db'
+import { dbOps, isDBAvailable } from '@/utils/db'
 import { useUserStore } from './user'
 import { ROLES } from './user'
 
@@ -50,15 +50,20 @@ export const useWorkerStore = defineStore('worker', () => {
   }
 
   const saveWorkers = async () => {
-    try {
-      // 先删除所有旧数据
-      await dbOps.deleteAll('workers')
-      for (const worker of workers.value) {
-        await dbOps.insert('workers', worker)
-      }
-    } catch (e) {
-      // 兼容：保存到 localStorage
-      uni.setStorageSync('workers', JSON.stringify(workers.value))
+    // 检查数据库是否可用
+    if (!isDBAvailable()) {
+      uni.showToast({
+        title: '数据库不可用，请检查网络连接',
+        icon: 'none',
+        duration: 3000
+      })
+      throw new Error('数据库不可用')
+    }
+
+    // 先删除所有旧数据
+    await dbOps.deleteAll('workers')
+    for (const worker of workers.value) {
+      await dbOps.insert('workers', worker)
     }
   }
 

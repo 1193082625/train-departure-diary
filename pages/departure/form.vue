@@ -487,18 +487,43 @@ const saveRecord = () => {
     })
     return
   }
-
-  const money = parseFloat(calculated.value.profit)
-
+  // 将所有null改为0，字符串数字转为真正的数字
+  const formData = { ...form }
+  const numberFields = ['dailyQuote', 'smallBoxWeight', 'depotBigBoxes', 'depotSmallBoxes', 'depotCartonBoxesBig', 'depotCartonBoxesSmall', 'reservedBigBoxes', 'reservedSmallBoxes', 'oilFee', 'entryFee', 'tollFee', 'loadingFee', 'unloadingFee', 'departureFee', 'returnedBigBoxes', 'returnedSmallBoxes']
+  Object.keys(formData).forEach(key => {
+    if (formData[key] === null) {
+      formData[key] = 0
+    } else if (numberFields.includes(key) && typeof formData[key] === 'string') {
+      formData[key] = Number(formData[key]) || 0
+    }
+  })
+  // 处理 truckRows 中的数字字段
+  formData.truckRows = formData.truckRows.map(row => ({
+    ...row,
+    bigBoxes: Number(row.bigBoxes) || 0,
+    smallBoxes: Number(row.smallBoxes) || 0,
+    cartonBoxesBig: Number(row.cartonBoxesBig) || 0,
+    cartonBoxesSmall: Number(row.cartonBoxesSmall) || 0
+  }))
+  // 处理 merchantDetails 中的数字字段
+  formData.merchantDetails = formData.merchantDetails.map(m => ({
+    ...m,
+    bigBoxes: Number(m.bigBoxes) || 0,
+    smallBoxes: Number(m.smallBoxes) || 0,
+    weight: Number(m.weight) || 0
+  }))
   const record = {
-    ...form,
+    ...formData,
     ...calculated.value,
-    getMoney: parseFloat(calculated.value.profit)
+    getMoney: parseFloat(calculated.value.profit),
+    dailyQuote: Number(form.dailyQuote) || 0
   }
 
   if (form.id) {
+    console.log('更新记录', record);
     departureStore.updateRecord(form.id, record)
   } else {
+    console.log('新增记录', record);
     departureStore.addRecord(record)
   }
 

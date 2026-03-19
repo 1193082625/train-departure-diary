@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { dbOps } from '@/utils/db'
+import { dbOps, isDBAvailable } from '@/utils/db'
 import { useUserStore } from './user'
 import { ROLES } from './user'
 
@@ -50,19 +50,24 @@ export const useMerchantStore = defineStore('merchant', () => {
   }
 
   const saveMerchants = async () => {
-    try {
-      // 保存到数据库
-      for (const merchant of merchants.value) {
-        const existing = await dbOps.queryBy('merchants', 'id', merchant.id)
-        if (existing && existing.length > 0) {
-          await dbOps.update('merchants', merchant.id, merchant)
-        } else {
-          await dbOps.insert('merchants', merchant)
-        }
+    // 检查数据库是否可用
+    if (!isDBAvailable()) {
+      uni.showToast({
+        title: '数据库不可用，请检查网络连接',
+        icon: 'none',
+        duration: 3000
+      })
+      throw new Error('数据库不可用')
+    }
+
+    // 保存到数据库
+    for (const merchant of merchants.value) {
+      const existing = await dbOps.queryBy('merchants', 'id', merchant.id)
+      if (existing && existing.length > 0) {
+        await dbOps.update('merchants', merchant.id, merchant)
+      } else {
+        await dbOps.insert('merchants', merchant)
       }
-    } catch (e) {
-      // 兼容：保存到 localStorage
-      uni.setStorageSync('merchants', JSON.stringify(merchants.value))
     }
   }
 

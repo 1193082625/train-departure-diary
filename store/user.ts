@@ -233,12 +233,17 @@ export const useUserStore = defineStore('user', () => {
           if (user.password !== code) {
             return { success: false, message: '密码错误' }
           }
-          // 密码正确，登录成功
-          currentUser.value = user
+          // 密码正确，登录成功，从数据库重新获取用户信息确保角色最新
+          const freshUsers = await userDbOps.getUserByPhone(phone)
+          if (freshUsers && freshUsers.length > 0) {
+            currentUser.value = freshUsers[0]
+          } else {
+            currentUser.value = user
+          }
           isLoggedIn.value = true
           uni.setStorageSync('currentUser', JSON.stringify(currentUser.value))
           uni.setStorageSync('loginTime', Date.now())
-          return { success: true, user: user }
+          return { success: true, user: currentUser.value }
         } else {
           // 用户存在但未设置密码，必须使用邀请码
           if (!code) {

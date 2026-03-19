@@ -21,7 +21,7 @@
           <image class="menu-icon-svg" src="/static/svg/invite.svg" mode="aspectFit"></image>
           <text class="menu-text">邀请码管理</text>
         </view>
-        <image class="menu-icon-svg" src="/static/svg/invite.svg" mode="aspectFit"></image>
+        <image class="menu-icon-svg" src="/static/svg/arrow-right.svg" mode="aspectFit"></image>
       </view>
 
       <!-- 修改密码 -->
@@ -30,7 +30,7 @@
           <image class="menu-icon-svg" src="/static/svg/password.svg" mode="aspectFit"></image>
           <text class="menu-text">修改密码</text>
         </view>
-        <text class="arrow" decode>&gt;</text>
+        <image class="menu-icon-svg" src="/static/svg/arrow-right.svg" mode="aspectFit"></image>
       </view>
 
       <!-- 编辑资料 -->
@@ -39,7 +39,7 @@
           <image class="menu-icon-svg" src="/static/svg/edit.svg" mode="aspectFit"></image>
           <text class="menu-text">编辑资料</text>
         </view>
-        <text class="arrow" decode>&gt;</text>
+        <image class="menu-icon-svg" src="/static/svg/arrow-right.svg" mode="aspectFit"></image>
       </view>
     </view>
 
@@ -163,6 +163,9 @@ const handleLogout = () => {
     content: '确定要退出登录吗？',
     success: (res) => {
       if (res.confirm) {
+        uni.removeStorageSync('currentUser')
+        uni.removeStorageSync('loginTime')
+
         userStore.logout()
         uni.reLaunch({
           url: '/pages/login/login'

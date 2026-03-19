@@ -88,7 +88,7 @@ const saveMerchant = () => {
   const data = {
     name: form.name,
     phone: form.phone,
-    margin: form.margin
+    margin: Number(form.margin) || 0
   }
 
   if (editingMerchant.value) {

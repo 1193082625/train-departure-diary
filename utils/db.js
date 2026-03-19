@@ -3,6 +3,10 @@
 
 let db = null
 let dbCmd = null
+let dbInitStatus = 'pending' // pending | success | failed
+
+// 获取数据库初始化状态
+export const getDbInitStatus = () => dbInitStatus
 
 // 初始化数据库连接
 export const initDB = () => {
@@ -14,19 +18,22 @@ export const initDB = () => {
           try {
             db = uniCloud.database()
             dbCmd = db.command
-            console.log('uniCloud 数据库连接成功')
+            dbInitStatus = 'success'
+            console.log('【数据库】uniCloud 连接成功')
             resolve(db)
           } catch (e) {
-            console.warn('uniCloud 初始化中，重试...', retryCount)
+            console.warn('【数据库】uniCloud 初始化中，重试...', retryCount)
             if (retryCount < 3) {
               tryInit(retryCount + 1)
             } else {
-              console.warn('uniCloud 初始化失败，使用 localStorage 兼容模式')
+              dbInitStatus = 'failed'
+              console.error('【数据库】uniCloud 初始化失败，数据库不可用')
               resolve(null)
             }
           }
         } else {
-          console.warn('uniCloud 未初始化，使用 localStorage 兼容模式')
+          dbInitStatus = 'failed'
+          console.error('【数据库】uniCloud 未初始化，数据库不可用')
           resolve(null)
         }
       }, 300 * (retryCount + 1))
@@ -36,7 +43,12 @@ export const initDB = () => {
 }
 
 // 检查数据库是否可用
-export const isDBAvailable = () => !!db
+export const isDBAvailable = () => {
+  if (!db) {
+    console.warn('【数据库】数据库不可用，数据将无法保存到云端')
+  }
+  return !!db
+}
 
 // 用户相关查询
 export const userDbOps = {
@@ -357,7 +369,11 @@ export const dbOps = {
         return
       }
 
-      db.collection(table).add(data)
+      // 过滤掉 _id 字段，uniCloud 会自动生成
+      const dataToInsert = { ...data }
+      delete dataToInsert._id
+
+      db.collection(table).add(dataToInsert)
         .then(res => {
           resolve(data)
         })
@@ -475,6 +491,7 @@ export const dbOps = {
 export default {
   initDB,
   isDBAvailable,
+  getDbInitStatus,
   dbOps,
   userDbOps,
   inviteDbOps,

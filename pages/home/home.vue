@@ -10,21 +10,18 @@
         <text class="icon">🚚</text>
         <text>发车记录</text>
       </view>
-    </view>
-
-    <view class="quick-actions">
-      <view class="action-btn" @click="goToMerchant">
+      <view class="action-btn" @click="goToMerchant" v-if="userStore.isAdmin || userStore.isMiddleman">
         <text class="icon">🐔</text>
-        <text>管理鸡场</text>
+        <text>鸡场管理</text>
       </view>
-      <view class="action-btn" @click="goToWorker">
+      <view class="action-btn" @click="goToWorker" v-if="userStore.isAdmin || userStore.isMiddleman">
         <text class="icon">👤</text>
         <text>管理人员</text>
       </view>
     </view>
 
     <!-- Tab 切换 -->
-    <view class="quote-tabs">
+    <view class="quote-tabs" v-if="userStore.isAdmin || userStore.isMiddleman">
       <view :class="['tab', activeTab === 'calendar' && 'active']" @click="activeTab = 'calendar'">报价日历</view>
       <view :class="['tab', activeTab === 'chart' && 'active']" @click="activeTab = 'chart'">报价统计</view>
     </view>
@@ -72,9 +69,12 @@
     <view class="recent-records">
       <view class="section-title-wrapper">
         <text class="section-title">今日记录</text>
-        <text class="section-title-value" v-if="todayStats.count > 0">共{{ todayStats.count }}次</text>
+        <view class="section-title-value-wrapper">
+          <text class="section-title-value" v-if="todayStats.count > 0">共{{ todayStats.count }}次</text>
+          <image v-if="userStore.isAdmin || userStore.isMiddleman || userStore.isLoader" @click="goToDepartureForm" class="section-title-icon" src="/static/svg/add.svg" mode="aspectFit"></image>
+        </view>
       </view>
-      <view v-for="record in todayRecords" :key="record.id" class="record-item">
+      <view v-for="record in todayRecords" :key="record.id" class="record-item" @click="editRecord(record)">
         <view class="record-info">
           <text>{{ record.merchantDetails.map(m => m.merchantName).join(', ') || '未选择鸡场' }}</text>
           <text class="record-profit" v-if="record.getMoney">盈利: ¥{{ record.getMoney.toFixed(2) }}</text>
@@ -176,9 +176,11 @@
 import { ref, computed, reactive, onMounted, watch, nextTick } from 'vue'
 import { useDepartureStore } from '@/store/departure'
 import { useSettingsStore } from '@/store/settings'
+import { useUserStore } from '@/store/user'
 
 const departureStore = useDepartureStore()
 const settingsStore = useSettingsStore()
+const userStore = useUserStore()
 
 // Tab 状态
 const activeTab = ref('calendar')
@@ -197,6 +199,12 @@ const quoteInput = ref(null)
 const goToDeparture = () => uni.navigateTo({ url: '/pages/departure/departure' })
 const goToMerchant = () => uni.navigateTo({ url: '/pages/merchant/merchant' })
 const goToWorker = () => uni.navigateTo({ url: '/pages/worker/worker' })
+const goToDepartureForm = () => uni.navigateTo({ url: '/pages/departure/form' })
+
+
+const editRecord = (record) => {
+  uni.navigateTo({ url: `/pages/departure/form?id=${record.id}` })
+}
 
 // 获取日历的开始和结束日期
 const initCalendarRange = () => {
@@ -649,18 +657,21 @@ const saveSettings = () => {
 </style>
 <style scoped>
 .home-page { padding: 20px; }
-.stats-cards { display: flex; gap: 15px; margin-bottom: 20px; }
+.stats-cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 20px; }
 .stat-card { flex: 1; background: #fff; padding: 20px; border-radius: 8px; text-align: center; }
 .stat-label { color: #999; font-size: 14px; display: block; }
 .stat-value { color: #007aff; font-size: 30px; font-weight: bold; display: block; margin-bottom: 10px; height: 42px; line-height: 42px; }
 .stat-value.icon { font-size: 28px; margin-bottom: 0!important; }
-.quick-actions { display: flex; gap: 15px; margin-bottom: 20px; }
 .action-btn { flex: 1; background: #fff; padding: 20px; border-radius: 8px; text-align: center; }
 .icon { font-size: 30px; display: block; margin-bottom: 10px; }
 .recent-records { background: #fff; padding: 15px; border-radius: 8px; }
-.section-title-wrapper { display: flex; justify-content: space-between; align-items: center; }
-.section-title { font-weight: bold; margin-bottom: 10px; display: block;}
-.section-title-value { color: #999; font-size: 14px; display: block; }
+.section-title-wrapper { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.section-title-content { display: flex; justify-content: start; align-items: center; }
+.section-title { font-weight: bold; display: block;}
+.section-title-icon { width: 28px; height: 28px; margin-left: 10px; }
+.section-title-value-wrapper { display: flex; justify-content: space-between; align-items: center; }
+.section-title-value { color: #999; font-size: 14px; display: block; margin-right: 10px; }
+.section-title-value-icon { width: 28px; height: 28px; margin-left: 10px; }
 .record-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f0f0f0; }
 .record-item:last-child { border-bottom: none; }
 .record-info { display: flex; flex-direction: column; gap: 4px; }
