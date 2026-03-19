@@ -111,6 +111,7 @@ const handlePhoneInput = async () => {
   } else {
     phoneChecked.value = false
     loginType.value = ''
+    inviteCode.value = ''
   }
 }
 

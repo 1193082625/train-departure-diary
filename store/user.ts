@@ -212,7 +212,11 @@ export const useUserStore = defineStore('user', () => {
             parentId: null,
             createdAt: new Date().toISOString()
           }
-          await userDbOps.createUser(newUser)
+          try {
+            await userDbOps.createUser(newUser)
+          } catch (e) {
+            console.error('创建管理员账号到云端失败，将使用本地存储:', e)
+          }
           currentUser.value = newUser
           isLoggedIn.value = true
           uni.setStorageSync('currentUser', JSON.stringify(currentUser.value))
@@ -301,10 +305,22 @@ export const useUserStore = defineStore('user', () => {
         workerId: inv.workerId || null,
         workerType: inv.workerType || null
       }
-      await userDbOps.createUser(newUser)
 
-      // 标记邀请码已使用
-      await inviteDbOps.useCode(code, newUser.id)
+      // 即使云端创建失败，也允许用户本地登录
+      let userCreated = false
+      try {
+        await userDbOps.createUser(newUser)
+        userCreated = true
+      } catch (e) {
+        console.error('创建用户到云端失败，将使用本地存储:', e)
+      }
+
+      // 标记邀请码已使用（即使创建用户失败也要标记，避免邀请码被重复使用）
+      try {
+        await inviteDbOps.useCode(code, newUser.id)
+      } catch (e) {
+        console.error('标记邀请码失败:', e)
+      }
 
       // 如果是中间商邀请的装发车或鸡场，添加到中间商的下级用户
       if (inv.creatorId && (inv.type === ROLES.LOADER || inv.type === ROLES.FARM)) {
@@ -376,7 +392,11 @@ export const useUserStore = defineStore('user', () => {
         parentId: null,
         createdAt: new Date().toISOString()
       }
-      await userDbOps.createUser(newUser)
+      try {
+        await userDbOps.createUser(newUser)
+      } catch (e) {
+        console.error('创建用户到云端失败，将使用本地存储:', e)
+      }
       currentUser.value = newUser
       isLoggedIn.value = true
       uni.setStorageSync('currentUser', JSON.stringify(currentUser.value))

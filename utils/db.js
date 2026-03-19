@@ -123,6 +123,7 @@ export const userDbOps = {
   // 创建用户
   createUser: (userData) => {
     return new Promise((resolve, reject) => {
+      // 如果数据库未初始化或不可用，直接使用本地存储
       if (!db) {
         const key = 'users'
         const list = uni.getStorageSync(key) ? JSON.parse(uni.getStorageSync(key)) : []
@@ -134,11 +135,17 @@ export const userDbOps = {
 
       db.collection('users').add(userData)
         .then(res => {
+          console.log('创建用户成功:', res)
           resolve(userData)
         })
         .catch(err => {
-          console.error('创建用户失败:', err)
-          reject(err)
+          console.error('创建用户到云端失败，降级到本地存储:', err)
+          // 云端写入失败时，降级到本地存储
+          const key = 'users'
+          const list = uni.getStorageSync(key) ? JSON.parse(uni.getStorageSync(key)) : []
+          list.push(userData)
+          uni.setStorageSync(key, JSON.stringify(list))
+          resolve(userData)
         })
     })
   },
@@ -146,6 +153,7 @@ export const userDbOps = {
   // 更新用户
   updateUser: (id, data) => {
     return new Promise((resolve, reject) => {
+      // 如果数据库未初始化或不可用，直接使用本地存储
       if (!db) {
         const key = 'users'
         const list = uni.getStorageSync(key) ? JSON.parse(uni.getStorageSync(key)) : []
@@ -158,13 +166,34 @@ export const userDbOps = {
         return
       }
 
-      db.collection('users').doc(id).update(data)
+      console.log('更新用户数据:', data);
+
+      // 先查询用户的云端 _id
+      db.collection('users').where({ id: dbCmd.eq(id) }).get()
+        .then(res => {
+          const userData = res.result ? res.result.data : res.data || []
+          if (userData.length > 0 && userData[0]._id) {
+            // 使用云端的 _id 进行更新
+            return db.collection('users').doc(userData[0]._id).update(data)
+          } else {
+            // 用户不存在于云端，降级到本地存储
+            return Promise.reject(new Error('USER_NOT_IN_CLOUD'))
+          }
+        })
         .then(res => {
           resolve(data)
         })
         .catch(err => {
-          console.error('更新用户失败:', err)
-          reject(err)
+          console.error('更新用户到云端失败，降级到本地存储:', err)
+          // 云端更新失败时，降级到本地存储
+          const key = 'users'
+          const list = uni.getStorageSync(key) ? JSON.parse(uni.getStorageSync(key)) : []
+          const index = list.findIndex(item => item.id === id)
+          if (index !== -1) {
+            list[index] = { ...list[index], ...data }
+            uni.setStorageSync(key, JSON.stringify(list))
+          }
+          resolve(data)
         })
     })
   },

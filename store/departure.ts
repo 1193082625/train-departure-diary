@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { dbOps } from '@/utils/db'
 import { useUserStore } from './user'
+import { useWorkerStore } from './worker'
 import { ROLES } from './user'
 
 export const useDepartureStore = defineStore('departure', () => {
@@ -19,9 +20,22 @@ export const useDepartureStore = defineStore('departure', () => {
       return records.value
     }
 
-    // 中间商：返回自己的
+    // 中间商：返回自己的 + 名下所有装发车用户添加的记录
+    // 逻辑：通过 parentId 关联，找到所有 parentId = 当前中间商ID 的装发车用户
     if (user.role === ROLES.MIDDLEMAN) {
-      return records.value.filter(r => r.userId === user.id)
+      // 同步获取所有用户，然后过滤
+      const allUsers = uni.getStorageSync('users') ? JSON.parse(uni.getStorageSync('users')) : []
+      console.log(111, allUsers);
+      
+      // 找出 parentId = 当前中间商ID 的装发车用户ID列表
+      const loaderUserIds = allUsers
+        .filter(u => u.role === ROLES.LOADER && u.parentId === user.id)
+        .map(u => u.id)
+      console.log(222, loaderUserIds);
+      // 返回自己或自己员工添加的记录
+      return records.value.filter(r =>
+        r.userId === user.id || loaderUserIds.includes(r.userId)
+      )
     }
 
     // 装发车：返回自己的
@@ -121,6 +135,7 @@ export const useDepartureStore = defineStore('departure', () => {
 
   const getTodayRecords = () => {
     const today = new Date().toISOString().split('T')[0]
+    console.log('今日记录:', filteredRecords.value);
     return filteredRecords.value.filter(r => r.date === today)
   }
 
