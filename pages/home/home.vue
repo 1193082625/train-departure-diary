@@ -179,27 +179,35 @@
     </uni-popup>
 
     <!-- 图表全屏弹窗 -->
-    <uni-popup ref="chartFullscreenPopup" type="center" :mask-click="true">
-      <view class="fullscreen-chart-popup">
-        <view class="fullscreen-chart-header">
+    <uni-popup ref="chartFullscreenPopup" type="center" :mask-click="true" @change="onFullscreenPopupChange">
+      <view class="fullscreen-chart-popup" :class="{ landscape: isLandscape }">
+        <view class="fullscreen-chart-header" v-if="!isLandscape">
           <text class="fullscreen-chart-title">{{ chartRange === 'week' ? '周' : chartRange === 'month' ? '月' : '年' }}报价统计</text>
           <text class="fullscreen-chart-close" @click="chartFullscreenPopup.close()">×</text>
         </view>
-        <qiun-data-charts
-          type="area"
-          canvasId="quoteChartFullscreen"
-          :chartData="chartData"
-          :opts="chartOpts"
-          :width="fullscreenChartWidth"
-          :height="fullscreenChartHeight"
-        />
+        <view class="fullscreen-chart-content">
+          <view class="fullscreen-chart-close-btn" v-if="isLandscape" @click="chartFullscreenPopup.close()">
+            <text>×</text>
+          </view>
+          <view class="chart-canvas-wrapper">
+            <qiun-data-charts
+              type="area"
+              canvasId="quoteChartFullscreen"
+              :chartData="chartData"
+              :opts="chartOpts"
+              :width="fullscreenChartWidth"
+              :height="fullscreenChartHeight"
+            />
+          </view>
+        </view>
       </view>
     </uni-popup>
   </view>
 </template>
 
 <script setup>
-import { ref, computed, reactive, onMounted, onShow, watch, nextTick } from 'vue'
+import { ref, computed, reactive, onMounted, watch, nextTick } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import { useDepartureStore } from '@/store/departure'
 import { useSettingsStore } from '@/store/settings'
 import { useUserStore } from '@/store/user'
@@ -210,6 +218,9 @@ const userStore = useUserStore()
 
 // Tab 状态
 const activeTab = ref('calendar')
+
+// 控制图表内容显示（用于全屏跳转时隐藏）
+const showChartContent = ref(true)
 
 // 日历相关
 const calendarSelected = ref([])
@@ -367,13 +378,28 @@ const chartHeight = ref(220)
 const chartFullscreenPopup = ref(null)
 const fullscreenChartWidth = ref(350)
 const fullscreenChartHeight = ref(350)
+const isLandscape = ref(false)
 
 const openChartFullscreen = () => {
-  // 获取屏幕尺寸，设置合适的图表宽高
-  const sysInfo = uni.getSystemInfoSync()
-  fullscreenChartWidth.value = sysInfo.windowWidth - 80
-  fullscreenChartHeight.value = sysInfo.windowHeight - 150
-  chartFullscreenPopup.value.open()
+  // 隐藏当前页面图表区域
+  showChartContent.value = false
+  // 跳转到全屏图表页面，传递图表数据和时间范围
+  const chartDataStr = encodeURIComponent(JSON.stringify({
+    chartData: chartData.value,
+    chartOpts: chartOpts.value,
+    chartRange: chartRange.value
+  }))
+  uni.navigateTo({
+    url: `/pages/home/chart-fullscreen?data=${chartDataStr}`
+  })
+}
+
+// 全屏弹窗状态变化
+const onFullscreenPopupChange = (e) => {
+  if (!e.show) {
+    // 关闭时重置状态
+    isLandscape.value = false
+  }
 }
 
 // 图表配置（适配 uCharts 格式）
@@ -644,6 +670,11 @@ onMounted(() => {
   }
 })
 
+// 页面显示时恢复图表内容显示
+onShow(() => {
+  showChartContent.value = true
+})
+
 // 页面显示时不再需要显式调用，store 初始化时会自动加载数据
 // onShow(() => {
 //   departureStore.loadRecords()
@@ -787,8 +818,68 @@ const saveSettings = () => {
 .data-value { color: #1890ff; font-weight: bold; }
 
 /* 全屏图表弹窗样式 */
-.fullscreen-chart-popup { width: 90vw; max-width: 400px; background: white; border-radius: 12px; padding: 20px; }
-.fullscreen-chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+.fullscreen-chart-popup {
+  width: 90vw;
+  max-width: 400px;
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  position: relative;
+  z-index: 9999;
+}
+/* 确保 uni-popup 层级高于 canvas */
+:deep(.uni-popup) {
+  z-index: 9998 !important;
+}
+:deep(.uni-popup__mask) {
+  z-index: 9997 !important;
+}
+:deep(.uni-popup__content) {
+  z-index: 9999 !important;
+}
+.fullscreen-chart-popup.landscape {
+  width: 100vw;
+  max-width: 100vw;
+  height: 100vh;
+  max-height: 100vh;
+  border-radius: 0;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+}
+.fullscreen-chart-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+.fullscreen-chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
 .fullscreen-chart-title { font-size: 16px; font-weight: bold; }
 .fullscreen-chart-close { font-size: 24px; color: #999; }
+.fullscreen-chart-close-btn {
+  position: absolute;
+  top: 5px;
+  right: 15px;
+  width: 32px;
+  height: 32px;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+.fullscreen-chart-close-btn text {
+  font-size: 20px;
+  color: #fff;
+}
+.chart-canvas-wrapper {
+  position: relative;
+  z-index: 1;
+}
 </style>

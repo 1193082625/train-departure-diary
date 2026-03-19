@@ -14,6 +14,13 @@
 		}
 	},
 	{
+		"path": "pages/home/chart-fullscreen",
+		"style": {
+			"navigationBarTitleText": "全屏图表",
+			"navigationStyle": "custom"
+		}
+	},
+	{
 		"path": "pages/departure/departure",
 		"style": {
 			"navigationBarTitleText": "发车"
