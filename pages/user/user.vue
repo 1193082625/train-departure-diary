@@ -22,7 +22,7 @@
     </view>
 
     <!-- 发车记录列表 -->
-    <view class="record-list">
+    <view class="record-list" v-if="userStore.isAdmin || userStore.isMiddleman">
       <view class="list-header">
         <text>日期</text>
         <text>鸡场</text>

@@ -83,6 +83,20 @@ const closeModal = () => {
 }
 
 const saveWorker = () => {
+  if (!form.name) {
+    uni.showToast({
+      title: '请输入姓名',
+      icon: 'none'
+    })
+    return
+  }
+  if (!form.phone || !form.phone.match(/^1[3-9]\d{9}$/)) {
+    uni.showToast({
+      title: '请输入正确的手机号',
+      icon: 'none'
+    })
+    return
+  }
   const data = {
     name: form.name,
     phone: form.phone,

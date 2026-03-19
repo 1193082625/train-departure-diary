@@ -14,6 +14,12 @@
           <text class="role-label">{{ role.label }}</text>
         </view>
       </view>
+      <!-- 如果角色是装发车，则显示选择人员列表 -->
+      <view class="user-list" v-if="selectedRole && selectedRole === ROLES.LOADER">
+        <view class="user-item" :class="{ active: selectedDepartureWorker?.id === worker.id }" v-for="worker in departureWorkerOptions" :key="worker.id" @click="onDepartureWorkerChange(worker)">
+          <text class="user-name">{{ worker.name }}</text>
+        </view>
+      </view>
       <view class="generate-btn" @click="handleGenerate">
         <text class="btn-text">生成邀请码</text>
       </view>
@@ -46,9 +52,11 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useUserStore, ROLE_NAMES, ROLES } from '@/store/user'
+import { useWorkerStore } from '@/store/worker'
 
+const workerStore = useWorkerStore()
 const userStore = useUserStore()
 const selectedRole = ref(ROLES.LOADER)
 const codeList = ref([])
@@ -56,9 +64,17 @@ const message = ref('')
 
 const roles = [
   { value: ROLES.LOADER, label: '装发车' },
-  { value: ROLES.FARM, label: '鸡场' },
+  // { value: ROLES.FARM, label: '鸡场' },
   { value: ROLES.MIDDLEMAN, label: '中间商' }
 ]
+
+const selectedDepartureWorker = ref(null)
+const departureWorkerOptions = computed(() => workerStore.departureWorkers)
+const onDepartureWorkerChange = (worker) => {
+  selectedDepartureWorker.value = worker
+  console.log('选择的发车人员', selectedDepartureWorker.value);
+}
+
 
 const getRoleName = (type) => {
   return ROLE_NAMES[type] || type
@@ -98,6 +114,7 @@ const handleGenerate = async () => {
 }
 
 onMounted(() => {
+  workerStore.loadWorkers()
   loadCodes()
 })
 </script>
@@ -109,6 +126,26 @@ onMounted(() => {
   padding: 30rpx;
 }
 
+.user-list {
+  margin-bottom: 20rpx;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20rpx;
+  .user-item {
+    padding: 20rpx;
+    background: #f5f5f5;
+    border-radius: 12rpx;
+    text-align: center;
+    border: 2rpx solid transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    &.active {
+      background: #f0f7ff;
+      border-color: #007aff;
+    }
+  }
+}
 .generate-card,
 .list-card {
   background: #fff;
