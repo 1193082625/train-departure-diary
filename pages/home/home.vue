@@ -211,10 +211,12 @@ import { onShow } from '@dcloudio/uni-app'
 import { useDepartureStore } from '@/store/departure'
 import { useSettingsStore } from '@/store/settings'
 import { useUserStore } from '@/store/user'
+import { useDailyQuoteStore } from '@/store/dailyQuote'
 
 const departureStore = useDepartureStore()
 const settingsStore = useSettingsStore()
 const userStore = useUserStore()
+const dailyQuoteStore = useDailyQuoteStore()
 
 // Tab 状态
 const activeTab = ref('calendar')
@@ -253,7 +255,7 @@ const initCalendarRange = () => {
   calendarEnd.value = `${year}-12-31`
 }
 
-// 获取所有报价数据（从发车记录和本地存储）
+// 获取所有报价数据（从发车记录和云端日报价表）
 const getAllQuotes = () => {
   const quotes = {}
 
@@ -270,13 +272,12 @@ const getAllQuotes = () => {
     }
   })
 
-  // 从本地存储中获取手动填写的报价
-  const manualQuotes = uni.getStorageSync('dailyQuotes') || {}
-  Object.keys(manualQuotes).forEach(date => {
-    if (!quotes[date]) {
-      quotes[date] = {
-        date: date,
-        quote: manualQuotes[date],
+  // 从云端日报价表获取手动填写的报价
+  dailyQuoteStore.quotes.forEach(item => {
+    if (!quotes[item.date]) {
+      quotes[item.date] = {
+        date: item.date,
+        quote: item.quote,
         source: 'manual'
       }
     }
@@ -313,9 +314,8 @@ const onCalendarChange = (e) => {
     popupRecordQuote.value = 0
   }
 
-  // 获取当日报价（优先显示本地存储的，如果没有则显示记录中的）
-  const manualQuotes = uni.getStorageSync('dailyQuotes') || {}
-  const manualQuote = manualQuotes[date]
+  // 获取当日报价（优先显示云端日报价，如果没有则显示记录中的）
+  const manualQuote = dailyQuoteStore.getQuoteByDate(date)
 
   if (manualQuote !== undefined) {
     quoteInput.value = manualQuote
@@ -341,29 +341,29 @@ const onCalendarChange = (e) => {
 }
 
 // 保存报价
-const saveQuote = () => {
+const saveQuote = async () => {
   if (!quoteInput.value || quoteInput.value <= 0) {
     uni.showToast({ title: '请输入有效报价', icon: 'none' })
     return
   }
 
-  // 保存到远程数据库
-  // db.
-  const manualQuotes = uni.getStorageSync('dailyQuotes') || {}
-  manualQuotes[popupDate.value] = quoteInput.value
-  uni.setStorageSync('dailyQuotes', manualQuotes)
+  try {
+    await dailyQuoteStore.saveQuote(popupDate.value, quoteInput.value)
+    uni.showToast({ title: '报价已保存', icon: 'success' })
+    quotePopup.value.close()
 
-  uni.showToast({ title: '报价已保存', icon: 'success' })
-  quotePopup.value.close()
+    // 更新日历显示
+    updateCalendarSelected()
 
-  // 更新日历显示
-  updateCalendarSelected()
-
-  // 更新当前显示
-  selectedDateQuote.value = {
-    date: popupDate.value,
-    quote: quoteInput.value,
-    source: 'manual'
+    // 更新当前显示
+    selectedDateQuote.value = {
+      date: popupDate.value,
+      quote: quoteInput.value,
+      source: 'manual'
+    }
+  } catch (e) {
+    console.error('保存日报价失败:', e)
+    uni.showToast({ title: '保存失败', icon: 'none' })
   }
 }
 

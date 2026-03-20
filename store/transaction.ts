@@ -29,8 +29,7 @@ export const useTransactionStore = defineStore('transaction', () => {
         }
       }
     } catch (e) {
-      // 兼容：保存到 localStorage
-      uni.setStorageSync('transactions', JSON.stringify(transactions.value))
+      console.error('【Transaction】保存交易记录失败:', e)
     }
   }
 
@@ -52,7 +51,7 @@ export const useTransactionStore = defineStore('transaction', () => {
     try {
       await dbOps.delete('transactions', id)
     } catch (e) {
-      // 兼容 localStorage
+      console.error('【Transaction】删除交易记录失败:', e)
     }
   }
 

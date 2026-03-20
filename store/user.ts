@@ -391,17 +391,10 @@ export const useUserStore = defineStore('user', () => {
       return { success: true }
     } catch (e) {
       console.error('更新用户失败:', e)
-      // 云端更新失败时，尝试更新本地存储
-      const key = 'users'
-      const list = uni.getStorageSync(key) ? JSON.parse(uni.getStorageSync(key)) : []
-      const index = list.findIndex(item => item.id === currentUser.value.id)
-      if (index !== -1) {
-        list[index] = { ...list[index], ...updates }
-        uni.setStorageSync(key, JSON.stringify(list))
-      }
+      // 云端更新失败时，仅更新本地内存状态
       currentUser.value = { ...currentUser.value, ...updates }
       uni.setStorageSync('currentUser', JSON.stringify(currentUser.value))
-      return { success: true }
+      return { success: false, message: '更新失败' }
     }
   }
 

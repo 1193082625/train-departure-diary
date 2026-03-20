@@ -282,6 +282,7 @@ import { useMerchantStore } from '@/store/merchant'
 import { useWorkerStore } from '@/store/worker'
 import { useSettingsStore } from '@/store/settings'
 import { useUserStore, ROLES } from '@/store/user'
+import { useDailyQuoteStore } from '@/store/dailyQuote'
 import { calculateMerchantCost } from '@/calc/index'
 
 const departureStore = useDepartureStore()
@@ -289,6 +290,7 @@ const merchantStore = useMerchantStore()
 const workerStore = useWorkerStore()
 const settingsStore = useSettingsStore()
 const userStore = useUserStore()
+const dailyQuoteStore = useDailyQuoteStore()
 
 // 当前用户
 const currentUser = computed(() => userStore.currentUser)
@@ -453,10 +455,10 @@ const calculated = computed(() => {
 
 // 根据日期自动带出报价
 const loadQuoteByDate = (date) => {
-  // 优先从 localStorage 的 dailyQuotes 读取
-  const manualQuotes = uni.getStorageSync('dailyQuotes') || {}
-  if (manualQuotes[date]) {
-    form.dailyQuote = manualQuotes[date]
+  // 优先从云端日报价表读取
+  const manualQuote = dailyQuoteStore.getQuoteByDate(date)
+  if (manualQuote) {
+    form.dailyQuote = manualQuote
     return
   }
 
@@ -568,11 +570,11 @@ const saveRecord = () => {
     departureStore.addRecord(record)
   }
 
-  // 保存当日报价到本地存储（自动填充）
+  // 保存当日报价到云端（自动填充）
   if (form.dailyQuote) {
-    const manualQuotes = uni.getStorageSync('dailyQuotes') || {}
-    manualQuotes[form.date] = form.dailyQuote
-    uni.setStorageSync('dailyQuotes', manualQuotes)
+    dailyQuoteStore.saveQuote(form.date, form.dailyQuote).catch(e => {
+      console.error('保存日报价失败:', e)
+    })
   }
 
   uni.navigateBack()

@@ -95,8 +95,6 @@ export const useDepartureStore = defineStore('departure', () => {
       }
     } catch (e) {
       console.error('【Departure】保存发车记录失败:', e)
-      // 兼容：保存到 localStorage
-      uni.setStorageSync('departureRecords', JSON.stringify(records.value))
     }
   }
 
@@ -126,7 +124,7 @@ export const useDepartureStore = defineStore('departure', () => {
     try {
       await dbOps.delete('departures', id)
     } catch (e) {
-      // 兼容 localStorage
+      console.error('【Departure】删除发车记录失败:', e)
     }
   }
 

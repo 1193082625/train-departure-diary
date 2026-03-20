@@ -1,0 +1,11 @@
+{
+  "bsonType": "object",
+  "permission": { "read": true, "create": true, "update": true, "delete": true },
+  "properties": {
+    "id": { "description": "ID", "bsonType": "string" },
+    "date": { "description": "日期 (YYYY-MM-DD)", "bsonType": "string" },
+    "quote": { "description": "日报价", "bsonType": "double" },
+    "userId": { "description": "所属用户ID(中间商)", "bsonType": "string" },
+    "createdAt": { "description": "创建时间", "bsonType": "string" }
+  }
+}
