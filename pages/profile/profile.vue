@@ -167,13 +167,12 @@ const handleLogout = () => {
     content: '确定要退出登录吗？',
     success: (res) => {
       if (res.confirm) {
-        uni.removeStorageSync('currentUser')
-        uni.removeStorageSync('loginTime')
-
         userStore.logout()
-        uni.reLaunch({
-          url: '/pages/login/login'
-        })
+        setTimeout(() => {
+          uni.reLaunch({
+            url: '/pages/login/login'
+          })
+        }, 1000)
       }
     }
   })

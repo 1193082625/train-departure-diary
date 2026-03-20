@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { dbOps, initDB } from '@/utils/db'
 import { useUserStore } from './user'
 import { ROLES } from './user'
+import { showErrorToast } from '@/utils/errorHandler'
 
 // 生成UUID
 const generateUUID = () => {
@@ -173,6 +174,7 @@ export const useSettingsStore = defineStore('settings', () => {
       }
     } catch (e) {
       console.error('保存设置失败:', e)
+      showErrorToast('保存设置失败')
     }
   }
 

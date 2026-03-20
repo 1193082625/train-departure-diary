@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import { dbOps, isDBAvailable } from '@/utils/db'
 import { useUserStore } from './user'
 import { ROLES } from './user'
+import { showErrorToast } from '@/utils/errorHandler'
 
 export const useMerchantStore = defineStore('merchant', () => {
   const merchants = ref([])
@@ -53,14 +54,20 @@ export const useMerchantStore = defineStore('merchant', () => {
       throw new Error('数据库不可用')
     }
 
-    // 保存到数据库
-    for (const merchant of merchants.value) {
-      const existing = await dbOps.queryBy('merchants', 'id', merchant.id)
-      if (existing && existing.length > 0) {
-        await dbOps.update('merchants', merchant.id, merchant)
-      } else {
-        await dbOps.insert('merchants', merchant)
+    try {
+      // 保存到数据库
+      for (const merchant of merchants.value) {
+        const existing = await dbOps.queryBy('merchants', 'id', merchant.id)
+        if (existing && existing.length > 0) {
+          await dbOps.update('merchants', merchant.id, merchant)
+        } else {
+          await dbOps.insert('merchants', merchant)
+        }
       }
+    } catch (e) {
+      console.error('【Merchant】保存商户失败:', e)
+      showErrorToast('保存商户失败')
+      throw e
     }
   }
 

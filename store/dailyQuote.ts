@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { dbOps } from '@/utils/db'
 import { useUserStore } from './user'
 import { ROLES } from './user'
+import { showErrorToast } from '@/utils/errorHandler'
 
 export const useDailyQuoteStore = defineStore('dailyQuote', () => {
   const quotes = ref([]) // 日报价列表
@@ -54,6 +55,7 @@ export const useDailyQuoteStore = defineStore('dailyQuote', () => {
       }
     } catch (e) {
       console.error('保存日报价失败:', e)
+      showErrorToast('保存日报价失败')
       throw e
     }
   }

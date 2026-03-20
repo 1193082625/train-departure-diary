@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import { dbOps, isDBAvailable } from '@/utils/db'
 import { useUserStore } from './user'
 import { ROLES } from './user'
+import { showErrorToast } from '@/utils/errorHandler'
 
 export const useWorkerStore = defineStore('worker', () => {
   const workers = ref([])
@@ -53,10 +54,16 @@ export const useWorkerStore = defineStore('worker', () => {
       throw new Error('数据库不可用')
     }
 
-    // 先删除所有旧数据
-    await dbOps.deleteAll('workers')
-    for (const worker of workers.value) {
-      await dbOps.insert('workers', worker)
+    try {
+      // 先删除所有旧数据
+      await dbOps.deleteAll('workers')
+      for (const worker of workers.value) {
+        await dbOps.insert('workers', worker)
+      }
+    } catch (e) {
+      console.error('【Worker】保存员工失败:', e)
+      showErrorToast('保存员工失败')
+      throw e
     }
   }
 

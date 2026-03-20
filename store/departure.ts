@@ -4,6 +4,7 @@ import { dbOps } from '@/utils/db'
 import { useUserStore } from './user'
 import { useWorkerStore } from './worker'
 import { ROLES } from './user'
+import { showErrorToast } from '@/utils/errorHandler'
 
 export const useDepartureStore = defineStore('departure', () => {
   const records = ref([])
@@ -99,23 +100,35 @@ export const useDepartureStore = defineStore('departure', () => {
   }
 
   const addRecord = async (record) => {
-    const userStore = useUserStore()
-    const newRecord = {
-      ...record,
-      id: Date.now().toString(),
-      userId: userStore.currentUser?.id || null,
-      createdAt: new Date().toISOString()
+    try {
+      const userStore = useUserStore()
+      const newRecord = {
+        ...record,
+        id: Date.now().toString(),
+        userId: userStore.currentUser?.id || null,
+        createdAt: new Date().toISOString()
+      }
+      records.value.push(newRecord)
+      await saveRecords()
+      return newRecord
+    } catch (e) {
+      console.error('【Departure】添加发车记录失败:', e)
+      showErrorToast('保存发车记录失败')
+      throw e
     }
-    records.value.push(newRecord)
-    await saveRecords()
-    return newRecord
   }
 
   const updateRecord = async (id, updates) => {
-    const index = records.value.findIndex(r => r.id === id)
-    if (index !== -1) {
-      records.value[index] = { ...records.value[index], ...updates }
-      await saveRecords()
+    try {
+      const index = records.value.findIndex(r => r.id === id)
+      if (index !== -1) {
+        records.value[index] = { ...records.value[index], ...updates }
+        await saveRecords()
+      }
+    } catch (e) {
+      console.error('【Departure】更新发车记录失败:', e)
+      showErrorToast('更新发车记录失败')
+      throw e
     }
   }
 

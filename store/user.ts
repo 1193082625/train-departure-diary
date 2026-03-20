@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { userDbOps, inviteDbOps, dbOps, initDB } from '@/utils/db'
+import { showErrorToast } from '@/utils/errorHandler'
 
 // 生成UUID
 const generateUUID = () => {
@@ -137,6 +138,7 @@ export const useUserStore = defineStore('user', () => {
       users.value = results || []
     } catch (e) {
       console.error('加载用户列表失败:', e)
+      showErrorToast('加载用户列表失败')
       users.value = []
     }
   }
@@ -314,6 +316,7 @@ export const useUserStore = defineStore('user', () => {
       return { success: true, needSetPassword: true, user: newUser }
     } catch (e) {
       console.error('登录失败:', e)
+      showErrorToast('登录失败')
       return { success: false, message: '登录失败' }
     }
   }
@@ -330,6 +333,7 @@ export const useUserStore = defineStore('user', () => {
       return { success: true }
     } catch (e) {
       console.error('设置密码失败:', e)
+      showErrorToast('设置密码失败')
       return { success: false, message: '设置密码失败' }
     }
   }
@@ -348,6 +352,7 @@ export const useUserStore = defineStore('user', () => {
       return { success: true }
     } catch (e) {
       console.error('修改密码失败:', e)
+      showErrorToast('修改密码失败')
       return { success: false, message: '修改密码失败' }
     }
   }
@@ -377,6 +382,7 @@ export const useUserStore = defineStore('user', () => {
       return { success: true, user: newUser }
     } catch (e) {
       console.error('创建用户失败:', e)
+      showErrorToast('创建用户失败')
       return { success: false, message: '创建用户失败' }
     }
   }
@@ -391,6 +397,7 @@ export const useUserStore = defineStore('user', () => {
       return { success: true }
     } catch (e) {
       console.error('更新用户失败:', e)
+      showErrorToast('更新用户信息失败')
       // 云端更新失败时，仅更新本地内存状态
       currentUser.value = { ...currentUser.value, ...updates }
       uni.setStorageSync('currentUser', JSON.stringify(currentUser.value))
@@ -441,6 +448,7 @@ export const useUserStore = defineStore('user', () => {
       return code
     } catch (e) {
       console.error('生成邀请码失败:', e)
+      showErrorToast('生成邀请码失败')
       return null
     }
   }
@@ -452,6 +460,7 @@ export const useUserStore = defineStore('user', () => {
       return await inviteDbOps.getByCreator(currentUser.value.id)
     } catch (e) {
       console.error('获取邀请码列表失败:', e)
+      showErrorToast('获取邀请码列表失败')
       return []
     }
   }
@@ -467,6 +476,7 @@ export const useUserStore = defineStore('user', () => {
       return users.value.filter(u => u.parentId === currentUser.value.id)
     } catch (e) {
       console.error('获取下级用户失败:', e)
+      showErrorToast('获取下级用户失败')
       return []
     }
   }
@@ -518,19 +528,25 @@ export const useUserStore = defineStore('user', () => {
       return null // null 表示全部
     }
 
-    // 中间商：返回自己创建的商户
-    if (currentUser.value.role === ROLES.MIDDLEMAN) {
-      const results = await dbOps.queryBy('merchants', 'userId', currentUser.value.id)
-      return results ? results.map(m => m.id) : []
-    }
+    try {
+      // 中间商：返回自己创建的商户
+      if (currentUser.value.role === ROLES.MIDDLEMAN) {
+        const results = await dbOps.queryBy('merchants', 'userId', currentUser.value.id)
+        return results ? results.map(m => m.id) : []
+      }
 
-    // 装发车和鸡场：返回中间商的商户
-    if (currentUser.value.parentId) {
-      const results = await dbOps.queryBy('merchants', 'userId', currentUser.value.parentId)
-      return results ? results.map(m => m.id) : []
-    }
+      // 装发车和鸡场：返回中间商的商户
+      if (currentUser.value.parentId) {
+        const results = await dbOps.queryBy('merchants', 'userId', currentUser.value.parentId)
+        return results ? results.map(m => m.id) : []
+      }
 
-    return []
+      return []
+    } catch (e) {
+      console.error('获取商户ID列表失败:', e)
+      showErrorToast('获取商户列表失败')
+      return []
+    }
   }
 
   // 获取当前用户可访问的员工ID列表
@@ -542,19 +558,25 @@ export const useUserStore = defineStore('user', () => {
       return null // null 表示全部
     }
 
-    // 中间商：返回自己创建的人员
-    if (currentUser.value.role === ROLES.MIDDLEMAN) {
-      const results = await dbOps.queryBy('workers', 'userId', currentUser.value.id)
-      return results ? results.map(w => w.id) : []
-    }
+    try {
+      // 中间商：返回自己创建的人员
+      if (currentUser.value.role === ROLES.MIDDLEMAN) {
+        const results = await dbOps.queryBy('workers', 'userId', currentUser.value.id)
+        return results ? results.map(w => w.id) : []
+      }
 
-    // 装发车：返回中间商的人员
-    if (currentUser.value.parentId) {
-      const results = await dbOps.queryBy('workers', 'userId', currentUser.value.parentId)
-      return results ? results.map(w => w.id) : []
-    }
+      // 装发车：返回中间商的人员
+      if (currentUser.value.parentId) {
+        const results = await dbOps.queryBy('workers', 'userId', currentUser.value.parentId)
+        return results ? results.map(w => w.id) : []
+      }
 
-    return []
+      return []
+    } catch (e) {
+      console.error('获取员工ID列表失败:', e)
+      showErrorToast('获取员工列表失败')
+      return []
+    }
   }
 
   // 自动调用 init() 确保初始化完成
