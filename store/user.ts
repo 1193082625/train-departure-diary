@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { userDbOps, inviteDbOps, merchantUserDbOps, merchantFarmDbOps, merchantWorkerDbOps, dbOps, initDB } from '@/utils/db'
+import { userDbOps, inviteDbOps, dbOps, initDB } from '@/utils/db'
 
 // 生成UUID
 const generateUUID = () => {
@@ -108,40 +108,6 @@ const initTestData = async () => {
       }
     }
 
-    // 建立中间商A和装发车A、鸡场A的关联
-    const middlemanA = await userDbOps.getUserByPhone('18131172057')
-    const loaderA = await userDbOps.getUserByPhone('13800000002')
-    const farmA = await userDbOps.getUserByPhone('13800000003')
-
-    if (middlemanA && middlemanA.length > 0 && loaderA && loaderA.length > 0) {
-      // 更新装发车A的parentId
-      await userDbOps.updateUser(loaderA[0].id, { parentId: middlemanA[0].id })
-
-      // 添加到中间商的下级用户
-      await merchantUserDbOps.add({
-        id: generateUUID(),
-        middlemanId: middlemanA[0].id,
-        userId: loaderA[0].id,
-        userPhone: '13800000002',
-        userRole: ROLES.LOADER,
-        createdAt: new Date().toISOString()
-      })
-    }
-
-    if (middlemanA && middlemanA.length > 0 && farmA && farmA.length > 0) {
-      // 更新鸡场A的parentId
-      await userDbOps.updateUser(farmA[0].id, { parentId: middlemanA[0].id })
-
-      // 添加到中间商的下级用户
-      await merchantUserDbOps.add({
-        id: generateUUID(),
-        middlemanId: middlemanA[0].id,
-        userId: farmA[0].id,
-        userPhone: '13800000003',
-        userRole: ROLES.FARM,
-        createdAt: new Date().toISOString()
-      })
-    }
   } catch (e) {
     console.error('初始化测试数据失败:', e)
   }
@@ -181,11 +147,12 @@ export const useUserStore = defineStore('user', () => {
     await initDB()
 
     // 先初始化测试数据
-    await initTestData()
+    // await initTestData()
 
     // 加载所有用户
     await loadUsers()
 
+    // 从本地存储恢复登录状态
     const userData = uni.getStorageSync('currentUser')
     if (userData) {
       // 检查会话是否过期
@@ -338,18 +305,6 @@ export const useUserStore = defineStore('user', () => {
         await inviteDbOps.useCode(code, newUser.id)
       } catch (e) {
         console.error('标记邀请码失败:', e)
-      }
-
-      // 如果是中间商邀请的装发车或鸡场，添加到中间商的下级用户
-      if (inv.creatorId && (inv.type === ROLES.LOADER || inv.type === ROLES.FARM)) {
-        await merchantUserDbOps.add({
-          id: generateUUID(),
-          middlemanId: inv.creatorId,
-          userId: newUser.id,
-          userPhone: phone,
-          userRole: inv.type,
-          createdAt: new Date().toISOString()
-        })
       }
 
       // 首次登录需要设置密码
@@ -508,14 +463,15 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
-  // 获取当前用户的所有下级用户
+  // 获取当前用户的所有下级用户（基于 parentId 关联）
   const getSubUsers = async () => {
     if (!currentUser.value) return []
     if (currentUser.value.role !== ROLES.ADMIN && currentUser.value.role !== ROLES.MIDDLEMAN) {
       return []
     }
     try {
-      return await merchantUserDbOps.getByMiddleman(currentUser.value.id)
+      // 基于 parentId 获取下级用户
+      return users.value.filter(u => u.parentId === currentUser.value.id)
     } catch (e) {
       console.error('获取下级用户失败:', e)
       return []
@@ -633,7 +589,6 @@ export const useUserStore = defineStore('user', () => {
     changePassword,
     generateCode,
     getMyCodes,
-    getSubUsers,
     getParentId,
     getMiddlemanId,
     getMyMerchantIds,

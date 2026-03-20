@@ -45,6 +45,7 @@ export const initDB = () => {
             const database = uniCloud.database()
             if (database) {
               db = database
+              // 初始化命令
               dbCmd = db.command
               dbInitStatus = 'success'
               console.log('【数据库】初始化成功')
@@ -314,75 +315,6 @@ export const inviteDbOps = {
   }
 }
 
-// 商户关联相关查询
-export const merchantUserDbOps = {
-  // 添加下级用户
-  add: (data) => {
-    return dbOps.insert('merchant_users', data)
-  },
-
-  // 根据中间商ID查询下级用户
-  getByMiddleman: (middlemanId) => {
-    return dbOps.queryBy('merchant_users', 'middlemanId', middlemanId)
-  },
-
-  // 根据用户ID查询
-  getByUser: (userId) => {
-    return dbOps.queryBy('merchant_users', 'userId', userId)
-  },
-
-  // 删除
-  delete: (id) => {
-    return dbOps.delete('merchant_users', id)
-  }
-}
-
-// 商户鸡场关联
-export const merchantFarmDbOps = {
-  // 关联
-  add: (data) => {
-    return dbOps.insert('merchant_farms', data)
-  },
-
-  // 根据中间商查询
-  getByMiddleman: (middlemanId) => {
-    return dbOps.queryBy('merchant_farms', 'middlemanId', middlemanId)
-  },
-
-  // 根据用户查询
-  getByUser: (userId) => {
-    return dbOps.queryBy('merchant_farms', 'userId', userId)
-  },
-
-  // 删除
-  delete: (id) => {
-    return dbOps.delete('merchant_farms', id)
-  }
-}
-
-// 商户员工关联
-export const merchantWorkerDbOps = {
-  // 关联
-  add: (data) => {
-    return dbOps.insert('merchant_workers', data)
-  },
-
-  // 根据中间商查询
-  getByMiddleman: (middlemanId) => {
-    return dbOps.queryBy('merchant_workers', 'middlemanId', middlemanId)
-  },
-
-  // 根据用户查询
-  getByUser: (userId) => {
-    return dbOps.queryBy('merchant_workers', 'userId', userId)
-  },
-
-  // 删除
-  delete: (id) => {
-    return dbOps.delete('merchant_workers', id)
-  }
-}
-
 // 通用的 CRUD 操作
 export const dbOps = {
   // 查询所有记录
@@ -585,8 +517,5 @@ export default {
   waitForDB,
   dbOps,
   userDbOps,
-  inviteDbOps,
-  merchantUserDbOps,
-  merchantFarmDbOps,
-  merchantWorkerDbOps
+  inviteDbOps
 }
