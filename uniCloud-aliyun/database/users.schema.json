@@ -27,7 +27,7 @@
 		"role": {
 			"description": "角色",
 			"bsonType": "string",
-			"defaultValue": "admin"
+			"defaultValue": "middleman"
 		},
 		"inviteCode": {
 			"description": "邀请码",

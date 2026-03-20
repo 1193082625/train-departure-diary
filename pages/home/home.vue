@@ -337,9 +337,7 @@ const onCalendarChange = (e) => {
   }
 
   // 如果当日无报价，弹出填写窗口
-  if (!selectedDateQuote.value) {
     quotePopup.value.open('center')
-  }
 }
 
 // 保存报价
@@ -349,7 +347,8 @@ const saveQuote = () => {
     return
   }
 
-  // 保存到本地存储
+  // 保存到远程数据库
+  // db.
   const manualQuotes = uni.getStorageSync('dailyQuotes') || {}
   manualQuotes[popupDate.value] = quoteInput.value
   uni.setStorageSync('dailyQuotes', manualQuotes)

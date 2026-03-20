@@ -1,6 +1,17 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { dbOps } from '@/utils/db'
+import { dbOps, initDB } from '@/utils/db'
+import { useUserStore } from './user'
+import { ROLES } from './user'
+
+// 生成UUID
+const generateUUID = () => {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0
+    const v = c === 'x' ? r : (r & 0x3 | 0x8)
+    return v.toString(16)
+  })
+}
 
 export const useSettingsStore = defineStore('settings', () => {
   const receiptBigBoxWeight = ref<number>(45)  // 收货大框斤数
@@ -15,15 +26,66 @@ export const useSettingsStore = defineStore('settings', () => {
   const entryFee = ref<number>(50)        // 进门费
   const oilFee = ref<number>(50)          // 油费
 
-  const loadSettings = async () => {
+  // 当前settings所属的userId（中间商ID）
+  const currentSettingsUserId = ref<string | null>(null)
+
+  // 获取默认设置
+  const getDefaultSettings = () => ({
+    receiptBigBoxWeight: 45,
+    deliveryBigBoxWeight: 44,
+    smallBoxWeight: 29.5,
+    depotCartonBoxesBig: 43,
+    depotCartonBoxesSmall: 30,
+    loadingFee: 0,
+    unloadingFee: 0,
+    departureFee: 0,
+    tollFee: 0,
+    entryFee: 0,
+    oilFee: 0
+  })
+
+  // 初始化指定用户的settings（如果不存在则创建）
+  const initSettingsForUser = async (userId: string) => {
     try {
-      // 尝试从数据库加载（添加 limit 避免资源耗尽）
-      const results = await dbOps.queryAll('settings', 1)
+      const results = await dbOps.queryBy('settings', 'userId', userId)
+      if (!results || results.length === 0) {
+        // 创建默认settings
+        const defaultSettings = getDefaultSettings()
+        const newSettings = {
+          id: generateUUID(),
+          userId: userId,
+          ...defaultSettings
+        }
+        await dbOps.insert('settings', newSettings)
+        console.log(`【Settings】为用户 ${userId} 创建默认settings`)
+      }
+    } catch (e) {
+      console.error(`【Settings】初始化用户settings失败:`, e)
+    }
+  }
+
+  // 从数据库加载当前用户的settings
+  const loadSettings = async () => {
+    const userStore = useUserStore()
+    const middlemanId = userStore.getMiddlemanId()
+
+    // 管理员角色不加载settings，使用默认值
+    if (!middlemanId) {
+      console.log('【Settings】非中间商角色，使用默认设置')
+      resetToDefaults()
+      currentSettingsUserId.value = null
+      return
+    }
+
+    try {
+      // 按userId查询对应的settings
+      const results = await dbOps.queryBy('settings', 'userId', middlemanId)
       if (results && results.length > 0) {
         const settings = results[0]
+        currentSettingsUserId.value = middlemanId
         receiptBigBoxWeight.value = settings.receiptBigBoxWeight ?? 45
         deliveryBigBoxWeight.value = settings.deliveryBigBoxWeight ?? 44
-        smallBoxWeight.value = settings.smallBoxWeight ?? 30
+        smallBoxWeight.value = settings.smallBoxWeight ?? 29.5
         depotCartonBoxesBig.value = settings.depotCartonBoxesBig ?? 43
         depotCartonBoxesSmall.value = settings.depotCartonBoxesSmall ?? 30
         loadingFee.value = settings.loadingFee ?? 0
@@ -33,38 +95,51 @@ export const useSettingsStore = defineStore('settings', () => {
         entryFee.value = settings.entryFee ?? 0
         oilFee.value = settings.oilFee ?? 0
       } else {
-        // 如果数据库没有，从 localStorage 兼容读取
-        loadFromLocalStorage()
+        // 没有找到settings，初始化一个
+        await initSettingsForUser(middlemanId)
+        resetToDefaults()
+        currentSettingsUserId.value = middlemanId
       }
     } catch (e) {
-      console.error('加载设置失败，使用本地存储:', e)
-      // 兼容：localStorage 读取
-      loadFromLocalStorage()
+      console.error('加载设置失败:', e)
+      resetToDefaults()
     }
   }
 
-  // 从本地存储加载设置
-  const loadFromLocalStorage = () => {
-    const data = uni.getStorageSync('settings')
-    if (data) {
-      const settings = JSON.parse(data)
-      receiptBigBoxWeight.value = settings.receiptBigBoxWeight ?? 45
-      deliveryBigBoxWeight.value = settings.deliveryBigBoxWeight ?? 44
-      smallBoxWeight.value = settings.smallBoxWeight ?? 30
-      depotCartonBoxesBig.value = settings.depotCartonBoxesBig ?? 43
-      depotCartonBoxesSmall.value = settings.depotCartonBoxesSmall ?? 30
-      loadingFee.value = settings.loadingFee ?? 0
-      unloadingFee.value = settings.unloadingFee ?? 0
-      departureFee.value = settings.departureFee ?? 0
-      tollFee.value = settings.tollFee ?? 0
-      entryFee.value = settings.entryFee ?? 0
-      oilFee.value = settings.oilFee ?? 0
-    }
+  // 重置为默认值
+  const resetToDefaults = () => {
+    const defaults = getDefaultSettings()
+    receiptBigBoxWeight.value = defaults.receiptBigBoxWeight
+    deliveryBigBoxWeight.value = defaults.deliveryBigBoxWeight
+    smallBoxWeight.value = defaults.smallBoxWeight
+    depotCartonBoxesBig.value = defaults.depotCartonBoxesBig
+    depotCartonBoxesSmall.value = defaults.depotCartonBoxesSmall
+    loadingFee.value = defaults.loadingFee
+    unloadingFee.value = defaults.unloadingFee
+    departureFee.value = defaults.departureFee
+    tollFee.value = defaults.tollFee
+    entryFee.value = defaults.entryFee
+    oilFee.value = defaults.oilFee
   }
 
+  // 保存设置到数据库
   const saveSettings = async () => {
-    const settings = {
-      id: 1,
+    const userStore = useUserStore()
+    const middlemanId = userStore.getMiddlemanId()
+
+    // 只有中间商角色才能保存
+    if (!middlemanId) {
+      console.warn('【Settings】非中间商角色，不能保存settings')
+      return
+    }
+
+    // 装发车角色不能修改settings（只能使用）
+    if (userStore.currentUser?.role === ROLES.LOADER) {
+      console.warn('【Settings】装发车角色不能修改settings')
+      return
+    }
+
+    const settingsData = {
       receiptBigBoxWeight: Number(receiptBigBoxWeight.value),
       deliveryBigBoxWeight: Number(deliveryBigBoxWeight.value),
       smallBoxWeight: Number(smallBoxWeight.value),
@@ -79,14 +154,29 @@ export const useSettingsStore = defineStore('settings', () => {
     }
 
     try {
-      // 尝试保存到数据库
-      await dbOps.update('settings', 1, settings)
+      // 先查询是否已有该用户的settings
+      const existing = await dbOps.queryBy('settings', 'userId', middlemanId)
+      if (existing && existing.length > 0 && existing[0]._id) {
+        // 存在则使用云端_id更新
+        const db = await initDB()
+        if (db) {
+          await db.collection('settings').doc(existing[0]._id).update(settingsData)
+        }
+      } else {
+        // 不存在则插入
+        const newSettings = {
+          id: generateUUID(),
+          userId: middlemanId,
+          ...settingsData
+        }
+        await dbOps.insert('settings', newSettings)
+      }
     } catch (e) {
-      // 兼容：保存到 localStorage
-      uni.setStorageSync('settings', JSON.stringify(settings))
+      console.error('保存设置失败:', e)
     }
   }
 
+  // 更新单个设置项并保存
   const setReceiptBigBoxWeight = (weight: number) => {
     receiptBigBoxWeight.value = weight
     saveSettings()
@@ -142,6 +232,7 @@ export const useSettingsStore = defineStore('settings', () => {
     saveSettings()
   }
 
+  // 批量更新设置
   const updateAllSettings = (params) => {
     if (params.receiptBigBoxWeight !== undefined) receiptBigBoxWeight.value = Number(params.receiptBigBoxWeight)
     if (params.deliveryBigBoxWeight !== undefined) deliveryBigBoxWeight.value = Number(params.deliveryBigBoxWeight)
@@ -172,6 +263,7 @@ export const useSettingsStore = defineStore('settings', () => {
     tollFee,
     entryFee,
     oilFee,
+    currentSettingsUserId,
     setReceiptBigBoxWeight,
     setDeliveryBigBoxWeight,
     setSmallBoxWeight,
@@ -184,6 +276,7 @@ export const useSettingsStore = defineStore('settings', () => {
     setEntryFee,
     setOilFee,
     updateAllSettings,
-    loadSettings
+    loadSettings,
+    initSettingsForUser
   }
 })

@@ -7,7 +7,8 @@
 		"delete": true
 	},
 	"properties": {
-		"id": { "description": "ID", "bsonType": "int" },
+		"id": { "description": "ID", "bsonType": "string" },
+		"userId": { "description": "所属用户ID(中间商)", "bsonType": "string" },
 		"receiptBigBoxWeight": { "description": "收货大箱重量", "bsonType": "double", "defaultValue": 45 },
 		"deliveryBigBoxWeight": { "description": "发货大箱重量", "bsonType": "double", "defaultValue": 44 },
 		"smallBoxWeight": { "description": "小箱重量", "bsonType": "double", "defaultValue": 29.5 },
