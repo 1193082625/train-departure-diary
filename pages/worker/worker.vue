@@ -6,7 +6,7 @@
     </view>
 
     <view class="worker-list">
-      <view v-for="worker in workerStore.workers" :key="worker.id" class="worker-card">
+      <view v-for="worker in workerStore.filteredWorkers" :key="worker.id" class="worker-card">
         <view class="worker-info">
           <text class="name">{{ worker.name }}</text>
           <text class="phone">{{ worker.phone }}</text>

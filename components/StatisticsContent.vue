@@ -279,7 +279,7 @@ watch(() => [dateRange.start, dateRange.end], () => {
   updateMerchantRecord()
 })
 
-const workerOptions = computed(() => workerStore.workers)
+const workerOptions = computed(() => workerStore.filteredWorkers)
 const merchantOptions = computed(() => merchantStore.filteredMerchants)
 
 const selectedWorker = computed(() => workerStore.getWorkerById(selectedWorkerId.value))

@@ -243,12 +243,12 @@ const chartData = ref({
       data: [],
       areaStyle: true
     },
-    {
-      name: '盈利',
-      color: '#52C41A',
-      data: [],
-      areaStyle: false
-    }
+    // {
+    //   name: '盈利',
+    //   color: '#52C41A',
+    //   data: [],
+    //   areaStyle: false
+    // }
   ]
 })
 
@@ -342,7 +342,7 @@ const updateChartData = () => {
       categories: [],
       series: [
         { name: '报价', color: '#FF9500', data: [], areaStyle: true },
-        { name: '盈利', color: '#52C41A', data: [], areaStyle: false }
+        // { name: '盈利', color: '#52C41A', data: [], areaStyle: false }
       ]
     }
     chartPoints.value = []
@@ -370,12 +370,12 @@ const updateChartData = () => {
         data: quoteData,
         areaStyle: true
       },
-      {
-        name: '盈利',
-        color: '#52C41A',
-        data: profitData,
-        areaStyle: false
-      }
+    //   {
+    //     name: '盈利',
+    //     color: '#52C41A',
+    //     data: profitData,
+    //     areaStyle: false
+    //   }
     ]
   }
 

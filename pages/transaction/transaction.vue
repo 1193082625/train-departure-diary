@@ -72,8 +72,8 @@ const form = reactive({
 
 const targetOptions = computed(() =>
   form.type === 'payment_to_merchant'
-    ? merchantStore.merchants
-    : workerStore.workers
+    ? merchantStore.filteredMerchants
+    : workerStore.filteredWorkers
 )
 
 const selectedTarget = computed(() => {
