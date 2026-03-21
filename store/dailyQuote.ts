@@ -32,7 +32,7 @@ export const useDailyQuoteStore = defineStore('dailyQuote', () => {
       if (existing && existing.length > 0) {
         // 更新已有报价
         await dbOps.update('daily_quotes', existing[0].id, {
-          quote,
+          quote: Number(quote),
           userId
         })
       } else {
@@ -40,7 +40,7 @@ export const useDailyQuoteStore = defineStore('dailyQuote', () => {
         const newQuote = {
           id: Date.now().toString(),
           date,
-          quote,
+          quote: Number(quote),
           userId,
           createdAt: new Date().toISOString()
         }
@@ -50,7 +50,7 @@ export const useDailyQuoteStore = defineStore('dailyQuote', () => {
       // 更新本地 quotes 数组中的对应记录
       const index = quotes.value.findIndex(q => q.date === date)
       if (index !== -1) {
-        quotes.value[index].quote = quote
+        quotes.value[index].quote = Number(quote)
         quotes.value[index].userId = userId
       }
     } catch (e) {
