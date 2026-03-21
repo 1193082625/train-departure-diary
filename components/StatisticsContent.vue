@@ -146,12 +146,13 @@
 </template>
 
 <script setup>
-import { ref, computed, reactive, watch, watchEffect, nextTick } from 'vue'
+import { ref, computed, reactive, watch, watchEffect, nextTick, onShow, onHide } from 'vue'
 import { useWorkerStore } from '@/store/worker'
 import { useMerchantStore } from '@/store/merchant'
 import { useDepartureStore } from '@/store/departure'
 import { useTransactionStore } from '@/store/transaction'
 import { useSettingsStore } from '@/store/settings'
+import { subscribe } from '@/utils/eventBus'
 import MiddlemanSelector from '@/components/middleman-selector.vue'
 
 const workerStore = useWorkerStore()
@@ -159,6 +160,28 @@ const merchantStore = useMerchantStore()
 const departureStore = useDepartureStore()
 const transactionStore = useTransactionStore()
 const settingsStore = useSettingsStore()
+
+let unsubscribers = []
+
+onShow(() => {
+  unsubscribers.push(subscribe('departure:refresh', () => {
+    departureStore.loadRecords()
+  }))
+  unsubscribers.push(subscribe('worker:refresh', () => {
+    workerStore.loadWorkers()
+  }))
+  unsubscribers.push(subscribe('merchant:refresh', () => {
+    merchantStore.loadMerchants()
+  }))
+  unsubscribers.push(subscribe('transaction:refresh', () => {
+    transactionStore.loadTransactions()
+  }))
+})
+
+onHide(() => {
+  unsubscribers.forEach(fn => fn())
+  unsubscribers = []
+})
 
 const activeTab = ref('worker')
 const selectedWorkerId = ref('')

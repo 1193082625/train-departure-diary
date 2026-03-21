@@ -4,6 +4,7 @@ import { dbOps } from '@/utils/db'
 import { useUserStore } from './user'
 import { ROLES } from './user'
 import { showErrorToast } from '@/utils/errorHandler'
+import { publish } from '@/utils/eventBus'
 
 export const useTransactionStore = defineStore('transaction', () => {
   const transactions = ref([])
@@ -45,6 +46,7 @@ export const useTransactionStore = defineStore('transaction', () => {
       }
       transactions.value.push(newTransaction)
       await saveTransactions()
+      publish('transaction:refresh', newTransaction)
       return newTransaction
     } catch (e) {
       console.error('【Transaction】添加交易记录失败:', e)
@@ -57,6 +59,7 @@ export const useTransactionStore = defineStore('transaction', () => {
     transactions.value = transactions.value.filter(t => t.id !== id)
     try {
       await dbOps.delete('transactions', id)
+      publish('transaction:refresh', null)
     } catch (e) {
       console.error('【Transaction】删除交易记录失败:', e)
     }

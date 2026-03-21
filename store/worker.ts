@@ -4,6 +4,7 @@ import { dbOps, isDBAvailable } from '@/utils/db'
 import { useUserStore } from './user'
 import { ROLES } from './user'
 import { showErrorToast } from '@/utils/errorHandler'
+import { publish } from '@/utils/eventBus'
 
 export const useWorkerStore = defineStore('worker', () => {
   const workers = ref([])
@@ -77,6 +78,7 @@ export const useWorkerStore = defineStore('worker', () => {
     }
     workers.value.push(newWorker)
     await saveWorkers()
+    publish('worker:refresh', newWorker)
     return newWorker
   }
 
@@ -85,12 +87,14 @@ export const useWorkerStore = defineStore('worker', () => {
     if (index !== -1) {
       workers.value[index] = { ...workers.value[index], ...updates }
       await saveWorkers()
+      publish('worker:refresh', workers.value[index])
     }
   }
 
   const deleteWorker = async (id) => {
     workers.value = workers.value.filter(w => w.id !== id)
     await saveWorkers()
+    publish('worker:refresh', null)
   }
 
   const getWorkerById = (id) => workers.value.find(w => w.id === id)

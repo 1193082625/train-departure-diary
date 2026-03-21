@@ -41,13 +41,27 @@
 
 <script setup>
 import { ref } from 'vue'
-import { onShow } from '@dcloudio/uni-app'
+import { onShow, onHide } from '@dcloudio/uni-app'
+import { useDepartureStore } from '@/store/departure'
+import { subscribe } from '@/utils/eventBus'
 import MiddlemanSelector from '@/components/middleman-selector.vue'
 import QuickEntry from './components/quick-entry.vue'
 import DailyQuotes from './components/daily-quotes.vue'
 import TodayRecords from './components/today-records.vue'
 
 const dailyQuotesRef = ref(null)
+const departureStore = useDepartureStore()
+let unsubscribe = null
+
+onShow(() => {
+  unsubscribe = subscribe('departure:refresh', () => {
+    departureStore.loadRecords()
+  })
+})
+
+onHide(() => {
+  if (unsubscribe) { unsubscribe(); unsubscribe = null }
+})
 
 // 控制图表内容显示（用于全屏跳转时隐藏）
 const showChartContent = ref(true)

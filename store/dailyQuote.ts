@@ -4,6 +4,7 @@ import { dbOps } from '@/utils/db'
 import { useUserStore } from './user'
 import { ROLES } from './user'
 import { showErrorToast } from '@/utils/errorHandler'
+import { publish } from '@/utils/eventBus'
 
 export const useDailyQuoteStore = defineStore('dailyQuote', () => {
   const quotes = ref([]) // 日报价列表
@@ -53,6 +54,7 @@ export const useDailyQuoteStore = defineStore('dailyQuote', () => {
         quotes.value[index].quote = Number(quote)
         quotes.value[index].userId = userId
       }
+      publish('dailyQuote:refresh', { date, quote })
     } catch (e) {
       console.error('保存日报价失败:', e)
       showErrorToast('保存日报价失败')

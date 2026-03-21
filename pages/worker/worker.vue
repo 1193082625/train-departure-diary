@@ -74,12 +74,25 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onShow, onHide } from 'vue'
 import { useWorkerStore } from '@/store/worker'
 import { useUserStore } from '@/store/user'
+import { subscribe } from '@/utils/eventBus'
 
 const workerStore = useWorkerStore()
 const userStore = useUserStore()
+
+let unsubscribe = null
+
+onShow(() => {
+  unsubscribe = subscribe('worker:refresh', () => {
+    workerStore.loadWorkers()
+  })
+})
+
+onHide(() => {
+  if (unsubscribe) { unsubscribe(); unsubscribe = null }
+})
 
 const showAddModal = ref(false)
 const editingWorker = ref(null)

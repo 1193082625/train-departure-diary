@@ -69,12 +69,25 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onShow, onHide } from 'vue'
 import { useMerchantStore } from '@/store/merchant'
 import { useUserStore } from '@/store/user'
+import { subscribe } from '@/utils/eventBus'
 
 const merchantStore = useMerchantStore()
 const userStore = useUserStore()
+
+let unsubscribe = null
+
+onShow(() => {
+  unsubscribe = subscribe('merchant:refresh', () => {
+    merchantStore.loadMerchants()
+  })
+})
+
+onHide(() => {
+  if (unsubscribe) { unsubscribe(); unsubscribe = null }
+})
 
 const showAddModal = ref(false)
 const editingMerchant = ref(null)

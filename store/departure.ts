@@ -5,6 +5,7 @@ import { useUserStore } from './user'
 import { useWorkerStore } from './worker'
 import { ROLES } from './user'
 import { showErrorToast } from '@/utils/errorHandler'
+import { publish } from '@/utils/eventBus'
 
 export const useDepartureStore = defineStore('departure', () => {
   const records = ref([])
@@ -113,6 +114,7 @@ export const useDepartureStore = defineStore('departure', () => {
       }
       records.value.push(newRecord)
       await saveRecords()
+      publish('departure:refresh', newRecord)
       return newRecord
     } catch (e) {
       console.error('【Departure】添加发车记录失败:', e)
@@ -127,6 +129,7 @@ export const useDepartureStore = defineStore('departure', () => {
       if (index !== -1) {
         records.value[index] = { ...records.value[index], ...updates }
         await saveRecords()
+        publish('departure:refresh', records.value[index])
       }
     } catch (e) {
       console.error('【Departure】更新发车记录失败:', e)
@@ -139,6 +142,7 @@ export const useDepartureStore = defineStore('departure', () => {
     records.value = records.value.filter(r => r.id !== id)
     try {
       await dbOps.delete('departures', id)
+      publish('departure:refresh', null)
     } catch (e) {
       console.error('【Departure】删除发车记录失败:', e)
     }

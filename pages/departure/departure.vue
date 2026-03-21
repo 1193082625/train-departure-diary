@@ -173,15 +173,28 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onShow, onHide } from 'vue'
 import { useDepartureStore } from '@/store/departure'
 import { useWorkerStore } from '@/store/worker'
 import { useUserStore } from '@/store/user'
+import { subscribe } from '@/utils/eventBus'
 import MiddlemanSelector from '@/components/middleman-selector.vue'
 
 const departureStore = useDepartureStore()
 const workerStore = useWorkerStore()
 const userStore = useUserStore()
+
+let unsubscribe = null
+
+onShow(() => {
+  unsubscribe = subscribe('departure:refresh', () => {
+    departureStore.loadRecords()
+  })
+})
+
+onHide(() => {
+  if (unsubscribe) { unsubscribe(); unsubscribe = null }
+})
 
 // 今天的日期
 const today = new Date().toISOString().split('T')[0]

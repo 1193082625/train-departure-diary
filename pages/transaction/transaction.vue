@@ -53,14 +53,27 @@
 </template>
 
 <script setup>
-import { ref, computed, reactive } from 'vue'
+import { ref, computed, reactive, onShow, onHide } from 'vue'
 import { useMerchantStore } from '@/store/merchant'
 import { useWorkerStore } from '@/store/worker'
 import { useTransactionStore } from '@/store/transaction'
+import { subscribe } from '@/utils/eventBus'
 
 const merchantStore = useMerchantStore()
 const workerStore = useWorkerStore()
 const transactionStore = useTransactionStore()
+
+let unsubscribe = null
+
+onShow(() => {
+  unsubscribe = subscribe('transaction:refresh', () => {
+    transactionStore.loadTransactions()
+  })
+})
+
+onHide(() => {
+  if (unsubscribe) { unsubscribe(); unsubscribe = null }
+})
 
 const form = reactive({
   type: 'payment_to_merchant',

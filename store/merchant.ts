@@ -4,6 +4,7 @@ import { dbOps, isDBAvailable } from '@/utils/db'
 import { useUserStore } from './user'
 import { ROLES } from './user'
 import { showErrorToast } from '@/utils/errorHandler'
+import { publish } from '@/utils/eventBus'
 
 export const useMerchantStore = defineStore('merchant', () => {
   const merchants = ref([])
@@ -81,6 +82,7 @@ export const useMerchantStore = defineStore('merchant', () => {
     }
     merchants.value.push(newMerchant)
     await saveMerchants()
+    publish('merchant:refresh', newMerchant)
     return newMerchant
   }
 
@@ -89,12 +91,14 @@ export const useMerchantStore = defineStore('merchant', () => {
     if (index !== -1) {
       merchants.value[index] = { ...merchants.value[index], ...updates }
       await saveMerchants()
+      publish('merchant:refresh', merchants.value[index])
     }
   }
 
   const deleteMerchant = async (id) => {
     merchants.value = merchants.value.filter(m => m.id !== id)
     await saveMerchants()
+    publish('merchant:refresh', null)
   }
 
   const getMerchantById = (id) => merchants.value.find(m => m.id === id)
