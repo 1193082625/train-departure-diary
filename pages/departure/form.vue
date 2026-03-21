@@ -589,7 +589,7 @@ const saveRecord = () => {
   uni.navigateBack()
 }
 
-onMounted(() => {
+onMounted(async () => {
   // 加载默认设置
   loadDefaultSettings()
 
@@ -599,6 +599,8 @@ onMounted(() => {
   const options = currentPage.options || {}
 
   if (options.id) {
+    // 确保数据已加载后再查找记录
+    await departureStore.loadRecords()
     const record = departureStore.records.find(r => r.id === options.id)
     if (record) {
       Object.assign(form, record)
