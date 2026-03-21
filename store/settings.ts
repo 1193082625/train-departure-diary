@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { dbOps, initDB } from '@/utils/db'
 import { useUserStore } from './user'
 import { ROLES } from './user'
@@ -250,8 +250,13 @@ export const useSettingsStore = defineStore('settings', () => {
     saveSettings()
   }
 
-  // 初始化加载
-  loadSettings()
+  // 监听用户登录状态变化，重新加载settings
+  const userStore = useUserStore()
+  watch(() => userStore.currentUser, (newUser) => {
+    if (newUser) {
+      loadSettings()
+    }
+  }, { immediate: false })
 
   return {
     receiptBigBoxWeight,
