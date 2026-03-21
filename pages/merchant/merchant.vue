@@ -7,7 +7,7 @@
     </view>
 
     <view class="merchant-list">
-      <view v-for="merchant in merchantStore.merchants" :key="merchant.id" class="merchant-card">
+      <view v-for="merchant in merchantStore.filteredMerchants" :key="merchant.id" class="merchant-card">
         <view class="merchant-info">
           <text class="name">{{ merchant.name }}</text>
           <text class="phone">{{ merchant.phone }}</text>

@@ -345,8 +345,8 @@ const showSaveButton = computed(() => {
   return true
 })
 
-// 鸡场选项
-const merchantOptions = computed(() => merchantStore.merchants)
+// 鸡场选项（根据角色过滤）
+const merchantOptions = computed(() => merchantStore.filteredMerchants)
 // 发车人员选项
 const departureWorkerOptions = computed(() => workerStore.departureWorkers)
 // 装车人员选项

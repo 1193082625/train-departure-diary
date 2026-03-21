@@ -89,7 +89,6 @@ const activeTab = ref('calendar')
 const calendarSelected = ref([])
 const calendarStart = ref('')
 const calendarEnd = ref('')
-const selectedDateQuote = ref(null)
 const quotePopup = ref(null)
 const popupDate = ref('')
 const popupHasRecordQuote = ref(false)
@@ -125,13 +124,11 @@ const getAllQuotes = () => {
 
   // 从云端日报价表获取手动填写的报价
   dailyQuoteStore.quotes.forEach(item => {
-    if (!quotes[item.date]) {
       quotes[item.date] = {
         date: item.date,
         quote: item.quote,
         source: 'manual'
       }
-    }
   })
 
   return quotes
@@ -170,21 +167,10 @@ const onCalendarChange = (e) => {
 
   if (manualQuote !== undefined) {
     quoteInput.value = manualQuote
-    selectedDateQuote.value = {
-      date: date,
-      quote: manualQuote,
-      source: 'manual'
-    }
   } else if (recordQuote) {
     quoteInput.value = recordQuote
-    selectedDateQuote.value = {
-      date: date,
-      quote: recordQuote,
-      source: 'record'
-    }
   } else {
     quoteInput.value = null
-    selectedDateQuote.value = null
   }
 
   // 如果当日无报价，弹出填写窗口
@@ -206,12 +192,6 @@ const saveQuote = async () => {
     // 更新日历显示
     updateCalendarSelected()
 
-    // 更新当前显示
-    selectedDateQuote.value = {
-      date: popupDate.value,
-      quote: quoteInput.value,
-      source: 'manual'
-    }
   } catch (e) {
     console.error('保存日报价失败:', e)
   }
