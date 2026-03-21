@@ -6,6 +6,9 @@
       <button class="add-btn" size="mini" @click="goToForm">+ 新增</button>
     </view>
 
+    <!-- 管理员中间商选择器 -->
+    <middleman-selector />
+
     <!-- 视图模式切换 -->
     <view class="view-mode-tabs">
       <view
@@ -174,6 +177,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useDepartureStore } from '@/store/departure'
 import { useWorkerStore } from '@/store/worker'
 import { useUserStore } from '@/store/user'
+import MiddlemanSelector from '@/components/middleman-selector.vue'
 
 const departureStore = useDepartureStore()
 const workerStore = useWorkerStore()

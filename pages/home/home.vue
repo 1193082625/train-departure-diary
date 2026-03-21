@@ -1,5 +1,8 @@
 <template>
   <view class="home-page">
+    <!-- 管理员中间商选择器 -->
+    <middleman-selector />
+
     <!-- 快捷操作 -->
     <quick-entry />
 
@@ -39,6 +42,7 @@
 <script setup>
 import { ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
+import MiddlemanSelector from '@/components/middleman-selector.vue'
 import QuickEntry from './components/quick-entry.vue'
 import DailyQuotes from './components/daily-quotes.vue'
 import TodayRecords from './components/today-records.vue'

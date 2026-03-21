@@ -60,9 +60,20 @@ export const useDailyQuoteStore = defineStore('dailyQuote', () => {
     }
   }
 
-  // 获取指定日期的报价
+  // 获取指定日期的报价（按当前中间商过滤）
   const getQuoteByDate = (date) => {
-    const quoteItem = quotes.value.find(q => q.date === date)
+    const user = userStore.currentUser
+
+    let filteredQuotes = quotes.value
+    if (user?.role === ROLES.ADMIN && userStore.currentMiddlemanId) {
+      filteredQuotes = quotes.value.filter(q => q.userId === userStore.currentMiddlemanId)
+    } else if (user?.role === ROLES.MIDDLEMAN) {
+      filteredQuotes = quotes.value.filter(q => q.userId === user.id)
+    } else if (user?.parentId) {
+      filteredQuotes = quotes.value.filter(q => q.userId === user.parentId)
+    }
+
+    const quoteItem = filteredQuotes.find(q => q.date === date)
     return quoteItem ? quoteItem.quote : null
   }
 

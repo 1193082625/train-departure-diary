@@ -131,6 +131,19 @@ export const useUserStore = defineStore('user', () => {
   // 计算是否为鸡场
   const isFarm = computed(() => currentUser.value?.role === ROLES.FARM)
 
+  // 当前选中的中间商ID（管理员专用）
+  const currentMiddlemanId = ref<string | null>(null)
+
+  // 获取中间商列表（管理员用）
+  const middlemanList = computed(() => {
+    return users.value.filter(u => u.role === ROLES.MIDDLEMAN)
+  })
+
+  // 设置当前选中的中间商（管理员用）
+  const setCurrentMiddleman = (middlemanId: string | null) => {
+    currentMiddlemanId.value = middlemanId
+  }
+
   // 加载所有用户
   const loadUsers = async () => {
     try {
@@ -595,6 +608,9 @@ export const useUserStore = defineStore('user', () => {
     isMiddleman,
     isLoader,
     isFarm,
+    currentMiddlemanId,
+    middlemanList,
+    setCurrentMiddleman,
     loadUsers,
     login,
     selectRole,

@@ -3,23 +3,45 @@
   <view class="merchant-page">
     <view class="header">
       <text class="title">鸡场管理</text>
-      <button class="add-btn" size="mini" @click="showAddModal = true">+ 添加</button>
+      <button v-if="userStore.isMiddleman" class="add-btn" size="mini" @click="showAddModal = true">+ 添加</button>
     </view>
 
     <view class="merchant-list">
-      <view v-for="merchant in merchantStore.filteredMerchants" :key="merchant.id" class="merchant-card">
-        <view class="merchant-info">
-          <text class="name">{{ merchant.name }}</text>
-          <text class="phone">{{ merchant.phone }}</text>
+      <!-- 按中间商分组展示（管理员视角） -->
+      <uni-collapse v-if="userStore.isAdmin">
+        <uni-collapse-item v-for="group in groupedMerchants" :key="group.id" :title="group.nickname || group.phone" :open="expandedGroups.has(group.id)" @toggle="toggleGroup(group.id)">
+          <view v-for="merchant in group.merchants" :key="merchant.id" class="merchant-card">
+            <view class="merchant-info">
+              <text class="name">{{ merchant.name }}</text>
+              <text class="phone">{{ merchant.phone }}</text>
+            </view>
+            <view class="merchant-margin">
+              <text>差额: {{ merchant.margin }}元/框</text>
+            </view>
+            <view class="actions">
+              <text @click="editMerchant(merchant)">编辑</text>
+              <text @click="deleteMerchant(merchant.id)" class="delete">删除</text>
+            </view>
+          </view>
+        </uni-collapse-item>
+      </uni-collapse>
+
+      <!-- 非管理员直接展示 -->
+      <template v-else>
+        <view v-for="merchant in merchantStore.filteredMerchants" :key="merchant.id" class="merchant-card">
+          <view class="merchant-info">
+            <text class="name">{{ merchant.name }}</text>
+            <text class="phone">{{ merchant.phone }}</text>
+          </view>
+          <view class="merchant-margin">
+            <text>差额: {{ merchant.margin }}元/框</text>
+          </view>
+          <view class="actions">
+            <text @click="editMerchant(merchant)">编辑</text>
+            <text @click="deleteMerchant(merchant.id)" class="delete">删除</text>
+          </view>
         </view>
-        <view class="merchant-margin">
-          <text>差额: {{ merchant.margin }}元/框</text>
-        </view>
-        <view class="actions">
-          <text @click="editMerchant(merchant)">编辑</text>
-          <text @click="deleteMerchant(merchant.id)" class="delete">删除</text>
-        </view>
-      </view>
+      </template>
     </view>
 
     <!-- 添加/编辑弹窗 -->
@@ -47,10 +69,12 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import { useMerchantStore } from '@/store/merchant'
+import { useUserStore } from '@/store/user'
 
 const merchantStore = useMerchantStore()
+const userStore = useUserStore()
 
 const showAddModal = ref(false)
 const editingMerchant = ref(null)
@@ -59,6 +83,30 @@ const form = reactive({
   phone: '',
   margin: null
 })
+
+// 分组展开状态
+const expandedGroups = ref(new Set())
+
+// 分组展示（管理员视角）
+const groupedMerchants = computed(() => {
+  const allMerchants = merchantStore.filteredMerchants
+  const middlemen = userStore.middlemanList
+
+  // 未选择中间商：显示所有分组
+  return middlemen.map(mm => ({
+    ...mm,
+    merchants: allMerchants.filter(m => m.userId === mm.id)
+  })).filter(g => g.merchants.length > 0)
+})
+
+// 切换分组展开状态
+const toggleGroup = (groupId) => {
+  if (expandedGroups.value.has(groupId)) {
+    expandedGroups.value.delete(groupId)
+  } else {
+    expandedGroups.value.add(groupId)
+  }
+}
 
 const editMerchant = (merchant) => {
   editingMerchant.value = merchant

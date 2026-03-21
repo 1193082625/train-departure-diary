@@ -1,6 +1,9 @@
 <template>
   <!-- 结账统计页面 -->
   <view class="statistics-page">
+    <!-- 管理员中间商选择器 -->
+    <middleman-selector />
+
     <view class="tabs">
       <view :class="['tab', activeTab === 'worker' && 'active']" @click="activeTab = 'worker'">按人员</view>
       <view :class="['tab', activeTab === 'merchant' && 'active']" @click="activeTab = 'merchant'">按鸡场</view>
@@ -149,6 +152,7 @@ import { useMerchantStore } from '@/store/merchant'
 import { useDepartureStore } from '@/store/departure'
 import { useTransactionStore } from '@/store/transaction'
 import { useSettingsStore } from '@/store/settings'
+import MiddlemanSelector from '@/components/middleman-selector.vue'
 
 const workerStore = useWorkerStore()
 const merchantStore = useMerchantStore()

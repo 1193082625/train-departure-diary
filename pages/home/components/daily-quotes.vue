@@ -109,8 +109,8 @@ const initCalendarRange = () => {
 const getAllQuotes = () => {
   const quotes = {}
 
-  // 从发车记录中提取报价
-  departureStore.records.forEach(record => {
+  // 从发车记录中提取报价（使用 filteredRecords 确保按中间商过滤）
+  departureStore.filteredRecords.forEach(record => {
     if (record.date && record.dailyQuote) {
       if (!quotes[record.date] || quotes[record.date].source === 'manual') {
         quotes[record.date] = {
@@ -426,6 +426,12 @@ watch(activeTab, (newVal) => {
 watch(() => departureStore.records, () => {
   updateCalendarSelected()
 }, { deep: true })
+
+// 监听中间商切换，更新日历和图表
+watch(() => userStore.currentMiddlemanId, () => {
+  updateCalendarSelected()
+  updateChartData()
+})
 
 // 初始化
 initCalendarRange()

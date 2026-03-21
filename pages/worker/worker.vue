@@ -2,25 +2,49 @@
   <view class="worker-page">
     <view class="header">
       <text class="title">人员管理</text>
-      <button class="add-btn" size="mini" @click="showAddModal = true">+ 添加</button>
+      <button v-if="userStore.isMiddleman" class="add-btn" size="mini" @click="showAddModal = true">+ 添加</button>
     </view>
 
     <view class="worker-list">
-      <view v-for="worker in workerStore.filteredWorkers" :key="worker.id" class="worker-card">
-        <view class="worker-info">
-          <text class="name">{{ worker.name }}</text>
-          <text class="phone">{{ worker.phone }}</text>
+      <!-- 按中间商分组展示（管理员视角） -->
+      <uni-collapse v-if="userStore.isAdmin">
+        <uni-collapse-item v-for="group in groupedWorkers" :key="group.id" :title="group.nickname || group.phone" :open="expandedGroups.has(group.id)" @toggle="toggleGroup(group.id)">
+          <view v-for="worker in group.workers" :key="worker.id" class="worker-card">
+            <view class="worker-info">
+              <text class="name">{{ worker.name }}</text>
+              <text class="phone">{{ worker.phone }}</text>
+            </view>
+            <view class="worker-type">
+              <text v-if="worker.type === 'departure'" class="tag departure">发车</text>
+              <text v-else-if="worker.type === 'loading'" class="tag loading">装车</text>
+              <text v-else class="tag both">发车+装车</text>
+            </view>
+            <view class="actions">
+              <text @click="editWorker(worker)">编辑</text>
+              <text @click="deleteWorker(worker.id)" class="delete">删除</text>
+            </view>
+          </view>
+        </uni-collapse-item>
+      </uni-collapse>
+
+      <!-- 非管理员直接展示 -->
+      <template v-else>
+        <view v-for="worker in workerStore.filteredWorkers" :key="worker.id" class="worker-card">
+          <view class="worker-info">
+            <text class="name">{{ worker.name }}</text>
+            <text class="phone">{{ worker.phone }}</text>
+          </view>
+          <view class="worker-type">
+            <text v-if="worker.type === 'departure'" class="tag departure">发车</text>
+            <text v-else-if="worker.type === 'loading'" class="tag loading">装车</text>
+            <text v-else class="tag both">发车+装车</text>
+          </view>
+          <view class="actions">
+            <text @click="editWorker(worker)">编辑</text>
+            <text @click="deleteWorker(worker.id)" class="delete">删除</text>
+          </view>
         </view>
-        <view class="worker-type">
-          <text v-if="worker.type === 'departure'" class="tag departure">发车</text>
-          <text v-else-if="worker.type === 'loading'" class="tag loading">装车</text>
-          <text v-else class="tag both">发车+装车</text>
-        </view>
-        <view class="actions">
-          <text @click="editWorker(worker)">编辑</text>
-          <text @click="deleteWorker(worker.id)" class="delete">删除</text>
-        </view>
-      </view>
+      </template>
     </view>
 
     <!-- 添加/编辑弹窗 -->
@@ -50,10 +74,12 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import { useWorkerStore } from '@/store/worker'
+import { useUserStore } from '@/store/user'
 
 const workerStore = useWorkerStore()
+const userStore = useUserStore()
 
 const showAddModal = ref(false)
 const editingWorker = ref(null)
@@ -65,6 +91,30 @@ const form = reactive({
 })
 
 const typeMap = ['departure', 'loading', 'both']
+
+// 分组展开状态
+const expandedGroups = ref(new Set())
+
+// 分组展示（管理员视角）
+const groupedWorkers = computed(() => {
+  const allWorkers = workerStore.filteredWorkers
+  const middlemen = userStore.middlemanList
+
+  // 未选择中间商：显示所有分组
+  return middlemen.map(mm => ({
+    ...mm,
+    workers: allWorkers.filter(w => w.userId === mm.id)
+  })).filter(g => g.workers.length > 0)
+})
+
+// 切换分组展开状态
+const toggleGroup = (groupId) => {
+  if (expandedGroups.value.has(groupId)) {
+    expandedGroups.value.delete(groupId)
+  } else {
+    expandedGroups.value.add(groupId)
+  }
+}
 
 const editWorker = (worker) => {
   editingWorker.value = worker

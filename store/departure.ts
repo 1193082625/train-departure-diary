@@ -15,9 +15,12 @@ export const useDepartureStore = defineStore('departure', () => {
 
     if (!user) return []
 
-    // 管理员：返回全部
+    // 管理员：根据选中中间商过滤
     if (user.role === ROLES.ADMIN) {
-      return records.value
+      if (!userStore.currentMiddlemanId) {
+        return records.value
+      }
+      return records.value.filter(r => r.userId === userStore.currentMiddlemanId)
     }
 
     // 中间商：返回自己的 + 名下所有装发车用户添加的记录
