@@ -532,6 +532,15 @@ const saveRecord = () => {
     })
     return
   }
+  // 留货数量为负数时禁止提交
+  if (calculated.value.reservedBigBoxesTotal < 0 || calculated.value.reservedSmallBoxesTotal < 0) {
+    uni.showToast({
+      title: '留货数量为负数，请检查信息是否正确',
+      icon: 'none'
+    })
+    return
+  }
+
   // 将所有null改为0，字符串数字转为真正的数字
   const formData = { ...form }
   const numberFields = ['dailyQuote', 'smallBoxWeight', 'depotBigBoxes', 'depotSmallBoxes', 'depotCartonBoxesBig', 'depotCartonBoxesSmall', 'reservedBigBoxes', 'reservedSmallBoxes', 'oilFee', 'entryFee', 'tollFee', 'loadingFee', 'unloadingFee', 'departureFee', 'returnedBigBoxes', 'returnedSmallBoxes']
