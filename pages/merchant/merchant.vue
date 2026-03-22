@@ -69,7 +69,8 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onShow, onHide } from 'vue'
+import { ref, reactive, computed } from 'vue'
+import { onShow, onHide } from '@dcloudio/uni-app'
 import { useMerchantStore } from '@/store/merchant'
 import { useUserStore } from '@/store/user'
 import { subscribe } from '@/utils/eventBus'

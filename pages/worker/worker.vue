@@ -74,7 +74,8 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onShow, onHide } from 'vue'
+import { ref, reactive, computed } from 'vue'
+import { onShow, onHide } from '@dcloudio/uni-app'
 import { useWorkerStore } from '@/store/worker'
 import { useUserStore } from '@/store/user'
 import { subscribe } from '@/utils/eventBus'

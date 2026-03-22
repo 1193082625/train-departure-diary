@@ -16,6 +16,7 @@
 	{
 		"path": "pages/home/chart-fullscreen",
 		"style": {
+		  "pageOrientation": "landscape",
 			"navigationBarTitleText": "全屏图表",
 			"navigationStyle": "custom"
 		}

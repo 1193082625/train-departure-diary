@@ -20,6 +20,7 @@
             "autoclose" : true,
             "delay" : 0
         },
+        "screenOrientation": ["portrait-primary", "landscape-primary"],
         "modules" : {
             "SQLite" : {}
         },
@@ -55,7 +56,8 @@
         "setting" : {
             "urlCheck" : false,
             "minified" : true,
-            "es6" : true
+            "es6" : true,
+            "screenOrientation": ["portrait", "landscape"]
         },
         "usingComponents" : true,
         "permission" : {}

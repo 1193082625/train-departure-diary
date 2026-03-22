@@ -77,22 +77,23 @@ const isLandscape = ref(false)
 
 // 打开全屏图表
 const openChartFullscreen = (data) => {
-  // 隐藏当前页面图表区域
-  showChartContent.value = false
+  // // 隐藏当前页面图表区域
+  // showChartContent.value = false
 
-  // 设置图表数据
-  if (data.chartData) {
-    chartData.value = data.chartData
-  }
-  if (data.chartOpts) {
-    chartOpts.value = data.chartOpts
-  }
-  if (data.chartRange) {
-    chartRange.value = data.chartRange
-  }
+  // // 设置图表数据
+  // if (data.chartData) {
+  //   chartData.value = data.chartData
+  // }
+  // if (data.chartOpts) {
+  //   chartOpts.value = data.chartOpts
+  // }
+  // if (data.chartRange) {
+  //   chartRange.value = data.chartRange
+  // }
 
-  // 打开全屏弹窗
-  chartFullscreenPopup.value.open('center')
+  // // 打开全屏弹窗
+  // chartFullscreenPopup.value.open('center')
+  uni.navigateTo({ url: '/pages/home/chart-fullscreen?data=' + encodeURIComponent(JSON.stringify(data)) })
 }
 
 // 全屏弹窗状态变化
@@ -102,11 +103,6 @@ const onFullscreenPopupChange = (e) => {
     isLandscape.value = false
   }
 }
-
-// 页面显示时恢复图表内容显示
-onShow(() => {
-  showChartContent.value = true
-})
 </script>
 
 <style>

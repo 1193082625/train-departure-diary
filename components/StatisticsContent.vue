@@ -146,7 +146,8 @@
 </template>
 
 <script setup>
-import { ref, computed, reactive, watch, watchEffect, nextTick, onShow, onHide } from 'vue'
+import { ref, computed, reactive, watch, watchEffect, nextTick } from 'vue'
+import { onShow, onHide } from '@dcloudio/uni-app'
 import { useWorkerStore } from '@/store/worker'
 import { useMerchantStore } from '@/store/merchant'
 import { useDepartureStore } from '@/store/departure'

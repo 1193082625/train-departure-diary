@@ -173,7 +173,8 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onShow, onHide } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { onShow, onHide } from '@dcloudio/uni-app'
 import { useDepartureStore } from '@/store/departure'
 import { useWorkerStore } from '@/store/worker'
 import { useUserStore } from '@/store/user'

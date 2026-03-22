@@ -30,8 +30,8 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { onLoad } from '@dcloudio/uni-app'
+import { ref, computed } from 'vue'
+import { onLoad, onShow, onHide } from '@dcloudio/uni-app'
 
 // 图表数据
 const chartData = ref({
@@ -68,6 +68,20 @@ const hasChartData = computed(() => {
   return chartData.value && chartData.value.series && chartData.value.series.length > 0
 })
 
+onShow(() => {
+  // 纯CSS旋转，不需要JS锁定方向
+  // 动态获取屏幕尺寸作为图表尺寸
+  const sysInfo = uni.getSystemInfoSync()
+  // 旋转后，原本的 windowWidth 变成垂直方向，windowHeight 变成水平方向
+  // 横屏时图表宽度应该用 windowHeight，高度应该用 windowWidth
+  chartWidth.value = sysInfo.windowHeight - 40  // 留出边距
+  chartHeight.value = sysInfo.windowWidth - 120  // 留出标题和边距
+})
+
+onHide(() => {
+  // 纯CSS旋转，页面返回时自动恢复竖屏，无需解锁方向
+})
+
 // 页面加载时接收数据
 onLoad((options) => {
   if (options.data) {
@@ -96,14 +110,6 @@ onLoad((options) => {
   }
 })
 
-onMounted(() => {
-  // 获取屏幕尺寸设置图表大小
-  const sysInfo = uni.getSystemInfoSync()
-  // 横屏布局：宽度更大，高度较小
-  chartWidth.value = sysInfo.windowHeight - 80
-  chartHeight.value = sysInfo.windowWidth - 100
-})
-
 // 返回上一页
 const goBack = () => {
   uni.navigateBack()
@@ -114,7 +120,7 @@ const goBack = () => {
 .chart-fullscreen-page {
   width: 100vh;
   height: 100vw;
-  background: #1a1a1a;
+  /* background: #1a1a1a; */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -126,6 +132,7 @@ const goBack = () => {
   bottom: 0;
   z-index: 9999;
   /* CSS 强制横屏 - 旋转 90 度 */
+  transform: rotate(90deg);
   transform-origin: center center;
 }
 
@@ -137,10 +144,13 @@ const goBack = () => {
   background: rgba(255, 255, 255, 0.2);
   border-radius: 6px;
   z-index: 100;
+  /* 抵消页面的90度旋转，使按钮始终在物理左上角 */
+  /* transform: rotate(-90deg);
+  transform-origin: center center; */
 }
 
 .back-btn text {
-  color: #fff;
+  /* color: #999; */
   font-size: 16px;
 }
 
@@ -150,20 +160,25 @@ const goBack = () => {
   right: 20px;
   font-size: 14px;
   color: rgba(255, 255, 255, 0.8);
+  /* 抵消页面的90度旋转 */
+  /* transform: rotate(-90deg);
+  transform-origin: center center; */
 }
 
 .chart-container-landscape {
-  width: 90%;
-  height: 80%;
+  width: 100%;
+  height: calc(100% - 60px); /* 留出标题空间 */
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 10px;
+  box-sizing: border-box;
 }
 
 .chart-wrapper {
   background: #fff;
   border-radius: 12px;
-  padding: 15px;
+  padding: 10px;
   width: 100%;
   height: 100%;
   box-sizing: border-box;
