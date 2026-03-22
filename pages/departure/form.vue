@@ -210,7 +210,7 @@
           <view class="w-pre25 font-bold">
             <text class="color-fa8c16">{{ calculated.merchantBigTotal }}</text> 大框</view>
           <view class="w-pre25 font-bold"><text class="color-fa8c16">{{ calculated.merchantSmallTotal }}</text> 小框</view>
-          <view class="w-pre25 font-bold"><text class="color-fa8c16">{{ calculated.merchantUnitOfWeightTotal }}</text> 斤</view>
+          <view class="w-pre25 font-bold"><text class="color-fa8c16">{{ calculated.merchantWeightTotal }}</text> 斤</view>
         </view>
         <view class="flex-start mt-15 mb-10">
           货车共装 <text class="font-bold color-fa8c16 ml-4 mr-4">{{ calculated.truckWeightTotal }}</text> 斤
@@ -239,7 +239,7 @@
 
         <!-- 鸡场金额明细 -->
         <view v-if="isAdminOrMiddleman">
-          <view v-if="calculated.merchantAmount.length > 0" class="result-subtitle">鸡场金额明细</view>
+          <view v-if="calculated.merchantAmount.length > 0" class="result-subtitle">鸡场收货明细</view>
           <view v-for="(item, index) in calculated.merchantAmount" :key="index" class="calc-item">
             <text class="name">{{ item.name }}</text>
             <text class="result-value">¥{{ item.amount }}</text>
@@ -379,9 +379,9 @@ const calculated = computed(() => {
   // 本次共拉 
   const merchantBigTotal = form.merchantDetails.reduce((sum, m) => sum + (Number(m.bigBoxes) || 0), 0) // 本次共拉大框数量
   const merchantSmallTotal = form.merchantDetails.reduce((sum, m) => sum + (Number(m.smallBoxes) || 0), 0) // 本次共拉小框数量
-  const merchantUnitOfWeightTotal = form.merchantDetails.reduce((sum, m) => sum + (Number(m.weight) || 0), 0) // 本次共拉斤数数量
+  const merchantWeightTotal = form.merchantDetails.reduce((sum, m) => sum + (Number(m.weight) || 0), 0) // 本次共拉斤数数量
   // 本次共拉斤数
-  const allMerchantWeight = merchantBigTotal * Number(settingsStore.receiptBigBoxWeight) + merchantSmallTotal * smallWeight + merchantUnitOfWeightTotal
+  const allMerchantWeight = merchantBigTotal * Number(settingsStore.receiptBigBoxWeight) + merchantSmallTotal * smallWeight + merchantWeightTotal
 
 
   // 货车共装
@@ -424,7 +424,7 @@ const calculated = computed(() => {
   // 留存单价 = (当日报价 - minMargin）/ 收货大框斤数
   const reservedPrice = (Number(form.dailyQuote) - minMargin) / Number(settingsStore.receiptBigBoxWeight)
   // 留存合计 = （留货大框 * 大框斤数 + 留货小框 * 小框斤数 + 鸡场散斤数）* 留存单价
-  const reservedTotalWeight = reservedBigBoxesTotal * Number(settingsStore.receiptBigBoxWeight) + reservedSmallBoxesTotal * smallWeight + merchantUnitOfWeightTotal
+  const reservedTotalWeight = reservedBigBoxesTotal * Number(settingsStore.receiptBigBoxWeight) + reservedSmallBoxesTotal * smallWeight + merchantWeightTotal
   const reservedTotal = Number(((reservedTotalWeight || 0) * (reservedPrice || 0)).toFixed(2))
   
 
@@ -434,7 +434,7 @@ const calculated = computed(() => {
   return {
     merchantBigTotal, // 本次共拉大框数量
     merchantSmallTotal, // 本次共拉小框数量
-    merchantUnitOfWeightTotal, // 本次共拉机场散斤数数量
+    merchantWeightTotal, // 本次共拉鸡场散斤数数量
     allMerchantWeight, // 本次共拉斤数
     truckBig, // 货车共装大框
     truckSmall, // 货车共装小框
@@ -495,9 +495,17 @@ const removeTruckRow = (index) => { form.truckRows.splice(index, 1) }
 
 const saveRecord = () => {
   // 添加校验
+  if (!form.dailyQuote) {
+    uni.showToast({
+      title: '请填写当日报价',
+      icon: 'none'
+    })
+    return
+  }
+  
   if (form.dailyQuote <= 0) {
     uni.showToast({
-      title: '当日报价不能为0',
+      title: '当日报价不能低于0元',
       icon: 'none'
     })
     return

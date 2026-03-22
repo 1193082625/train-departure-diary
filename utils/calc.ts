@@ -38,7 +38,6 @@ export const calculateMerchantCost = ({
           // 鸡场差额
           const merchantMargin = Number(merchant.margin) || 0
       
-          // 收货价 = (当日报价 - 鸡场margin) / 45 × (大框斤数 × 本次共拉大框数量 + 小框斤数 × 本次共拉小框数量 + 斤数）
           // 收货每斤价格
           const price = (dailyQuote - merchantMargin) / Number(settingsStore.receiptBigBoxWeight)
           // 大框收货 = 大框斤数 × 本次共拉大框数量 
