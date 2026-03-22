@@ -57,9 +57,7 @@
           <view class="w-22"></view>
           </view>
         <view v-for="(detail, index) in form.merchantDetails" :key="index" class="merchant-item">
-          <picker :range="merchantOptions" :range-key="'name'" @change="(e) => onMerchantChange(index, e)">
-            <view class="merchant-select">{{ detail.merchantName || '选择鸡场' }}</view>
-          </picker>
+          <view class="merchant-select" @click="openMerchantSelector(index)">{{ detail.merchantName || '选择鸡场' }}</view>
           <view class="merchant-inputs">
             <input v-model="detail.bigBoxes" :disabled="!detail.merchantId || !detail.margin" type="number" placeholder="大框" />
             <input v-model="detail.smallBoxes" :disabled="!detail.merchantId || !detail.margin" type="number" placeholder="小框" />
@@ -272,6 +270,16 @@
         <button @click="saveRecord" class="save-btn">保存</button>
       </view>
     </view>
+
+    <!-- 鸡场选择弹窗 -->
+    <MerchantSelector
+      :visible="merchantSelectorVisible"
+      :merchants="merchantOptions"
+      :selected-merchant-ids="selectedMerchantIds"
+      :current-merchant-id="currentEditingMerchantId"
+      @update:visible="merchantSelectorVisible = $event"
+      @confirm="onMerchantSelected"
+    />
   </view>
 </template>
 
@@ -284,6 +292,7 @@ import { useSettingsStore } from '@/store/settings'
 import { useUserStore, ROLES } from '@/store/user'
 import { useDailyQuoteStore } from '@/store/dailyQuote'
 import { calculateMerchantCost } from '@/utils/calc'
+import MerchantSelector from './components/merchant-selector.vue'
 
 const departureStore = useDepartureStore()
 const merchantStore = useMerchantStore()
@@ -325,6 +334,38 @@ const form = reactive({
   departureFee: 0, // 发车费
   truckRows: [], // 货车信息（一个记录可包含多个货车）
 })
+
+// 鸡场选择弹窗状态
+const merchantSelectorVisible = ref(false)
+const currentEditingMerchantIndex = ref(-1)
+const currentEditingMerchantId = computed(() => {
+  if (currentEditingMerchantIndex.value >= 0 && currentEditingMerchantIndex.value < form.merchantDetails.length) {
+    return form.merchantDetails[currentEditingMerchantIndex.value].merchantId || ''
+  }
+  return ''
+})
+
+// 已选中鸡场ID列表（用于弹窗置灰）
+const selectedMerchantIds = computed(() =>
+  form.merchantDetails
+    .filter(m => m.merchantId)
+    .map(m => m.merchantId)
+)
+
+// 打开鸡场选择弹窗
+const openMerchantSelector = (index) => {
+  currentEditingMerchantIndex.value = index
+  merchantSelectorVisible.value = true
+}
+
+// 鸡场选择确认
+const onMerchantSelected = (merchant) => {
+  if (currentEditingMerchantIndex.value >= 0) {
+    form.merchantDetails[currentEditingMerchantIndex.value].merchantId = merchant.id
+    form.merchantDetails[currentEditingMerchantIndex.value].merchantName = merchant.name
+    form.merchantDetails[currentEditingMerchantIndex.value].margin = merchant.margin
+  }
+}
 
 // 是否显示保存按钮
 // 规则：管理员/中间商始终显示；装发车只显示自己创建的记录
@@ -478,17 +519,10 @@ const onDateChange = (e) => {
 const onDepartureWorkerChange = (e) => { form.departureWorkerId = departureWorkerOptions.value[e.detail.value]?.id || '' }
 
 const addMerchant = () => {
-  form.merchantDetails.push({ merchantId: '', merchantName: '', bigBoxes: null, smallBoxes: null })
+  form.merchantDetails.push({ merchantId: '', merchantName: '', margin: null, bigBoxes: null, smallBoxes: null, weight: null })
 }
 
 const removeMerchant = (index) => { form.merchantDetails.splice(index, 1) }
-
-const onMerchantChange = (index, e) => {
-  const merchant = merchantOptions.value[e.detail.value]
-  form.merchantDetails[index].merchantId = merchant.id
-  form.merchantDetails[index].merchantName = merchant.name
-  form.merchantDetails[index].margin = merchant.margin
-}
 
 const addTruckRow = () => { form.truckRows.push({ rowNumber: form.truckRows.length + 1, bigBoxes: null, smallBoxes: null }) }
 const removeTruckRow = (index) => { form.truckRows.splice(index, 1) }
@@ -633,7 +667,7 @@ onMounted(async () => {
 .merchant-title { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f0f0f0; margin-bottom: 10px; }
 .merchant-title text { flex: 1; text-align: center; }
 .merchant-item { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-.merchant-select { background: #f5f5f5; padding: 8px; border-radius: 4px; min-width: 80px; }
+.merchant-select { background: #f5f5f5; padding: 8px; border-radius: 4px; min-width: 80px; cursor: pointer; }
 .merchant-inputs { display: flex; gap: 10px; flex: 1; }
 .merchant-inputs input { flex: 1; background: #f5f5f5; padding: 8px; border-radius: 4px; }
 .remove { color: #ff4d4f; font-size: 20px; padding: 5px; }
