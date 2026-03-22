@@ -283,7 +283,7 @@ import { useWorkerStore } from '@/store/worker'
 import { useSettingsStore } from '@/store/settings'
 import { useUserStore, ROLES } from '@/store/user'
 import { useDailyQuoteStore } from '@/store/dailyQuote'
-import { calculateMerchantCost } from '@/calc/index'
+import { calculateMerchantCost } from '@/utils/calc'
 
 const departureStore = useDepartureStore()
 const merchantStore = useMerchantStore()
