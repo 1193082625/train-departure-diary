@@ -145,8 +145,8 @@ const goBack = () => {
   border-radius: 6px;
   z-index: 100;
   /* 抵消页面的90度旋转，使按钮始终在物理左上角 */
-  /* transform: rotate(-90deg);
-  transform-origin: center center; */
+  transform: rotate(-90deg);
+  transform-origin: center center;
 }
 
 .back-btn text {
@@ -161,8 +161,8 @@ const goBack = () => {
   font-size: 14px;
   color: rgba(255, 255, 255, 0.8);
   /* 抵消页面的90度旋转 */
-  /* transform: rotate(-90deg);
-  transform-origin: center center; */
+  transform: rotate(-90deg);
+  transform-origin: center center;
 }
 
 .chart-container-landscape {
