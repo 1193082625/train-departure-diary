@@ -40,6 +40,7 @@ export const useMerchantStore = defineStore('merchant', () => {
       merchants.value = results || []
     } catch (e) {
       console.error('加载商户列表失败:', e)
+      showErrorToast('加载商户列表失败')
       merchants.value = []
     }
   }

@@ -68,6 +68,7 @@ export const useDepartureStore = defineStore('departure', () => {
       }
     } catch (e) {
       console.error('加载发车记录失败:', e)
+      showErrorToast('加载发车记录失败')
       records.value = []
     }
   }
@@ -100,6 +101,7 @@ export const useDepartureStore = defineStore('departure', () => {
       }
     } catch (e) {
       console.error('【Departure】保存发车记录失败:', e)
+      showErrorToast('保存发车记录失败')
     }
   }
 
@@ -145,6 +147,7 @@ export const useDepartureStore = defineStore('departure', () => {
       publish('departure:refresh', null)
     } catch (e) {
       console.error('【Departure】删除发车记录失败:', e)
+      showErrorToast('删除发车记录失败')
     }
   }
 

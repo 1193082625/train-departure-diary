@@ -21,6 +21,7 @@ export const useDailyQuoteStore = defineStore('dailyQuote', () => {
       }
     } catch (e) {
       console.error('加载日报价失败:', e)
+      showErrorToast('加载日报价失败')
       quotes.value = []
     }
   }

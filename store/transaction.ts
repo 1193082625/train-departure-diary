@@ -15,6 +15,7 @@ export const useTransactionStore = defineStore('transaction', () => {
       transactions.value = results || []
     } catch (e) {
       console.error('加载交易记录失败:', e)
+      showErrorToast('加载交易记录失败')
       transactions.value = []
     }
   }
@@ -32,6 +33,7 @@ export const useTransactionStore = defineStore('transaction', () => {
       }
     } catch (e) {
       console.error('【Transaction】保存交易记录失败:', e)
+      showErrorToast('保存交易记录失败')
     }
   }
 
@@ -62,6 +64,7 @@ export const useTransactionStore = defineStore('transaction', () => {
       publish('transaction:refresh', null)
     } catch (e) {
       console.error('【Transaction】删除交易记录失败:', e)
+      showErrorToast('删除交易记录失败')
     }
   }
 

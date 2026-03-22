@@ -111,6 +111,7 @@ const initTestData = async () => {
 
   } catch (e) {
     console.error('初始化测试数据失败:', e)
+    showErrorToast('初始化测试数据失败')
   }
 }
 
@@ -158,30 +159,35 @@ export const useUserStore = defineStore('user', () => {
 
   // 初始化 - 从本地存储恢复登录状态
   const init = async () => {
-    // 先确保数据库初始化完成
-    await initDB()
+    try {
+      // 先确保数据库初始化完成
+      await initDB()
 
-    // 先初始化测试数据
-    // await initTestData()
+      // 先初始化测试数据
+      // await initTestData()
 
-    // 加载所有用户
-    await loadUsers()
+      // 加载所有用户
+      await loadUsers()
 
-    // 从本地存储恢复登录状态
-    const userData = uni.getStorageSync('currentUser')
-    if (userData) {
-      // 检查会话是否过期
-      if (checkSessionExpiry()) {
-        // 会话过期，清除登录状态
-        logout()
-        return
+      // 从本地存储恢复登录状态
+      const userData = uni.getStorageSync('currentUser')
+      if (userData) {
+        // 检查会话是否过期
+        if (checkSessionExpiry()) {
+          // 会话过期，清除登录状态
+          logout()
+          return
+        }
+        // 兼容旧用户：没有 loginTime 但有 currentUser，设置登录时间
+        if (!uni.getStorageSync('loginTime')) {
+          uni.setStorageSync('loginTime', Date.now())
+        }
+        currentUser.value = JSON.parse(userData)
+        isLoggedIn.value = true
       }
-      // 兼容旧用户：没有 loginTime 但有 currentUser，设置登录时间
-      if (!uni.getStorageSync('loginTime')) {
-        uni.setStorageSync('loginTime', Date.now())
-      }
-      currentUser.value = JSON.parse(userData)
-      isLoggedIn.value = true
+    } catch (e) {
+      console.error('【User】初始化失败:', e)
+      showErrorToast('初始化失败')
     }
   }
 
@@ -514,6 +520,7 @@ export const useUserStore = defineStore('user', () => {
       return existingUsers && existingUsers.length > 0
     } catch (e) {
       console.error('【checkPhoneExists】检查失败:', e)
+      showErrorToast('检查手机号失败')
       return false
     }
   }

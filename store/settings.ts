@@ -62,6 +62,7 @@ export const useSettingsStore = defineStore('settings', () => {
       }
     } catch (e) {
       console.error(`【Settings】初始化用户settings失败:`, e)
+      showErrorToast('初始化设置失败')
     }
   }
 
@@ -103,6 +104,7 @@ export const useSettingsStore = defineStore('settings', () => {
       }
     } catch (e) {
       console.error('加载设置失败:', e)
+      showErrorToast('加载设置失败')
       resetToDefaults()
     }
   }
@@ -161,7 +163,12 @@ export const useSettingsStore = defineStore('settings', () => {
         // 存在则使用云端_id更新
         const db = await initDB()
         if (db) {
-          await db.collection('settings').doc(existing[0]._id).update(settingsData)
+          try {
+            await db.collection('settings').doc(existing[0]._id).update(settingsData)
+          } catch (e) {
+            console.error('更新设置失败:', e)
+            showErrorToast('保存设置失败')
+          }
         }
       } else {
         // 不存在则插入

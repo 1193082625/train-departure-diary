@@ -40,6 +40,7 @@ export const useWorkerStore = defineStore('worker', () => {
       workers.value = results || []
     } catch (e) {
       console.error('加载员工列表失败:', e)
+      showErrorToast('加载员工列表失败')
       workers.value = []
     }
   }
