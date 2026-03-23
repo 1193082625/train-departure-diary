@@ -1,14 +1,14 @@
 <template>
   <view class="chart-fullscreen-page">
     <!-- 返回按钮 -->
-    <view class="back-btn" @click="goBack">
+    <view class="back-btn" @click="goBack" :style="{transform: 'rotate(-90deg)', transformOrigin: `205px 460px`}">
       <text>← 返回</text>
     </view>
 
     <!-- 时间范围显示 -->
-    <view class="chart-range-title">
+    <!-- <view class="chart-range-title" :style="{transform: 'rotate(-90deg)', transformOrigin: `240px 480px`}">
       <text>{{ rangeLabel }}报价统计</text>
-    </view>
+    </view> -->
 
     <!-- 图表容器 - 横屏布局 -->
     <view class="chart-container-landscape">
@@ -55,10 +55,14 @@ const chartOpts = ref({
   }
 })
 const chartRange = ref('month')
-
 // 图表尺寸 - 横屏时使用更大尺寸
 const chartWidth = ref(400)
 const chartHeight = ref(250)
+
+const sysInfo = ref({
+  windowWidth: 0,
+  windowHeight: 0
+})
 
 // 时间范围标签
 const rangeLabel = ref('')
@@ -72,6 +76,9 @@ onShow(() => {
   // 纯CSS旋转，不需要JS锁定方向
   // 动态获取屏幕尺寸作为图表尺寸
   const sysInfo = uni.getSystemInfoSync()
+  sysInfo.value = sysInfo
+  console.log(777, sysInfo.value.windowWidth, sysInfo.value.windowHeight);
+  
   // 旋转后，原本的 windowWidth 变成垂直方向，windowHeight 变成水平方向
   // 横屏时图表宽度应该用 windowHeight，高度应该用 windowWidth
   chartWidth.value = sysInfo.windowHeight - 40  // 留出边距
@@ -144,9 +151,6 @@ const goBack = () => {
   background: rgba(255, 255, 255, 0.2);
   border-radius: 6px;
   z-index: 100;
-  /* 抵消页面的90度旋转，使按钮始终在物理左上角 */
-  transform: rotate(-90deg);
-  transform-origin: center center;
 }
 
 .back-btn text {
@@ -154,20 +158,20 @@ const goBack = () => {
   font-size: 16px;
 }
 
-.chart-range-title {
+/* .chart-range-title {
   position: absolute;
   top: 20px;
   right: 20px;
   font-size: 14px;
   color: rgba(255, 255, 255, 0.8);
-  /* 抵消页面的90度旋转 */
-  transform: rotate(-90deg);
-  transform-origin: center center;
-}
+} */
 
 .chart-container-landscape {
-  width: 100%;
-  height: calc(100% - 60px); /* 留出标题空间 */
+  margin: auto auto;
+  width: 90%;
+  height: 90%; /* 留出标题空间 */
+  padding-bottom: 40px;
+  padding-left: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -176,7 +180,7 @@ const goBack = () => {
 }
 
 .chart-wrapper {
-  background: #fff;
+  /* background: #fff; */
   border-radius: 12px;
   padding: 10px;
   width: 100%;
