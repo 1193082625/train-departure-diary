@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { dbOps, isDBAvailable } from '@/utils/db'
+import { apiOps } from '@/utils/api'
 import { useUserStore } from './user'
 import { ROLES } from './user'
 import { showErrorToast } from '@/utils/errorHandler'
@@ -36,8 +36,8 @@ export const useMerchantStore = defineStore('merchant', () => {
 
   const loadMerchants = async () => {
     try {
-      const results = await dbOps.queryAll('merchants')
-      merchants.value = results || []
+      const res = await apiOps.queryAll('merchants')
+      merchants.value = res.data || []
     } catch (e) {
       console.error('加载商户列表失败:', e)
       showErrorToast('加载商户列表失败')
@@ -46,24 +46,15 @@ export const useMerchantStore = defineStore('merchant', () => {
   }
 
   const saveMerchants = async () => {
-    // 检查数据库是否可用
-    if (!isDBAvailable()) {
-      uni.showToast({
-        title: '数据库不可用，请检查网络连接',
-        icon: 'none',
-        duration: 3000
-      })
-      throw new Error('数据库不可用')
-    }
-
     try {
       // 保存到数据库
       for (const merchant of merchants.value) {
-        const existing = await dbOps.queryBy('merchants', 'id', merchant.id)
+        const existRes = await apiOps.queryBy('merchants', 'id', merchant.id)
+        const existing = existRes.data || []
         if (existing && existing.length > 0) {
-          await dbOps.update('merchants', merchant.id, merchant)
+          await apiOps.update('merchants', merchant.id, merchant)
         } else {
-          await dbOps.insert('merchants', merchant)
+          await apiOps.insert('merchants', merchant)
         }
       }
     } catch (e) {

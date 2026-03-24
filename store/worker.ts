@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { dbOps, isDBAvailable } from '@/utils/db'
+import { apiOps } from '@/utils/api'
 import { useUserStore } from './user'
 import { ROLES } from './user'
 import { showErrorToast } from '@/utils/errorHandler'
@@ -36,8 +36,8 @@ export const useWorkerStore = defineStore('worker', () => {
 
   const loadWorkers = async () => {
     try {
-      const results = await dbOps.queryAll('workers')
-      workers.value = results || []
+      const res = await apiOps.queryAll('workers')
+      workers.value = res.data || []
     } catch (e) {
       console.error('加载员工列表失败:', e)
       showErrorToast('加载员工列表失败')
@@ -46,21 +46,11 @@ export const useWorkerStore = defineStore('worker', () => {
   }
 
   const saveWorkers = async () => {
-    // 检查数据库是否可用
-    if (!isDBAvailable()) {
-      uni.showToast({
-        title: '数据库不可用，请检查网络连接',
-        icon: 'none',
-        duration: 3000
-      })
-      throw new Error('数据库不可用')
-    }
-
     try {
       // 先删除所有旧数据
-      await dbOps.deleteAll('workers')
+      await apiOps.deleteAll('workers')
       for (const worker of workers.value) {
-        await dbOps.insert('workers', worker)
+        await apiOps.insert('workers', worker)
       }
     } catch (e) {
       console.error('【Worker】保存员工失败:', e)

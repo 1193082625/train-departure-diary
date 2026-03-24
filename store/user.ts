@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { userDbOps, inviteDbOps, dbOps, initDB } from '@/utils/db'
+import { apiOps, userApi, inviteApi } from '@/utils/api'
 import { showErrorToast } from '@/utils/errorHandler'
 
 // 生成UUID
@@ -65,7 +65,8 @@ const initTestData = async () => {
   try {
     // 创建测试用户
     for (const testUser of TEST_USERS) {
-      const existingUsers = await userDbOps.getUserByPhone(testUser.phone)
+      const res = await userApi.getUserByPhone(testUser.phone)
+      const existingUsers = res.data || []
       if (!existingUsers || existingUsers.length === 0) {
         const newUser = {
           id: generateUUID(),
@@ -78,13 +79,14 @@ const initTestData = async () => {
           parentId: testUser.parentId || null,
           createdAt: new Date().toISOString()
         }
-        await userDbOps.createUser(newUser)
+        await userApi.createUser(newUser)
       }
     }
 
     // 创建测试邀请码
     for (const testCode of TEST_INVITE_CODES) {
-      const existingCodes = await inviteDbOps.getByCode(testCode.code)
+      const res = await inviteApi.getByCode(testCode.code)
+      const existingCodes = res.data || []
       if (!existingCodes || existingCodes.length === 0) {
         // 查找创建者
         const creatorPhone = testCode.type === ROLES.MIDDLEMAN ?
@@ -92,7 +94,8 @@ const initTestData = async () => {
 
         let creatorId = null
         if (creatorPhone) {
-          const creators = await userDbOps.getUserByPhone(creatorPhone)
+          const creatorsRes = await userApi.getUserByPhone(creatorPhone)
+          const creators = creatorsRes.data || []
           creatorId = creators && creators.length > 0 ? creators[0].id : null
         }
 
@@ -105,7 +108,7 @@ const initTestData = async () => {
           usedAt: null,
           createdAt: new Date().toISOString()
         }
-        await inviteDbOps.create(codeData)
+        await inviteApi.create(codeData)
       }
     }
 
@@ -148,8 +151,8 @@ export const useUserStore = defineStore('user', () => {
   // 加载所有用户
   const loadUsers = async () => {
     try {
-      const results = await userDbOps.getAllUsers()
-      users.value = results || []
+      const res = await userApi.getAllUsers()
+      users.value = res.data || []
     } catch (e) {
       console.error('加载用户列表失败:', e)
       showErrorToast('加载用户列表失败')
@@ -160,9 +163,6 @@ export const useUserStore = defineStore('user', () => {
   // 初始化 - 从本地存储恢复登录状态
   const init = async () => {
     try {
-      // 先确保数据库初始化完成
-      await initDB()
-
       // 先初始化测试数据
       // await initTestData()
 
@@ -195,7 +195,8 @@ export const useUserStore = defineStore('user', () => {
   const login = async (phone, code) => {
     try {
       // 检查手机号是否已注册
-      const existingUsers = await userDbOps.getUserByPhone(phone)
+      const phoneRes = await userApi.getUserByPhone(phone)
+      const existingUsers = phoneRes.data || []
 
       // 检查是否为预设管理员
       if (phone === ADMIN_PHONE && code === ADMIN_CODE) {
@@ -219,7 +220,7 @@ export const useUserStore = defineStore('user', () => {
             createdAt: new Date().toISOString()
           }
           try {
-            await userDbOps.createUser(newUser)
+            await userApi.createUser(newUser)
           } catch (e) {
             console.error('创建管理员账号到云端失败，将使用本地存储:', e)
           }
@@ -244,7 +245,8 @@ export const useUserStore = defineStore('user', () => {
             return { success: false, message: '密码错误' }
           }
           // 密码正确，登录成功，从数据库重新获取用户信息确保角色最新
-          const freshUsers = await userDbOps.getUserByPhone(phone)
+          const freshRes = await userApi.getUserByPhone(phone)
+          const freshUsers = freshRes.data || []
           if (freshUsers && freshUsers.length > 0) {
             currentUser.value = freshUsers[0]
           } else {
@@ -270,7 +272,8 @@ export const useUserStore = defineStore('user', () => {
       }
 
       // 验证邀请码
-      const invCodes = await inviteDbOps.getByCode(code)
+      const invRes = await inviteApi.getByCode(code)
+      const invCodes = invRes.data || []
       if (!invCodes || invCodes.length === 0) {
         return { success: false, message: '邀请码无效' }
       }
@@ -315,7 +318,7 @@ export const useUserStore = defineStore('user', () => {
       // 即使云端创建失败，也允许用户本地登录
       let userCreated = false
       try {
-        await userDbOps.createUser(newUser)
+        await userApi.createUser(newUser)
         userCreated = true
       } catch (e) {
         console.error('创建用户到云端失败，将使用本地存储:', e)
@@ -323,7 +326,7 @@ export const useUserStore = defineStore('user', () => {
 
       // 标记邀请码已使用（即使创建用户失败也要标记，避免邀请码被重复使用）
       try {
-        await inviteDbOps.useCode(code, newUser.id)
+        await inviteApi.useCode(code, newUser.id)
       } catch (e) {
         console.error('标记邀请码失败:', e)
       }
@@ -344,7 +347,7 @@ export const useUserStore = defineStore('user', () => {
   const setPassword = async (password) => {
     if (!currentUser.value) return { success: false, message: '未登录' }
     try {
-      await userDbOps.updateUser(currentUser.value.id, { password: password })
+      await userApi.updateUser(currentUser.value.id, { password: password })
       currentUser.value = { ...currentUser.value, password: password }
       isLoggedIn.value = true
       uni.setStorageSync('currentUser', JSON.stringify(currentUser.value))
@@ -365,7 +368,7 @@ export const useUserStore = defineStore('user', () => {
       if (currentUser.value.password && currentUser.value.password !== oldPassword) {
         return { success: false, message: '原密码错误' }
       }
-      await userDbOps.updateUser(currentUser.value.id, { password: newPassword })
+      await userApi.updateUser(currentUser.value.id, { password: newPassword })
       currentUser.value = { ...currentUser.value, password: newPassword }
       uni.setStorageSync('currentUser', JSON.stringify(currentUser.value))
       return { success: true }
@@ -390,7 +393,7 @@ export const useUserStore = defineStore('user', () => {
         createdAt: new Date().toISOString()
       }
       try {
-        await userDbOps.createUser(newUser)
+        await userApi.createUser(newUser)
       } catch (e) {
         console.error('创建用户到云端失败，将使用本地存储:', e)
       }
@@ -410,7 +413,7 @@ export const useUserStore = defineStore('user', () => {
   const updateUser = async (updates) => {
     if (!currentUser.value) return { success: false, message: '未登录' }
     try {
-      await userDbOps.updateUser(currentUser.value.id, updates)
+      await userApi.updateUser(currentUser.value.id, updates)
       currentUser.value = { ...currentUser.value, ...updates }
       uni.setStorageSync('currentUser', JSON.stringify(currentUser.value))
       return { success: true }
@@ -463,7 +466,7 @@ export const useUserStore = defineStore('user', () => {
         workerName: workerInfo ? workerInfo.name : null,
         workerType: workerInfo ? workerInfo.type : null
       }
-      await inviteDbOps.create(codeData)
+      await inviteApi.create(codeData)
       return code
     } catch (e) {
       console.error('生成邀请码失败:', e)
@@ -476,7 +479,8 @@ export const useUserStore = defineStore('user', () => {
   const getMyCodes = async () => {
     if (!currentUser.value) return []
     try {
-      return await inviteDbOps.getByCreator(currentUser.value.id)
+      const res = await inviteApi.getByCreator(currentUser.value.id)
+      return res.data || []
     } catch (e) {
       console.error('获取邀请码列表失败:', e)
       showErrorToast('获取邀请码列表失败')
@@ -515,7 +519,8 @@ export const useUserStore = defineStore('user', () => {
   const checkPhoneExists = async (phone) => {
     try {
       console.log('【checkPhoneExists】开始检查手机号:', phone)
-      const existingUsers = await userDbOps.getUserByPhone(phone)
+      const res = await userApi.getUserByPhone(phone)
+      const existingUsers = res.data || []
       console.log('【checkPhoneExists】查询结果:', existingUsers)
       return existingUsers && existingUsers.length > 0
     } catch (e) {
@@ -551,13 +556,15 @@ export const useUserStore = defineStore('user', () => {
     try {
       // 中间商：返回自己创建的商户
       if (currentUser.value.role === ROLES.MIDDLEMAN) {
-        const results = await dbOps.queryBy('merchants', 'userId', currentUser.value.id)
+        const res = await apiOps.queryBy('merchants', 'userId', currentUser.value.id)
+        const results = res.data || []
         return results ? results.map(m => m.id) : []
       }
 
       // 装发车和鸡场：返回中间商的商户
       if (currentUser.value.parentId) {
-        const results = await dbOps.queryBy('merchants', 'userId', currentUser.value.parentId)
+        const res = await apiOps.queryBy('merchants', 'userId', currentUser.value.parentId)
+        const results = res.data || []
         return results ? results.map(m => m.id) : []
       }
 
@@ -581,13 +588,15 @@ export const useUserStore = defineStore('user', () => {
     try {
       // 中间商：返回自己创建的人员
       if (currentUser.value.role === ROLES.MIDDLEMAN) {
-        const results = await dbOps.queryBy('workers', 'userId', currentUser.value.id)
+        const res = await apiOps.queryBy('workers', 'userId', currentUser.value.id)
+        const results = res.data || []
         return results ? results.map(w => w.id) : []
       }
 
       // 装发车：返回中间商的人员
       if (currentUser.value.parentId) {
-        const results = await dbOps.queryBy('workers', 'userId', currentUser.value.parentId)
+        const res = await apiOps.queryBy('workers', 'userId', currentUser.value.parentId)
+        const results = res.data || []
         return results ? results.map(w => w.id) : []
       }
 

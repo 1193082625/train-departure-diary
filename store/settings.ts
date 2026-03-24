@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
-import { dbOps, initDB } from '@/utils/db'
+import { apiOps } from '@/utils/api'
 import { useUserStore } from './user'
 import { ROLES } from './user'
 import { showErrorToast } from '@/utils/errorHandler'
@@ -48,7 +48,8 @@ export const useSettingsStore = defineStore('settings', () => {
   // 初始化指定用户的settings（如果不存在则创建）
   const initSettingsForUser = async (userId: string) => {
     try {
-      const results = await dbOps.queryBy('settings', 'userId', userId)
+      const res = await apiOps.queryBy('settings', 'userId', userId)
+      const results = res.data || []
       if (!results || results.length === 0) {
         // 创建默认settings
         const defaultSettings = getDefaultSettings()
@@ -57,7 +58,7 @@ export const useSettingsStore = defineStore('settings', () => {
           userId: userId,
           ...defaultSettings
         }
-        await dbOps.insert('settings', newSettings)
+        await apiOps.insert('settings', newSettings)
         console.log(`【Settings】为用户 ${userId} 创建默认settings`)
       }
     } catch (e) {
@@ -81,7 +82,8 @@ export const useSettingsStore = defineStore('settings', () => {
 
     try {
       // 按userId查询对应的settings
-      const results = await dbOps.queryBy('settings', 'userId', middlemanId)
+      const res = await apiOps.queryBy('settings', 'userId', middlemanId)
+      const results = res.data || []
       if (results && results.length > 0) {
         const settings = results[0]
         currentSettingsUserId.value = middlemanId
@@ -158,18 +160,11 @@ export const useSettingsStore = defineStore('settings', () => {
 
     try {
       // 先查询是否已有该用户的settings
-      const existing = await dbOps.queryBy('settings', 'userId', middlemanId)
-      if (existing && existing.length > 0 && existing[0]._id) {
-        // 存在则使用云端_id更新
-        const db = await initDB()
-        if (db) {
-          try {
-            await db.collection('settings').doc(existing[0]._id).update(settingsData)
-          } catch (e) {
-            console.error('更新设置失败:', e)
-            showErrorToast('保存设置失败')
-          }
-        }
+      const existRes = await apiOps.queryBy('settings', 'userId', middlemanId)
+      const existing = existRes.data || []
+      if (existing && existing.length > 0) {
+        // 存在则更新
+        await apiOps.update('settings', existing[0].id, settingsData)
       } else {
         // 不存在则插入
         const newSettings = {
@@ -177,7 +172,7 @@ export const useSettingsStore = defineStore('settings', () => {
           userId: middlemanId,
           ...settingsData
         }
-        await dbOps.insert('settings', newSettings)
+        await apiOps.insert('settings', newSettings)
       }
     } catch (e) {
       console.error('保存设置失败:', e)

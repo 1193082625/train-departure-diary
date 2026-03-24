@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { dbOps } from '@/utils/db'
+import { apiOps } from '@/utils/api'
 import { useUserStore } from './user'
 import { ROLES } from './user'
 import { showErrorToast } from '@/utils/errorHandler'
@@ -11,8 +11,8 @@ export const useTransactionStore = defineStore('transaction', () => {
 
   const loadTransactions = async () => {
     try {
-      const results = await dbOps.queryAll('transactions')
-      transactions.value = results || []
+      const res = await apiOps.queryAll('transactions')
+      transactions.value = res.data || []
     } catch (e) {
       console.error('加载交易记录失败:', e)
       showErrorToast('加载交易记录失败')
@@ -24,11 +24,12 @@ export const useTransactionStore = defineStore('transaction', () => {
     try {
       // 保存到数据库
       for (const transaction of transactions.value) {
-        const existing = await dbOps.queryBy('transactions', 'id', transaction.id)
+        const existRes = await apiOps.queryBy('transactions', 'id', transaction.id)
+        const existing = existRes.data || []
         if (existing && existing.length > 0) {
-          await dbOps.update('transactions', transaction.id, transaction)
+          await apiOps.update('transactions', transaction.id, transaction)
         } else {
-          await dbOps.insert('transactions', transaction)
+          await apiOps.insert('transactions', transaction)
         }
       }
     } catch (e) {
@@ -60,7 +61,7 @@ export const useTransactionStore = defineStore('transaction', () => {
   const deleteTransaction = async (id) => {
     transactions.value = transactions.value.filter(t => t.id !== id)
     try {
-      await dbOps.delete('transactions', id)
+      await apiOps.delete('transactions', id)
       publish('transaction:refresh', null)
     } catch (e) {
       console.error('【Transaction】删除交易记录失败:', e)
@@ -95,7 +96,8 @@ export const useTransactionStore = defineStore('transaction', () => {
       // 装发车：返回关联自己的（通过targetId关联到自己的商户）
       if (user.role === ROLES.LOADER) {
         if (user.parentId) {
-          const merchantResults = await dbOps.queryBy('merchants', 'userId', user.parentId)
+          const merchantRes = await apiOps.queryBy('merchants', 'userId', user.parentId)
+          const merchantResults = merchantRes.data || []
           const merchantIds = merchantResults ? merchantResults.map(m => m.id) : []
           return transactions.value.filter(t => merchantIds.includes(t.targetId))
         }

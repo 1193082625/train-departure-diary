@@ -1,5 +1,4 @@
 <script>
-	import { initDB } from '@/utils/db'
 	import { useUserStore } from '@/store/user'
 
 	// 会话有效期：7 天（毫秒）
@@ -21,14 +20,8 @@
 			console.warn('当前组件仅支持 uni_modules 目录结构 ，请升级 HBuilderX 到 3.1.0 版本以上！')
 			console.log('App Launch')
 
-			// 初始化数据库
-			initDB().then(() => {
-				console.log('数据库初始化完成')
-				// 初始化用户store（会创建测试数据）
-				const userStore = useUserStore()
-			}).catch(err => {
-				console.error('数据库初始化失败:', err)
-			})
+			// 初始化用户store
+			const userStore = useUserStore()
 		},
 		onShow: function() {
 			console.log('App Show')

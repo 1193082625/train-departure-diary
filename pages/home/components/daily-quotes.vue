@@ -122,8 +122,8 @@ const getAllQuotes = () => {
     }
   })
 
-  // 从云端日报价表获取手动填写的报价
-  dailyQuoteStore.quotes.forEach(item => {
+  // 从云端日报价表获取手动填写的报价（使用过滤后的数据）
+  dailyQuoteStore.filteredQuotes.forEach(item => {
       quotes[item.date] = {
         date: item.date,
         quote: item.quote,

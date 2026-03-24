@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
-import { dbOps } from '@/utils/db'
+import { ref, computed } from 'vue'
+import { apiOps } from '@/utils/api'
 import { useUserStore } from './user'
 import { ROLES } from './user'
 import { showErrorToast } from '@/utils/errorHandler'
@@ -10,10 +10,32 @@ export const useDailyQuoteStore = defineStore('dailyQuote', () => {
   const quotes = ref([]) // 日报价列表
   const userStore = useUserStore()
 
+  // 按当前用户过滤的报价列表
+  const filteredQuotes = computed(() => {
+    const user = userStore.currentUser
+    if (!user) return []
+
+    // 管理员：根据选中的中间商过滤
+    if (user.role === ROLES.ADMIN && userStore.currentMiddlemanId) {
+      return quotes.value.filter(q => q.userId === userStore.currentMiddlemanId)
+    }
+    // 中间商：返回自己的
+    if (user.role === ROLES.MIDDLEMAN) {
+      return quotes.value.filter(q => q.userId === user.id)
+    }
+    // 装发车：返回上级的
+    if (user.role === ROLES.LOADER && user.parentId) {
+      return quotes.value.filter(q => q.userId === user.parentId)
+    }
+    // 鸡场：无报价
+    return []
+  })
+
   // 加载所有日报价
   const loadQuotes = async () => {
     try {
-      const results = await dbOps.queryAll('daily_quotes')
+      const res = await apiOps.queryAll('daily_quotes')
+      const results = res.data || []
       if (results && results.length > 0) {
         quotes.value = results
       } else {
@@ -30,10 +52,11 @@ export const useDailyQuoteStore = defineStore('dailyQuote', () => {
   const saveQuote = async (date, quote) => {
     try {
       const userId = userStore.currentUser?.id || null
-      const existing = await dbOps.queryBy('daily_quotes', 'date', date)
+      const existRes = await apiOps.queryBy('daily_quotes', 'date', date)
+      const existing = existRes.data || []
       if (existing && existing.length > 0) {
         // 更新已有报价
-        await dbOps.update('daily_quotes', existing[0].id, {
+        await apiOps.update('daily_quotes', existing[0].id, {
           quote: Number(quote),
           userId
         })
@@ -46,7 +69,7 @@ export const useDailyQuoteStore = defineStore('dailyQuote', () => {
           userId,
           createdAt: new Date().toISOString()
         }
-        await dbOps.insert('daily_quotes', newQuote)
+        await apiOps.insert('daily_quotes', newQuote)
         quotes.value.push(newQuote)
       }
       // 更新本地 quotes 数组中的对应记录
@@ -85,6 +108,7 @@ export const useDailyQuoteStore = defineStore('dailyQuote', () => {
 
   return {
     quotes,
+    filteredQuotes,
     loadQuotes,
     saveQuote,
     getQuoteByDate
