@@ -193,6 +193,37 @@ export const createCrudRouter = (tableName) => {
         console.error(`清空 ${tableName} 失败:`, err)
         res.status(500).json({ success: false, error: err.message })
       }
+    },
+
+    // PUT /:table/by/:field/:value - 根据字段更新
+    updateByField: async (req, res) => {
+      try {
+        const pool = getPool()
+        const { field, value } = req.params
+
+        // 白名单验证，防止 SQL 注入
+        if (!ALLOWED_QUERY_FIELDS.includes(field)) {
+          return res.status(400).json({ success: false, error: '无效的查询字段' })
+        }
+
+        const data = serializeData(req.body)
+        const fields = Object.keys(data)
+        const sets = fields.map(f => `${f} = ?`).join(', ')
+        const values = fields.map(f => data[f])
+
+        const [result] = await pool.query(
+          `UPDATE ${tableName} SET ${sets} WHERE ${field} = ?`,
+          [...values, value]
+        )
+
+        if (result.affectedRows === 0) {
+          return res.status(404).json({ success: false, error: '记录不存在' })
+        }
+        res.json({ success: true, data: req.body })
+      } catch (err) {
+        console.error(`更新 ${tableName} 失败:`, err)
+        res.status(500).json({ success: false, error: err.message })
+      }
     }
   }
 

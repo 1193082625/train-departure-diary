@@ -3,6 +3,29 @@ import { useMerchantStore } from "../store/merchant"
 import { useSettingsStore } from "../store/settings"
 import { MerchantAmount } from "../types/departureRecord"
 
+export const calculateMerchantItem = ({
+  formData,
+  merchantDetail
+}) => {
+  const settingsStore = useSettingsStore()
+  const bigBoxes = merchantDetail?.bigBoxes || 0
+  const smallBoxes = merchantDetail?.smallBoxes || 0
+  const weight = merchantDetail?.weight || 0
+  const price = (formData.dailyQuote - merchantDetail.margin) / Number(settingsStore.receiptBigBoxWeight)
+  // 大框收货 = 大框斤数 × 本次共拉大框数量 
+  const receiveBigNumber = Number(settingsStore.deliveryBigBoxWeight) * bigBoxes
+  const receiveBigMoney = receiveBigNumber * price
+  // 小框收货 = 小框斤数 × 本次共拉小框数量 
+  const receiveSmallNumber = Number(formData.smallBoxWeight) * smallBoxes
+  const receiveSmallMoney = receiveSmallNumber * price
+  // 斤数收货
+  const receiveOfWeight = Number(Number(weight).toFixed(2))
+  const receiveOfWeightMoney = receiveOfWeight * price
+  // 本趟合计收货价
+  const receivePrice = Number((receiveBigMoney + receiveSmallMoney + receiveOfWeightMoney).toFixed(2))
+  return receivePrice
+}
+
 // 鸡场拉货成本
 export const calculateMerchantCost = ({
   merchantDetails,
@@ -32,26 +55,31 @@ export const calculateMerchantCost = ({
           const bigBoxes = Number(detail.bigBoxes) || 0
           // 小框
           const smallBoxes = Number(detail.smallBoxes) || 0
-          // 斤数
-          const weight = Number(detail.weight) || 0
 
-          // 鸡场差额
-          const merchantMargin = Number(merchant.margin) || 0
-      
+          const receivePrice = calculateMerchantItem({
+            formData: {
+              dailyQuote,
+              smallBoxWeight: smallWeight
+            },
+            merchantDetail: {
+              margin: merchant.margin,
+              ...detail
+            }
+          })
           // 收货每斤价格
-          const price = (dailyQuote - merchantMargin) / Number(settingsStore.receiptBigBoxWeight)
-          // 大框收货 = 大框斤数 × 本次共拉大框数量 
-          const receiveBigNumber = Number(settingsStore.deliveryBigBoxWeight) * bigBoxes
-          const receiveBigMoney = receiveBigNumber * price
+          // const price = (dailyQuote - merchantMargin) / Number(settingsStore.receiptBigBoxWeight)
+          // // 大框收货 = 大框斤数 × 本次共拉大框数量 
+          // const receiveBigNumber = Number(settingsStore.deliveryBigBoxWeight) * bigBoxes
+          // const receiveBigMoney = receiveBigNumber * price
           
-          // 小框收货 = 小框斤数 × 本次共拉小框数量 
-          const receiveSmallNumber = Number(smallWeight) * smallBoxes
-          const receiveSmallMoney = receiveSmallNumber * price
-          // 斤数收货
-          const receiveOfWeight = Number(Number(weight).toFixed(2))
-          const receiveOfWeightMoney = receiveOfWeight * price
-          // 本趟合计收货价
-          const receivePrice = Number((receiveBigMoney + receiveSmallMoney + receiveOfWeightMoney).toFixed(2))
+          // // 小框收货 = 小框斤数 × 本次共拉小框数量 
+          // const receiveSmallNumber = Number(smallWeight) * smallBoxes
+          // const receiveSmallMoney = receiveSmallNumber * price
+          // // 斤数收货
+          // const receiveOfWeight = Number(Number(weight).toFixed(2))
+          // const receiveOfWeightMoney = receiveOfWeight * price
+          // // 本趟合计收货价
+          // const receivePrice = Number((receiveBigMoney + receiveSmallMoney + receiveOfWeightMoney).toFixed(2))
           totalReceivePrice += Number(receivePrice) 
           // 交货价 = (当日报价 - 1) × 本次共拉大框数量 + (当日报价 - 鸡场margin) / 交货大框斤数 × 小框斤数 × 本次共拉小框数量
           // 大框交货

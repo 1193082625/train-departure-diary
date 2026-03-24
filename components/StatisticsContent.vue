@@ -155,6 +155,7 @@ import { useTransactionStore } from '@/store/transaction'
 import { useSettingsStore } from '@/store/settings'
 import { subscribe } from '@/utils/eventBus'
 import MiddlemanSelector from '@/components/middleman-selector.vue'
+import { calculateMerchantItem } from '@/utils/calc'
 
 const workerStore = useWorkerStore()
 const merchantStore = useMerchantStore()
@@ -335,9 +336,15 @@ const workerStats = computed(() => {
   const departureCount = workderRecords.filter(r => r.departureWorkerId === selectedWorkerId.value).length
   // 装车次数
   const loadingCount = workderRecords.filter(r => r.loadingWorkerIds.includes(selectedWorkerId.value)).length
-  // 应结算(装车费默认按两人分摊)
-  const totalProfit = departureCount * (settingsStore.departureFee || 0) + loadingCount * (settingsStore.loadingFee / 2 || 0)
-
+  // 应结算
+  let totalloadingCount = 0;
+  records.forEach(record => {
+    if(record.loadingWorkerIds.includes(selectedWorkerId.value)) {
+      totalloadingCount += Number(settingsStore.loadingFee || 0) / record.loadingWorkerIds.length
+    }
+  })
+  const totalProfit = departureCount * (settingsStore.departureFee || 0) + totalloadingCount
+  
   return { workDays, departureCount, loadingCount, totalProfit: totalProfit.toFixed(2) }
 })
 
@@ -369,14 +376,15 @@ watchEffect(() => {
       totalSmallBoxes += smallBoxes
       totalWeight += weight
 
-      const bigWeight = settingsStore.receiptBigBoxWeight || 45
-      const deliveryBigWeight = settingsStore.deliveryBigBoxWeight || 44
-      const smallWeight = settingsStore.smallBoxWeight || 29.5
-
-      // 计算每斤价格
-      const price = (r.dailyQuote - merchant.margin) / (settingsStore.bigBoxWeight || 45)
+      const receivePrice = calculateMerchantItem({
+        formData: r,
+        merchantDetail: {
+          margin: merchant.margin,
+          ...detail
+        }
+      })
       // 计算应结算
-      receivable += price * (bigWeight * bigBoxes + smallWeight * smallBoxes + weight)
+      receivable += receivePrice
 
       recordList.push({
         date: r.date,

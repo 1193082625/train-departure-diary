@@ -30,6 +30,7 @@ tables.forEach(table => {
   app.get(`/api/${table}/by/:field/:value`, router.getByField)
   app.post(`/api/${table}`, router.create)
   app.put(`/api/${table}/:id`, router.update)
+  app.put(`/api/${table}/by/:field/:value`, router.updateByField)
   app.delete(`/api/${table}/:id`, router.delete)
   app.delete(`/api/${table}`, router.deleteAll)
 })
