@@ -427,6 +427,11 @@ watch(() => departureStore.records, () => {
   updateCalendarSelected()
 }, { deep: true })
 
+// 监听日报价数据变化，更新日历
+watch(() => dailyQuoteStore.quotes, () => {
+  updateCalendarSelected()
+}, { deep: true })
+
 // 监听中间商切换，更新日历和图表
 watch(() => userStore.currentMiddlemanId, () => {
   updateCalendarSelected()
@@ -435,6 +440,7 @@ watch(() => userStore.currentMiddlemanId, () => {
 
 // 初始化
 initCalendarRange()
+updateCalendarSelected()
 updateChartData()
 
 // 暴露给父组件使用

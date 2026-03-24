@@ -8,6 +8,13 @@ import { getPool } from '../config/db.js'
 // JSON 字段列表
 const JSON_FIELDS = ['merchantDetails', 'truckRows', 'loadingWorkerIds', 'merchantAmount']
 
+// 允许查询的字段白名单（防止 SQL 注入）
+const ALLOWED_QUERY_FIELDS = [
+  'id', 'phone', 'userId', 'date', 'role', 'parentId', 'code',
+  'name', 'type', 'targetId', 'targetType', 'createdAt',
+  'inviteCode', 'invitedBy', 'workerId', 'usedBy'
+]
+
 /**
  * 序列化数据
  */
@@ -93,6 +100,12 @@ export const createCrudRouter = (tableName) => {
       try {
         const pool = getPool()
         const { field, value } = req.params
+
+        // 白名单验证，防止 SQL 注入
+        if (!ALLOWED_QUERY_FIELDS.includes(field)) {
+          return res.status(400).json({ success: false, error: '无效的查询字段' })
+        }
+
         const [rows] = await pool.query(
           `SELECT * FROM ${tableName} WHERE ${field} = ?`,
           [value]

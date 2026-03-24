@@ -157,13 +157,19 @@ export const useDepartureStore = defineStore('departure', () => {
   }
 
   const deleteRecord = async (id) => {
+    const deletedRecord = records.value.find(r => r.id === id)
     records.value = records.value.filter(r => r.id !== id)
     try {
       await apiOps.delete('departures', id)
       publish('departure:refresh', null)
     } catch (e) {
+      // 回滚本地状态
+      if (deletedRecord) {
+        records.value.push(deletedRecord)
+      }
       console.error('【Departure】删除发车记录失败:', e)
       showErrorToast('删除发车记录失败')
+      throw e
     }
   }
 

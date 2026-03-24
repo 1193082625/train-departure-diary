@@ -51,32 +51,49 @@ export const useDailyQuoteStore = defineStore('dailyQuote', () => {
   // 保存单条日报价到云端
   const saveQuote = async (date, quote) => {
     try {
-      const userId = userStore.currentUser?.id || null
-      const existRes = await apiOps.queryBy('daily_quotes', 'date', date)
-      const existing = existRes.data || []
-      if (existing && existing.length > 0) {
+      // 使用中间商ID（LOADER 角色会返回 parentId）
+      const middlemanId = userStore.getMiddlemanId()
+      if (!middlemanId) {
+        throw new Error('无权限保存报价')
+      }
+
+      // 先在本地查找是否已有该日期的报价（按中间商过滤）
+      const localIndex = quotes.value.findIndex(
+        q => q.date === date && q.userId === middlemanId
+      )
+
+      // 查询云端是否已有该中间商的当日报价
+      const allQuotesRes = await apiOps.queryAll('daily_quotes')
+      const allQuotes = allQuotesRes.data || []
+      const existing = allQuotes.find(
+        q => q.date === date && q.userId === middlemanId
+      )
+
+      if (existing) {
         // 更新已有报价
-        await apiOps.update('daily_quotes', existing[0].id, {
-          quote: Number(quote),
-          userId
+        await apiOps.update('daily_quotes', existing.id, {
+          quote: Number(quote)
         })
+        // 更新本地
+        if (localIndex !== -1) {
+          quotes.value[localIndex].quote = Number(quote)
+        }
       } else {
         // 创建新报价
         const newQuote = {
           id: Date.now().toString(),
           date,
           quote: Number(quote),
-          userId,
+          userId: middlemanId,
           createdAt: new Date().toISOString()
         }
         await apiOps.insert('daily_quotes', newQuote)
-        quotes.value.push(newQuote)
-      }
-      // 更新本地 quotes 数组中的对应记录
-      const index = quotes.value.findIndex(q => q.date === date)
-      if (index !== -1) {
-        quotes.value[index].quote = Number(quote)
-        quotes.value[index].userId = userId
+        // 更新或添加到本地列表
+        if (localIndex !== -1) {
+          quotes.value[localIndex] = newQuote
+        } else {
+          quotes.value.push(newQuote)
+        }
       }
       publish('dailyQuote:refresh', { date, quote })
     } catch (e) {

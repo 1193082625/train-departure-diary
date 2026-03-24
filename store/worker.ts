@@ -47,10 +47,15 @@ export const useWorkerStore = defineStore('worker', () => {
 
   const saveWorkers = async () => {
     try {
-      // 先删除所有旧数据
-      await apiOps.deleteAll('workers')
+      // 使用 upsert 模式，替代 deleteAll
       for (const worker of workers.value) {
-        await apiOps.insert('workers', worker)
+        const existRes = await apiOps.queryBy('workers', 'id', worker.id)
+        const existing = existRes.data || []
+        if (existing && existing.length > 0) {
+          await apiOps.update('workers', worker.id, worker)
+        } else {
+          await apiOps.insert('workers', worker)
+        }
       }
     } catch (e) {
       console.error('【Worker】保存员工失败:', e)
@@ -60,32 +65,55 @@ export const useWorkerStore = defineStore('worker', () => {
   }
 
   const addWorker = async (worker) => {
-    const userStore = useUserStore()
-    const newWorker = {
-      ...worker,
-      id: Date.now().toString(),
-      userId: userStore.currentUser?.id || null,
-      createdAt: new Date().toISOString()
+    try {
+      const userStore = useUserStore()
+      const newWorker = {
+        ...worker,
+        id: Date.now().toString(),
+        userId: userStore.currentUser?.id || null,
+        createdAt: new Date().toISOString()
+      }
+      workers.value.push(newWorker)
+      await saveWorkers()
+      publish('worker:refresh', newWorker)
+      return newWorker
+    } catch (e) {
+      console.error('【Worker】添加员工失败:', e)
+      showErrorToast('添加员工失败')
+      throw e
     }
-    workers.value.push(newWorker)
-    await saveWorkers()
-    publish('worker:refresh', newWorker)
-    return newWorker
   }
 
   const updateWorker = async (id, updates) => {
-    const index = workers.value.findIndex(w => w.id === id)
-    if (index !== -1) {
-      workers.value[index] = { ...workers.value[index], ...updates }
-      await saveWorkers()
-      publish('worker:refresh', workers.value[index])
+    try {
+      const index = workers.value.findIndex(w => w.id === id)
+      if (index !== -1) {
+        workers.value[index] = { ...workers.value[index], ...updates }
+        await saveWorkers()
+        publish('worker:refresh', workers.value[index])
+      }
+    } catch (e) {
+      console.error('【Worker】更新员工失败:', e)
+      showErrorToast('更新员工失败')
+      throw e
     }
   }
 
   const deleteWorker = async (id) => {
+    const deletedWorker = workers.value.find(w => w.id === id)
     workers.value = workers.value.filter(w => w.id !== id)
-    await saveWorkers()
-    publish('worker:refresh', null)
+    try {
+      await apiOps.delete('workers', id)
+      publish('worker:refresh', null)
+    } catch (e) {
+      // 回滚本地状态
+      if (deletedWorker) {
+        workers.value.push(deletedWorker)
+      }
+      console.error('【Worker】删除员工失败:', e)
+      showErrorToast('删除员工失败')
+      throw e
+    }
   }
 
   const getWorkerById = (id) => workers.value.find(w => w.id === id)

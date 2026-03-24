@@ -18,24 +18,29 @@ triggers:
 
 ## 项目背景
 
-这是一个 **uni-app + Vue 3 + Pinia + uniCloud** 的发车日记应用。
+这是一个 **uni-app + Vue 3 + Pinia + 自建 MySQL + Express** 的发车日记应用。
 
 ### 技术栈
 
-| 类别     | 技术            |
-| -------- | --------------- |
-| 框架     | UniApp (Vue 3)  |
-| 状态管理 | Pinia           |
-| 数据库   | uniCloud 阿里云 |
-| UI 组件  | uni-ui          |
+| 类别     | 技术              |
+| -------- | ----------------- |
+| 框架     | UniApp (Vue 3)    |
+| 状态管理 | Pinia             |
+| 数据库   | 自建阿里云 MySQL  |
+| 后端     | Express (Node.js) |
+| API      | HTTP REST API     |
+| UI 组件  | uni-ui            |
 
 ### 关键目录
 
 ```
 store/           - Pinia 状态管理 (user, departure, merchant, worker, transaction, settings, dailyQuote)
-utils/           - 工具函数 (db.js, errorHandler.ts, validate.js)、业务计算逻辑
+utils/           - 工具函数 (api.js, db-mysql.js, errorHandler.ts, validate.js)、业务计算逻辑
 pages/           - Vue 页面组件
-uniCloud-aliyun/database/  - 云数据库 Schema
+server/          - Express 后端服务 (API 路由、数据库操作)
+sql/             - SQL Schema (schema-mysql.sql)
+config/          - 数据库配置 (database.js)
+uniCloud-aliyun/database/  - 历史遗留 (旧 uniCloud Schema)
 ```
 
 ---
@@ -164,18 +169,32 @@ export const ROLES = {
 
 ### 4. 数据库操作规范
 
-**db.js 封装模块：**
+**api.js 封装模块 (前端)：**
 
 ```javascript
-dbOps; // 通用 CRUD: queryAll, insert, update, delete, queryBy, deleteAll
-userDbOps; // 用户操作: getUserByPhone, getUserById, createUser, updateUser
-inviteDbOps; // 邀请码: getByCode, create, useCode, getByCreator
+apiOps; // 通用 CRUD: queryAll, queryBy, getById, insert, update, delete, deleteAll
+userApi; // 用户操作: getUserByPhone, getUserById, getUserByInviteCode, createUser, updateUser
+inviteApi; // 邀请码: getByCode, create, useCode, getByCreator
+```
+
+**server/routes/users.js 封装模块 (后端)：**
+
+```javascript
+// Express CRUD 路由工厂，提供：
+// GET    /api/:table        - 查询所有
+// GET    /api/:table/:id    - 根据 ID 查询
+// GET    /api/:table/by/:field/:value - 根据字段查询
+// POST   /api/:table        - 新增
+// PUT    /api/:table/:id    - 更新
+// DELETE /api/:table/:id    - 删除
+// DELETE /api/:table        - 清空
 ```
 
 **规范：**
 
-- 所有数据库操作通过 dbOps 封装
-- 不直接操作 uniCloud API
+- 前端所有数据库操作通过 `utils/api.js` 封装，调用后端 HTTP API
+- 后端通过 `server/config/db.js` 操作 MySQL 数据库
+- 不直接操作 MySQL API
 - JSON 字段存储前序列化，读取后反序列化
 
 ### 5. 性能与安全
@@ -266,12 +285,17 @@ inviteDbOps; // 邀请码: getByCode, create, useCode, getByCreator
 
 ## 参考文件
 
-| 文件                    | 用途                     |
-| ----------------------- | ------------------------ |
-| `store/user.ts`         | 角色定义和用户认证       |
-| `store/departure.ts`    | 发车记录 CRUD + 角色过滤 |
-| `store/merchant.ts`     | 商户 CRUD + 角色过滤     |
-| `store/worker.ts`       | 员工 CRUD + 角色过滤     |
-| `utils/db.js`           | 数据库操作封装           |
-| `utils/errorHandler.ts` | 统一错误提示             |
-| `utils/calc.ts`         | 业务计算逻辑             |
+| 文件                          | 用途                       |
+| ----------------------------- | -------------------------- |
+| `store/user.ts`               | 角色定义和用户认证         |
+| `store/departure.ts`          | 发车记录 CRUD + 角色过滤   |
+| `store/merchant.ts`           | 商户 CRUD + 角色过滤       |
+| `store/worker.ts`             | 员工 CRUD + 角色过滤       |
+| `utils/api.js`                | HTTP API 调用封装          |
+| `utils/errorHandler.ts`       | 统一错误提示               |
+| `utils/calc.ts`               | 业务计算逻辑               |
+| `config/database.js`          | 数据库配置                 |
+| `sql/schema-mysql.sql`        | MySQL 建表语句             |
+| `server/config/db.js`          | 后端 MySQL 连接封装        |
+| `server/routes/users.js`       | 后端 CRUD 路由工厂         |
+| `uniCloud-aliyun/database/*.schema.json` | 历史遗留 (旧 Schema) |

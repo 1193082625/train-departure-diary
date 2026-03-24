@@ -518,10 +518,8 @@ export const useUserStore = defineStore('user', () => {
   // 检查手机号是否已注册
   const checkPhoneExists = async (phone) => {
     try {
-      console.log('【checkPhoneExists】开始检查手机号:', phone)
       const res = await userApi.getUserByPhone(phone)
       const existingUsers = res.data || []
-      console.log('【checkPhoneExists】查询结果:', existingUsers)
       return existingUsers && existingUsers.length > 0
     } catch (e) {
       console.error('【checkPhoneExists】检查失败:', e)

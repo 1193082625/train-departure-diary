@@ -65,32 +65,55 @@ export const useMerchantStore = defineStore('merchant', () => {
   }
 
   const addMerchant = async (merchant) => {
-    const userStore = useUserStore()
-    const newMerchant = {
-      ...merchant,
-      id: Date.now().toString(),
-      userId: userStore.currentUser?.id || null,
-      createdAt: new Date().toISOString()
+    try {
+      const userStore = useUserStore()
+      const newMerchant = {
+        ...merchant,
+        id: Date.now().toString(),
+        userId: userStore.currentUser?.id || null,
+        createdAt: new Date().toISOString()
+      }
+      merchants.value.push(newMerchant)
+      await saveMerchants()
+      publish('merchant:refresh', newMerchant)
+      return newMerchant
+    } catch (e) {
+      console.error('【Merchant】添加商户失败:', e)
+      showErrorToast('添加商户失败')
+      throw e
     }
-    merchants.value.push(newMerchant)
-    await saveMerchants()
-    publish('merchant:refresh', newMerchant)
-    return newMerchant
   }
 
   const updateMerchant = async (id, updates) => {
-    const index = merchants.value.findIndex(m => m.id === id)
-    if (index !== -1) {
-      merchants.value[index] = { ...merchants.value[index], ...updates }
-      await saveMerchants()
-      publish('merchant:refresh', merchants.value[index])
+    try {
+      const index = merchants.value.findIndex(m => m.id === id)
+      if (index !== -1) {
+        merchants.value[index] = { ...merchants.value[index], ...updates }
+        await saveMerchants()
+        publish('merchant:refresh', merchants.value[index])
+      }
+    }  catch (e) {
+      console.error('【Merchant】更新商户失败:', e)
+      showErrorToast('更新商户失败')
+      throw e
     }
   }
 
   const deleteMerchant = async (id) => {
+    const deletedMerchant = merchants.value.find(m => m.id === id)
     merchants.value = merchants.value.filter(m => m.id !== id)
-    await saveMerchants()
-    publish('merchant:refresh', null)
+    try {
+      await apiOps.delete('merchants', id)
+      publish('merchant:refresh', null)
+    } catch (e) {
+      // 回滚本地状态
+      if (deletedMerchant) {
+        merchants.value.push(deletedMerchant)
+      }
+      console.error('【Merchant】删除商户失败:', e)
+      showErrorToast('删除商户失败')
+      throw e
+    }
   }
 
   const getMerchantById = (id) => merchants.value.find(m => m.id === id)

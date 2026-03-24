@@ -237,7 +237,7 @@ export const useSettingsStore = defineStore('settings', () => {
   }
 
   // 批量更新设置
-  const updateAllSettings = (params) => {
+  const updateAllSettings = async (params) => {
     if (params.receiptBigBoxWeight !== undefined) receiptBigBoxWeight.value = Number(params.receiptBigBoxWeight)
     if (params.deliveryBigBoxWeight !== undefined) deliveryBigBoxWeight.value = Number(params.deliveryBigBoxWeight)
     if (params.smallBoxWeight !== undefined) smallBoxWeight.value = Number(params.smallBoxWeight)
@@ -249,7 +249,13 @@ export const useSettingsStore = defineStore('settings', () => {
     if (params.tollFee !== undefined) tollFee.value = Number(params.tollFee)
     if (params.entryFee !== undefined) entryFee.value = Number(params.entryFee)
     if (params.oilFee !== undefined) oilFee.value = Number(params.oilFee)
-    saveSettings()
+    try {
+      await saveSettings()
+    } catch (e) {
+      console.error('【Settings】批量更新设置失败:', e)
+      showErrorToast('保存设置失败')
+      throw e
+    }
   }
 
   // 监听用户登录状态变化，重新加载settings
