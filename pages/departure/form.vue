@@ -222,13 +222,13 @@
         <view class="flex-start mt-15 mb-10">
           回框数量合计
         </view>
-        <view class="flex-start">
-          <view class="w-pre25 font-bold">
+        <view class="flex flex-start gap-2">
+          <view class="font-bold">
             {{calculated.totalBigBoxes  < 0 ? '欠' : ''}}
             <text class="ml-4 mr-4 font-bold color-fa8c16">{{ calculated.totalBigBoxes }}</text> 
             大框
           </view>
-          <view class="w-pre25 font-bold">
+          <view class="font-bold">
             {{calculated.totalSmallBoxes  < 0 ? '欠' : ''}}
             <text class="ml-4 mr-4 font-bold color-fa8c16">{{ calculated.totalSmallBoxes }}</text> 
             小框
@@ -435,6 +435,14 @@ const calculated = computed(() => {
   // 货车共装斤数
   const truckWeightTotal = truckBig * Number(settingsStore.deliveryBigBoxWeight) + truckSmall * smallWeight + truckCartonBoxesBig * Number(settingsStore.depotCartonBoxesBig) + truckCartonBoxesSmall * Number(settingsStore.depotCartonBoxesSmall)
 
+
+  // 交货应回款
+  const totalDeliveryPriceBig = (Number(form.dailyQuote) - 1) * truckBig
+  const totalDeliveryPriceSmall = Number(form.dailyQuote - 1) / Number(settingsStore.deliveryBigBoxWeight) * Number(smallWeight) * truckSmall
+  const totalDeliveryPriceCartonBoxesBig = (Number(form.dailyQuote)  + 8) * truckCartonBoxesBig
+  const totalDeliveryPriceBoxesSmall = (Number(form.dailyQuote) + 5) * truckCartonBoxesSmall
+  const totalDeliveryPrice = (totalDeliveryPriceBig + totalDeliveryPriceSmall + totalDeliveryPriceCartonBoxesBig + totalDeliveryPriceBoxesSmall).toFixed(2)
+
   // 留货数量
   const reservedBigBoxesTotal = merchantBigTotal + Number(form.depotBigBoxes) - truckBig // 大框留货数量
   const reservedSmallBoxesTotal = merchantSmallTotal + Number(form.depotSmallBoxes) - truckSmall // 小框留货数量
@@ -452,7 +460,7 @@ const calculated = computed(() => {
   const totalUnloadingFee = Number(form.unloadingFee) || 0 // 卸车费
   const totalDepartureFee = Number(form.departureFee) || 0 // 发车费
 
-  const { totalReceivePrice, totalDeliveryPrice, merchantAmount } = calculateMerchantCost({
+  const { totalReceivePrice, merchantAmount } = calculateMerchantCost({
     merchantDetails: form.merchantDetails, // 鸡场信息
     dailyQuote: Number(form.dailyQuote), // 当日报价
     smallWeight: smallWeight, // 本趟小框斤数
@@ -465,13 +473,15 @@ const calculated = computed(() => {
   // 留存单价 = (当日报价 - minMargin）/ 收货大框斤数
   const reservedPrice = (Number(form.dailyQuote) - minMargin) / Number(settingsStore.receiptBigBoxWeight)
   // 留存合计 = （留货大框 * 大框斤数 + 留货小框 * 小框斤数 + 鸡场散斤数）* 留存单价
-  const reservedTotalWeight = reservedBigBoxesTotal * Number(settingsStore.receiptBigBoxWeight) + reservedSmallBoxesTotal * smallWeight + merchantWeightTotal
+  const reservedTotalWeight = reservedBigBoxesTotal * Number(settingsStore.deliveryBigBoxWeight) + reservedSmallBoxesTotal * smallWeight + merchantWeightTotal
   const reservedTotal = Number(((reservedTotalWeight || 0) * (reservedPrice || 0)).toFixed(2))
   
 
   // 本趟盈利 = 交货价 - 收货价 - 油费 - 进门费 - 过路费 - 装车费 - 卸车费 - 发车费
-  const profit = Number((totalDeliveryPrice - totalReceivePrice - totalOilFee - totalEntryFee - totalTollFee - totalLoadingFee - totalUnloadingFee - totalDepartureFee).toFixed(2))
-
+  const profit = Number((Number(totalDeliveryPrice) + reservedTotal - totalReceivePrice - totalOilFee - totalEntryFee - totalTollFee - totalLoadingFee - totalUnloadingFee - totalDepartureFee).toFixed(2))
+  console.log(`${totalDeliveryPrice} + ${reservedTotal} - ${totalReceivePrice} - ${totalOilFee}  - ${totalEntryFee} - ${totalTollFee} - ${totalLoadingFee} - ${totalUnloadingFee} - ${totalDepartureFee}`);
+  
+  
   return {
     merchantBigTotal, // 本次共拉大框数量
     merchantSmallTotal, // 本次共拉小框数量
@@ -485,7 +495,7 @@ const calculated = computed(() => {
     reservedSmallBoxesTotal, // 留货小框数量
     merchantAmount, // 鸡场金额明细
     totalReceivePrice, // 本趟合计收货价
-    totalDeliveryPrice, // 本趟合计交货价
+    totalDeliveryPrice: Number(totalDeliveryPrice), // 本趟合计交货价
     profit, // 本趟盈利
     totalBigBoxes, // 大框合计
     totalSmallBoxes, // 小框合计

@@ -56,14 +56,18 @@ export const calculateMerchantCost = ({
           // 交货价 = (当日报价 - 1) × 本次共拉大框数量 + (当日报价 - 鸡场margin) / 交货大框斤数 × 小框斤数 × 本次共拉小框数量
           // 大框交货
           const deliveryBig = Number((dailyQuote - 1) * bigBoxes)
+          
           // 小框交货
           const deliverySmall = Number((dailyQuote - 1) / Number(settingsStore.deliveryBigBoxWeight) * Number(smallWeight) * smallBoxes)
+
           // 大箱交货
           const deliveryCartonBoxesBig = Number((dailyQuote + 8) / Number(settingsStore.deliveryBigBoxWeight) * truckCartonBoxesBig *  settingsStore.depotCartonBoxesBig)
+          
           // 小箱交货
           const deliveryCartonBoxesSmall = Number((dailyQuote + 5) / Number(settingsStore.deliveryBigBoxWeight) * truckCartonBoxesSmall *  settingsStore.depotCartonBoxesSmall)
           // 本趟合计交货价
           const deliveryPrice = Number(Number((deliveryBig + deliverySmall + deliveryCartonBoxesBig + deliveryCartonBoxesSmall).toFixed(2)))
+          
           totalDeliveryPrice += deliveryPrice
       
           merchantAmount.push({
