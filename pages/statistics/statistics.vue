@@ -10,7 +10,7 @@
 
 <script setup>
 import { useUserStore } from '@/store/user'
-import StatisticsContent from '@/components/StatisticsContent.vue'
+import StatisticsContent from './components/StatisticsContent.vue'
 
 const userStore = useUserStore()
 </script>

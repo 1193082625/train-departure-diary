@@ -77,7 +77,6 @@ onShow(() => {
   // 动态获取屏幕尺寸作为图表尺寸
   const sysInfo = uni.getSystemInfoSync()
   sysInfo.value = sysInfo
-  console.log(777, sysInfo.value.windowWidth, sysInfo.value.windowHeight);
   
   // 旋转后，原本的 windowWidth 变成垂直方向，windowHeight 变成水平方向
   // 横屏时图表宽度应该用 windowHeight，高度应该用 windowWidth
