@@ -54,7 +54,7 @@
 	{
 		"path": "pages/transaction/transaction",
 		"style": {
-			"navigationBarTitleText": "结账"
+			"navigationBarTitleText": "单次结账"
 		}
 	},
 	{

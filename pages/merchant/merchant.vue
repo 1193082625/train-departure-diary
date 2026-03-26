@@ -109,7 +109,7 @@ const groupedMerchants = computed(() => {
   // 未选择中间商：显示所有分组
   return middlemen.map(mm => ({
     ...mm,
-    merchants: allMerchants.filter(m => m.userId === mm.id)
+    merchants: allMerchants.filter(m => m.userId === mm.id).sort((a, b) => b.createdAt.localeCompare(a.createdAt))
   })).filter(g => g.merchants.length > 0)
 })
 

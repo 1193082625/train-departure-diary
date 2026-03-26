@@ -95,7 +95,7 @@
       </view>
       <view class="summary-item">
         <text class="summary-label">斤数</text>
-        <text class="summary-value">{{ totalWeight || '--' }}</text>
+        <text class="summary-value">{{ totalWeight.toFixed(2) || '--' }}</text>
       </view>
       <view class="summary-item" v-if="userStore.isAdmin || userStore.isMiddleman">
         <text class="summary-label">总盈利</text>
@@ -132,7 +132,7 @@
             <view class="record-stats">
               <text>大框: {{ calculateTotalBigBoxes(record) }}</text>
               <text>小框: {{ calculateTotalSmallBoxes(record) }}</text>
-              <text>斤数: {{ calculateTotalWeight(record) }}</text>
+              <text>斤数: {{ calculateTotalWeight(record).toFixed(2) }}</text>
               <text class="profit" v-if="record.getMoney && (userStore.isAdmin || userStore.isMiddleman)">盈利: ¥{{ parseFloat(record.getMoney).toFixed(2) }}</text>
             </view>
           </view>
@@ -159,7 +159,7 @@
           <view class="record-stats">
             <text>大框: {{ calculateTotalBigBoxes(record) }}</text>
             <text>小框: {{ calculateTotalSmallBoxes(record) }}</text>
-            <text>散装: {{ calculateTotalWeight(record) }} 斤</text>
+            <text>散装: {{ calculateTotalWeight(record).toFixed(2) }} 斤</text>
             <text class="profit" v-if="record.getMoney && (userStore.isAdmin || userStore.isMiddleman)">盈利: ¥{{ parseFloat(record.getMoney).toFixed(2) }}</text>
           </view>
         </view>
@@ -294,7 +294,7 @@ const groupedRecords = computed(() => {
   if (viewMode.value === 'day') return {}
 
   const groups = {}
-  const sortedRecords = [...records.value].sort((a, b) => a.date.localeCompare(b.date))
+  const sortedRecords = [...records.value].sort((a, b) => b.date.localeCompare(a.date))
 
   sortedRecords.forEach(record => {
     const key = viewMode.value === 'month' ? record.date : record.date.substring(0, 7)
@@ -385,7 +385,8 @@ const calculateTotalSmallBoxes = (record) => {
 }
 
 const calculateTotalWeight = (record) => {
-  return record.merchantDetails.reduce((sum, m) => sum + m.weight, 0)
+  const totalWeight = record.merchantDetails.reduce((sum, m) => sum + m.weight, 0)
+  return totalWeight
 }
 
 onMounted(() => {

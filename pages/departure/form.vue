@@ -439,8 +439,10 @@ const calculated = computed(() => {
   // 交货应回款
   const totalDeliveryPriceBig = (Number(form.dailyQuote) - 1) * truckBig
   const totalDeliveryPriceSmall = Number(form.dailyQuote - 1) / Number(settingsStore.deliveryBigBoxWeight) * Number(smallWeight) * truckSmall
-  const totalDeliveryPriceCartonBoxesBig = (Number(form.dailyQuote)  + 8) * truckCartonBoxesBig
-  const totalDeliveryPriceBoxesSmall = (Number(form.dailyQuote) + 5) * truckCartonBoxesSmall
+  //  大箱应回款 = （今日报价 + 8）/ 交货大框斤数 * 默认大箱斤数 * 数量
+  const totalDeliveryPriceCartonBoxesBig = (Number(form.dailyQuote) + 8) / settingsStore.deliveryBigBoxWeight * settingsStore.depotCartonBoxesBig  * truckCartonBoxesBig
+  //  小箱应回款 = （今日报价 + 5）/ 交货大框斤数 * 默认小箱斤数 * 数量
+  const totalDeliveryPriceBoxesSmall = (Number(form.dailyQuote) + 5) / settingsStore.deliveryBigBoxWeight * settingsStore.depotCartonBoxesSmall   * truckCartonBoxesSmall
   const totalDeliveryPrice = (totalDeliveryPriceBig + totalDeliveryPriceSmall + totalDeliveryPriceCartonBoxesBig + totalDeliveryPriceBoxesSmall).toFixed(2)
 
   // 留货数量
@@ -476,11 +478,14 @@ const calculated = computed(() => {
   const reservedTotalWeight = reservedBigBoxesTotal * Number(settingsStore.deliveryBigBoxWeight) + reservedSmallBoxesTotal * smallWeight + merchantWeightTotal
   const reservedTotal = Number(((reservedTotalWeight || 0) * (reservedPrice || 0)).toFixed(2))
   
-
-  // 本趟盈利 = 交货价 - 收货价 - 油费 - 进门费 - 过路费 - 装车费 - 卸车费 - 发车费
-  const profit = Number((Number(totalDeliveryPrice) + reservedTotal - totalReceivePrice - totalOilFee - totalEntryFee - totalTollFee - totalLoadingFee - totalUnloadingFee - totalDepartureFee).toFixed(2))
-  console.log(`${totalDeliveryPrice} + ${reservedTotal} - ${totalReceivePrice} - ${totalOilFee}  - ${totalEntryFee} - ${totalTollFee} - ${totalLoadingFee} - ${totalUnloadingFee} - ${totalDepartureFee}`);
   
+  // 大箱成本 = （当日报价 - 2） / 45 * 43 * 大箱数量
+  const costCartonBoxesBig = (form.dailyQuote - 2) / settingsStore.receiptBigBoxWeight * settingsStore.depotCartonBoxesBig * truckCartonBoxesBig
+  // 小箱成本 = （当日报价 - 2） / 45 * 30 * 小箱数量
+  const costCartonBoxesSmall = (form.dailyQuote - 2) / settingsStore.receiptBigBoxWeight * settingsStore.depotCartonBoxesSmall * truckCartonBoxesSmall
+
+  // 本趟盈利 = 交货价 + 留存合计 - 收货价 - 大箱成本 - 小箱成本 - 油费 - 进门费 - 过路费 - 装车费 - 卸车费 - 发车费
+  const profit = Number((Number(totalDeliveryPrice) + reservedTotal - totalReceivePrice - costCartonBoxesBig - costCartonBoxesSmall - totalOilFee - totalEntryFee - totalTollFee - totalLoadingFee - totalUnloadingFee - totalDepartureFee).toFixed(2))
   
   return {
     merchantBigTotal, // 本次共拉大框数量

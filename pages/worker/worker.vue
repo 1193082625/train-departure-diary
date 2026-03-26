@@ -117,7 +117,7 @@ const groupedWorkers = computed(() => {
   // 未选择中间商：显示所有分组
   return middlemen.map(mm => ({
     ...mm,
-    workers: allWorkers.filter(w => w.userId === mm.id)
+    workers: allWorkers.filter(w => w.userId === mm.id).sort((a, b) => b.createdAt.localeCompare(a.createdAt))
   })).filter(g => g.workers.length > 0)
 })
 

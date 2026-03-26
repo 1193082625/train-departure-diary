@@ -34,7 +34,7 @@ const editRecord = (record) => {
   uni.navigateTo({ url: `/pages/departure/form?id=${record.id}` })
 }
 
-const todayRecords = computed(() => departureStore.getTodayRecords())
+const todayRecords = computed(() => departureStore.getTodayRecords().sort((a, b) => b.createdAt.localeCompare(a.createdAt)))
 
 const todayStats = computed(() => {
   const records = todayRecords.value

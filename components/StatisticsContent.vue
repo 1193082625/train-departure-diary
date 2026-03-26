@@ -269,7 +269,7 @@ const updatePersonRecord = () => {
   })
 
   nextTick(() => {
-    personRecordList.value = personRecord.value
+    personRecordList.value = personRecord.value.sort((a, b) => b.date.localeCompare(a.date))
     openPersonRecordList.value = true
   })
 }
@@ -397,21 +397,21 @@ watchEffect(() => {
     }
   })
   nextTick(() => {
-    merchantRecordList.value = recordList
+    merchantRecordList.value = recordList.sort((a, b) => b.date.localeCompare(a.date))
     openMerchantRecordList.value = true
   })
 
   // 交易记录
   const transactions = transactionStore.getTransactionsByTarget(selectedMerchantId.value)
   // 已结金额
-  const paid = transactions.reduce((sum, t) => sum + t.amount, 0)
+  const paid = transactions.reduce((sum, t) => sum + Number(t.amount), 0)
 
   merchantStats.value = {
     totalBigBoxes,
     totalSmallBoxes,
     totalWeight,
     receivable: receivable.toFixed(2),
-    paid: paid.toFixed(2),
+    paid: Number(paid || 0).toFixed(2),
     unpaid: (receivable - paid).toFixed(2)
   }
 })

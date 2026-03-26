@@ -88,7 +88,7 @@ const showMessage = (msg) => {
 }
 
 const loadCodes = async () => {
-  codeList.value = await userStore.getMyCodes()
+  codeList.value = (await userStore.getMyCodes()).sort((a, b) => b.createdAt.localeCompare(a.createdAt))
 }
 
 const handleGenerate = async () => {

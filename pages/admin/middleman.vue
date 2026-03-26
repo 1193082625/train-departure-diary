@@ -70,7 +70,7 @@ const toast = ref({
 
 // 中间商列表（所有中间商）
 const middlemanList = computed(() => {
-  return userStore.users.filter(u => u.role === ROLES.MIDDLEMAN)
+  return userStore.users.filter(u => u.role === ROLES.MIDDLEMAN).sort((a, b) => b.createdAt.localeCompare(a.createdAt))
 })
 
 // 获取头像文字

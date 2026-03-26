@@ -18,6 +18,10 @@
         <text class="icon">👤</text>
         <text>管理人员</text>
       </view>
+      <view class="action-btn" @click="goToTransaction" v-if="userStore.isAdmin || userStore.isMiddleman">
+        <text class="icon">💰</text>
+        <text>单次结账</text>
+      </view>
     </view>
     
     <!-- 参数设置弹窗 -->
@@ -115,7 +119,7 @@ const settingsForm = reactive({
 const goToDeparture = () => uni.navigateTo({ url: '/pages/departure/departure' })
 const goToMerchant = () => uni.navigateTo({ url: '/pages/merchant/merchant' })
 const goToWorker = () => uni.navigateTo({ url: '/pages/worker/worker' })
-
+const goToTransaction = () => uni.navigateTo({ url: '/pages/transaction/transaction' })
 
 const openSettingsPopup = () => {
   settingsPopup.value.open('center')
@@ -160,7 +164,7 @@ const saveSettings = () => {
 }
 </script>
 <style scoped>
-.stats-cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 20px; }
+.stats-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px; }
 .stats-cards.stats-cards-all { grid-template-columns: repeat(1, 1fr); }
 .stat-card { flex: 1; background: #fff; padding: 20px; border-radius: 8px; text-align: center; }
 .action-btn { flex: 1; background: #fff; padding: 20px; border-radius: 8px; text-align: center; }

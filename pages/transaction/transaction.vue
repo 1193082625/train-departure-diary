@@ -79,7 +79,7 @@ onHide(() => {
 const form = reactive({
   type: 'payment_to_merchant',
   targetId: '',
-  amount: 0,
+  amount: null,
   date: new Date().toISOString().split('T')[0],
   note: ''
 })
@@ -98,7 +98,12 @@ const selectedTarget = computed(() => {
 })
 
 const recentTransactions = computed(() =>
-  transactionStore.transactions.slice().reverse().slice(0, 20)
+  transactionStore.transactions.slice().reverse().slice(0, 20).map(t => ({
+    ...t,
+    targetName: t.type === 'payment_to_merchant'
+      ? merchantStore.getMerchantById(t.targetId)?.name
+      : workerStore.getWorkerById(t.targetId)?.name
+  }))
 )
 
 const onTargetChange = (e) => {
@@ -116,14 +121,13 @@ const addTransaction = () => {
   transactionStore.addTransaction({
     type: form.type,
     targetId: form.targetId,
-    targetName: selectedTarget.value.name,
     amount: form.amount,
     date: form.date,
     note: form.note
   })
 
   uni.showToast({ title: '结账成功', icon: 'success' })
-  form.amount = 0
+  form.amount = null
   form.note = ''
 }
 
