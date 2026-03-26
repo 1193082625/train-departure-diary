@@ -200,36 +200,12 @@ export const useUserStore = defineStore('user', () => {
 
       // 检查是否为预设管理员
       if (phone === ADMIN_PHONE && code === ADMIN_CODE) {
-        if (existingUsers && existingUsers.length > 0) {
-          // 已有管理员账号，直接登录
-          currentUser.value = existingUsers[0]
-          isLoggedIn.value = true
-          uni.setStorageSync('currentUser', JSON.stringify(currentUser.value))
-          uni.setStorageSync('loginTime', Date.now())
-          return { success: true, user: currentUser.value }
-        } else {
-          // 创建管理员账号
-          const newUser = {
-            id: generateUUID(),
-            phone: phone,
-            nickname: '管理员',
-            role: ROLES.ADMIN,
-            inviteCode: generateInviteCode(),
-            invitedBy: null,
-            parentId: null,
-            createdAt: new Date().toISOString()
-          }
-          try {
-            await userApi.createUser(newUser)
-          } catch (e) {
-            console.error('创建管理员账号到云端失败，将使用本地存储:', e)
-          }
-          currentUser.value = newUser
-          isLoggedIn.value = true
-          uni.setStorageSync('currentUser', JSON.stringify(currentUser.value))
-          uni.setStorageSync('loginTime', Date.now())
-          return { success: true, user: newUser }
-        }
+        // 已有管理员账号，直接登录
+        currentUser.value = existingUsers[0]
+        isLoggedIn.value = true
+        uni.setStorageSync('currentUser', JSON.stringify(currentUser.value))
+        uni.setStorageSync('loginTime', Date.now())
+        return { success: true, user: currentUser.value }
       }
 
       // 如果用户已存在且设置了密码，必须使用密码登录
@@ -265,7 +241,6 @@ export const useUserStore = defineStore('user', () => {
       }
 
       // 以下是邀请码登录逻辑（首次登录或未设置密码的用户）
-
       // 无邀请码且无密码，直接拒绝
       if (!code) {
         return { success: false, message: '请输入邀请码' }
@@ -520,7 +495,12 @@ export const useUserStore = defineStore('user', () => {
     try {
       const res = await userApi.getUserByPhone(phone)
       const existingUsers = res.data || []
-      return existingUsers && existingUsers.length > 0
+      let hasPassword = false
+      if(existingUsers.length > 0) {
+        const user = existingUsers[0]
+        hasPassword = !!user.password
+      }
+      return existingUsers && existingUsers.length > 0 && hasPassword
     } catch (e) {
       console.error('【checkPhoneExists】检查失败:', e)
       showErrorToast('检查手机号失败')
@@ -606,6 +586,97 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
+  // 删除中间商及其所有关联数据
+  const deleteMiddleman = async (middlemanId) => {
+    try {
+      // 1. 查询所有关联数据
+      // const [
+      //   loaderUsersRes,
+      //   merchantsRes,
+      //   workersRes,
+      //   departuresRes,
+      //   transactionsRes,
+      //   invitationCodesRes,
+      //   settingsRes,
+      //   dailyQuotesRes
+      // ] = await Promise.all([
+      //   apiOps.queryBy('users', 'parentId', middlemanId),
+      //   apiOps.queryBy('merchants', 'userId', middlemanId),
+      //   apiOps.queryBy('workers', 'userId', middlemanId),
+      //   apiOps.queryBy('departures', 'userId', middlemanId),
+      //   apiOps.queryBy('transactions', 'userId', middlemanId),
+      //   inviteApi.getByCreator(middlemanId),
+      //   apiOps.queryBy('settings', 'userId', middlemanId),
+      //   apiOps.queryBy('daily_quotes', 'userId', middlemanId)
+      // ])
+
+      // const loaderUsers = loaderUsersRes.data || []
+      // const merchants = merchantsRes.data || []
+      // const workers = workersRes.data || []
+      // const departures = departuresRes.data || []
+      // const transactions = transactionsRes.data || []
+      // const invitationCodes = invitationCodesRes.data || []
+      // const settings = settingsRes.data || []
+      // const dailyQuotes = dailyQuotesRes.data || []
+
+      // // 2. 删除装发车用户
+      // for (const loader of loaderUsers) {
+      //   await userApi.deleteUser(loader.id)
+      // }
+
+      // // 3. 删除商户
+      // for (const merchant of merchants) {
+      //   await apiOps.delete('merchants', merchant.id)
+      // }
+
+      // // 4. 删除员工
+      // for (const worker of workers) {
+      //   await apiOps.delete('workers', worker.id)
+      // }
+
+      // // 5. 删除发车记录
+      // for (const record of departures) {
+      //   await apiOps.delete('departures', record.id)
+      // }
+
+      // // 6. 删除交易记录
+      // for (const tx of transactions) {
+      //   await apiOps.delete('transactions', tx.id)
+      // }
+
+      // // 7. 处理邀请码 - 未使用删除，已使用置空
+      // for (const code of invitationCodes) {
+      //   if (!code.usedBy) {
+      //     await apiOps.delete('invitation_codes', code.id)
+      //   } else {
+      //     await apiOps.update('invitation_codes', code.id, { creatorId: null })
+      //   }
+      // }
+
+      // // 8. 删除系统设置
+      // for (const setting of settings) {
+      //   await apiOps.delete('settings', setting.id)
+      // }
+
+      // // 9. 删除日报价
+      // for (const quote of dailyQuotes) {
+      //   await apiOps.delete('daily_quotes', quote.id)
+      // }
+
+      // // 10. 删除中间商用户
+      // await userApi.deleteUser(middlemanId)
+
+      // // 11. 刷新用户列表
+      // await loadUsers()
+
+      // return { success: true }
+    } catch (e) {
+      console.error('删除中间商失败:', e)
+      showErrorToast('删除中间商失败')
+      throw e
+    }
+  }
+
   // 自动调用 init() 确保初始化完成
   init()
 
@@ -640,6 +711,7 @@ export const useUserStore = defineStore('user', () => {
     getMyWorkerIds,
     checkPhoneExists,
     initUserStore,
+    deleteMiddleman,
     ROLES,
     ROLE_NAMES
   }

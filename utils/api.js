@@ -119,6 +119,7 @@ export const userApi = {
   getUserByInviteCode: (inviteCode) => apiOps.queryBy('users', 'inviteCode', inviteCode),
   createUser: (data) => apiOps.insert('users', data),
   updateUser: (id, data) => apiOps.update('users', id, data),
+  deleteUser: (id) => apiOps.delete('users', id),
   getAllUsers: () => apiOps.queryAll('users')
 }
 
@@ -132,7 +133,13 @@ export const inviteApi = {
       data: JSON.stringify({ usedBy: userId, usedAt: new Date().toISOString() })
     })
   },
-  getByCreator: (creatorId) => apiOps.queryBy('invitation_codes', 'creatorId', creatorId),
+  getByCreator: (creatorId) => {
+    // 后端不支持按 creatorId 查询，改为获取所有后在前端过滤
+    return apiOps.queryAll('invitation_codes').then(res => ({
+      ...res,
+      data: (res.data || []).filter(code => code.creatorId === creatorId)
+    }))
+  },
   getAll: () => apiOps.queryAll('invitation_codes')
 }
 

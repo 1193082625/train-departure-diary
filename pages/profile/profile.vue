@@ -23,6 +23,15 @@
         <image class="menu-icon-svg" src="/static/svg/arrow-right.svg" mode="aspectFit"></image>
       </view>
 
+      <!-- 中间商管理 - 仅管理员可见 -->
+      <view class="menu-item" @click="goToMiddleman" v-if="userStore.isAdmin">
+        <view class="menu-left">
+          <image class="menu-icon-svg" src="/static/svg/users.svg" mode="aspectFit"></image>
+          <text class="menu-text">中间商管理</text>
+        </view>
+        <image class="menu-icon-svg" src="/static/svg/arrow-right.svg" mode="aspectFit"></image>
+      </view>
+
       <!-- 修改密码 -->
       <view class="menu-item" @click="changePassword">
         <view class="menu-left">
@@ -84,6 +93,12 @@ const showMessage = (msg) => {
 const goToInvitation = () => {
   uni.navigateTo({
     url: '/pages/profile/invitation'
+  })
+}
+
+const goToMiddleman = () => {
+  uni.navigateTo({
+    url: '/pages/admin/middleman'
   })
 }
 

@@ -67,6 +67,20 @@ export const useMerchantStore = defineStore('merchant', () => {
   const addMerchant = async (merchant) => {
     try {
       const userStore = useUserStore()
+
+      // 校验电话是否已被其他中间商的商户使用
+      // const currentMiddlemanId = userStore.getMiddlemanId()
+      // const existingByPhone = merchants.value.filter(m => m.phone === merchant.phone)
+      // if (existingByPhone.length > 0) {
+      //   // 存在，检查是否属于当前中间商
+      //   const isOwn = existingByPhone.some(m => m.userId === currentMiddlemanId)
+      //   if (isOwn) {
+      //     return { success: false, message: '该商户已存在' }
+      //   } else {
+      //     return { success: false, message: '该电话已被其他商户使用' }
+      //   }
+      // }
+
       const newMerchant = {
         ...merchant,
         id: Date.now().toString(),

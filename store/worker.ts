@@ -67,6 +67,20 @@ export const useWorkerStore = defineStore('worker', () => {
   const addWorker = async (worker) => {
     try {
       const userStore = useUserStore()
+
+      // 校验手机号是否已被其他中间商的员工使用
+      // const currentMiddlemanId = userStore.getMiddlemanId()
+      // const existingByPhone = workers.value.filter(w => w.phone === worker.phone)
+      // if (existingByPhone.length > 0) {
+      //   // 存在，检查是否属于当前中间商
+      //   const isOwn = existingByPhone.some(w => w.userId === currentMiddlemanId)
+      //   if (isOwn) {
+      //     return { success: false, message: '该员工已存在' }
+      //   } else {
+      //     return { success: false, message: '该手机号已被其他员工使用' }
+      //   }
+      // }
+
       const newWorker = {
         ...worker,
         id: Date.now().toString(),
