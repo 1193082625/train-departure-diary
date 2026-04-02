@@ -39,7 +39,7 @@ export const useMerchantStore = defineStore('merchant', () => {
       const res = await apiOps.queryAll('merchants')
       merchants.value = res.data || []
     } catch (e) {
-      console.error('加载商户列表失败:', e)
+      console.error('【Merchant】加载商户列表失败:', e)
       showErrorToast('加载商户列表失败')
       merchants.value = []
     }

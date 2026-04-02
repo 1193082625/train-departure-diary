@@ -252,8 +252,8 @@ const handleLogin = async () => {
   const result = await userStore.login(phone.value, inviteCode.value)
 
   if (result.success) {
-    // 需要设置密码
-    if (!result.user.password) {
+    // 需要设置密码（首次登录的新用户或未设置密码的用户）
+    if (result.needSetPassword) {
       showSetPassword.value = true
     } else {
       uni.switchTab({

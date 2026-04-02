@@ -39,7 +39,7 @@ export const useWorkerStore = defineStore('worker', () => {
       const res = await apiOps.queryAll('workers')
       workers.value = res.data || []
     } catch (e) {
-      console.error('加载员工列表失败:', e)
+      console.error('【Worker】加载员工列表失败:', e)
       showErrorToast('加载员工列表失败')
       workers.value = []
     }

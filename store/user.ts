@@ -113,7 +113,7 @@ const initTestData = async () => {
     }
 
   } catch (e) {
-    console.error('初始化测试数据失败:', e)
+    console.error('【User】初始化测试数据失败:', e)
     showErrorToast('初始化测试数据失败')
   }
 }
@@ -154,7 +154,7 @@ export const useUserStore = defineStore('user', () => {
       const res = await userApi.getAllUsers()
       users.value = res.data || []
     } catch (e) {
-      console.error('加载用户列表失败:', e)
+      console.error('【User】加载用户列表失败:', e)
       showErrorToast('加载用户列表失败')
       users.value = []
     }
@@ -229,7 +229,7 @@ export const useUserStore = defineStore('user', () => {
               return { success: false, message: loginRes.error || '密码错误' }
             }
           } catch (e) {
-            console.error('登录 API 调用失败:', e)
+            console.error('【User】登录 API 调用失败:', e)
             return { success: false, message: '登录失败' }
           }
         } else {
@@ -296,14 +296,14 @@ export const useUserStore = defineStore('user', () => {
         await userApi.createUser(newUser)
         userCreated = true
       } catch (e) {
-        console.error('创建用户到云端失败，将使用本地存储:', e)
+        console.error('【User】创建用户到云端失败，将使用本地存储:', e)
       }
 
       // 标记邀请码已使用（即使创建用户失败也要标记，避免邀请码被重复使用）
       try {
         await inviteApi.useCode(code, newUser.id)
       } catch (e) {
-        console.error('标记邀请码失败:', e)
+        console.error('【User】标记邀请码失败:', e)
       }
 
       // 首次登录需要设置密码
@@ -312,7 +312,7 @@ export const useUserStore = defineStore('user', () => {
       uni.setStorageSync('currentUser', JSON.stringify(currentUser.value))
       return { success: true, needSetPassword: true, user: newUser }
     } catch (e) {
-      console.error('登录失败:', e)
+      console.error('【User】登录失败:', e)
       showErrorToast('登录失败')
       return { success: false, message: '登录失败' }
     }
@@ -330,7 +330,7 @@ export const useUserStore = defineStore('user', () => {
       uni.setStorageSync('loginTime', Date.now())
       return { success: true }
     } catch (e) {
-      console.error('设置密码失败:', e)
+      console.error('【User】设置密码失败:', e)
       showErrorToast('设置密码失败')
       return { success: false, message: '设置密码失败' }
     }
@@ -348,7 +348,7 @@ export const useUserStore = defineStore('user', () => {
       uni.setStorageSync('currentUser', JSON.stringify(currentUser.value))
       return { success: true }
     } catch (e) {
-      console.error('修改密码失败:', e)
+      console.error('【User】修改密码失败:', e)
       showErrorToast('修改密码失败')
       return { success: false, message: '修改密码失败' }
     }
@@ -370,7 +370,7 @@ export const useUserStore = defineStore('user', () => {
       try {
         await userApi.createUser(newUser)
       } catch (e) {
-        console.error('创建用户到云端失败，将使用本地存储:', e)
+        console.error('【User】创建用户到云端失败，将使用本地存储:', e)
       }
       currentUser.value = newUser
       isLoggedIn.value = true
@@ -378,7 +378,7 @@ export const useUserStore = defineStore('user', () => {
       uni.setStorageSync('loginTime', Date.now())
       return { success: true, user: newUser }
     } catch (e) {
-      console.error('创建用户失败:', e)
+      console.error('【User】创建用户失败:', e)
       showErrorToast('创建用户失败')
       return { success: false, message: '创建用户失败' }
     }
@@ -393,7 +393,7 @@ export const useUserStore = defineStore('user', () => {
       uni.setStorageSync('currentUser', JSON.stringify(currentUser.value))
       return { success: true }
     } catch (e) {
-      console.error('更新用户失败:', e)
+      console.error('【User】更新用户失败:', e)
       showErrorToast('更新用户信息失败')
       // 云端更新失败时，仅更新本地内存状态
       currentUser.value = { ...currentUser.value, ...updates }
@@ -421,7 +421,7 @@ export const useUserStore = defineStore('user', () => {
 
     // 如果是装发车角色，必须选择员工
     if (type === ROLES.LOADER && !workerInfo) {
-      console.error('生成装发车邀请码需要选择员工')
+      console.error('【User】生成装发车邀请码需要选择员工')
       return null
     }
 
@@ -444,7 +444,7 @@ export const useUserStore = defineStore('user', () => {
       await inviteApi.create(codeData)
       return code
     } catch (e) {
-      console.error('生成邀请码失败:', e)
+      console.error('【User】生成邀请码失败:', e)
       showErrorToast('生成邀请码失败')
       return null
     }
@@ -457,7 +457,7 @@ export const useUserStore = defineStore('user', () => {
       const res = await inviteApi.getByCreator(currentUser.value.id)
       return res.data || []
     } catch (e) {
-      console.error('获取邀请码列表失败:', e)
+      console.error('【User】获取邀请码列表失败:', e)
       showErrorToast('获取邀请码列表失败')
       return []
     }
@@ -473,7 +473,7 @@ export const useUserStore = defineStore('user', () => {
       // 基于 parentId 获取下级用户
       return users.value.filter(u => u.parentId === currentUser.value.id)
     } catch (e) {
-      console.error('获取下级用户失败:', e)
+      console.error('【User】获取下级用户失败:', e)
       showErrorToast('获取下级用户失败')
       return []
     }
@@ -502,7 +502,7 @@ export const useUserStore = defineStore('user', () => {
       }
       return existingUsers && existingUsers.length > 0 && hasPassword
     } catch (e) {
-      console.error('【checkPhoneExists】检查失败:', e)
+      console.error('【User】检查手机号失败:', e)
       showErrorToast('检查手机号失败')
       return false
     }
@@ -548,7 +548,7 @@ export const useUserStore = defineStore('user', () => {
 
       return []
     } catch (e) {
-      console.error('获取商户ID列表失败:', e)
+      console.error('【User】获取商户ID列表失败:', e)
       showErrorToast('获取商户列表失败')
       return []
     }
@@ -580,7 +580,7 @@ export const useUserStore = defineStore('user', () => {
 
       return []
     } catch (e) {
-      console.error('获取员工ID列表失败:', e)
+      console.error('【User】获取员工ID列表失败:', e)
       showErrorToast('获取员工列表失败')
       return []
     }
@@ -671,7 +671,7 @@ export const useUserStore = defineStore('user', () => {
 
       // return { success: true }
     } catch (e) {
-      console.error('删除中间商失败:', e)
+      console.error('【User】删除中间商失败:', e)
       showErrorToast('删除中间商失败')
       throw e
     }

@@ -82,7 +82,7 @@ export const useDepartureStore = defineStore('departure', () => {
         records.value = []
       }
     } catch (e) {
-      console.error('加载发车记录失败:', e)
+      console.error('【Departure】加载发车记录失败:', e)
       showErrorToast('加载发车记录失败')
       records.value = []
     }

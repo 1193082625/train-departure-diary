@@ -105,7 +105,7 @@ export const useSettingsStore = defineStore('settings', () => {
         currentSettingsUserId.value = middlemanId
       }
     } catch (e) {
-      console.error('加载设置失败:', e)
+      console.error('【Settings】加载设置失败:', e)
       showErrorToast('加载设置失败')
       resetToDefaults()
     }
@@ -175,7 +175,7 @@ export const useSettingsStore = defineStore('settings', () => {
         await apiOps.insert('settings', newSettings)
       }
     } catch (e) {
-      console.error('保存设置失败:', e)
+      console.error('【Settings】保存设置失败:', e)
       showErrorToast('保存设置失败')
     }
   }

@@ -14,7 +14,7 @@ export const useTransactionStore = defineStore('transaction', () => {
       const res = await apiOps.queryAll('transactions')
       transactions.value = res.data || []
     } catch (e) {
-      console.error('加载交易记录失败:', e)
+      console.error('【Transaction】加载交易记录失败:', e)
       showErrorToast('加载交易记录失败')
       transactions.value = []
     }

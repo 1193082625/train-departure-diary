@@ -42,7 +42,7 @@ export const useDailyQuoteStore = defineStore('dailyQuote', () => {
         quotes.value = []
       }
     } catch (e) {
-      console.error('加载日报价失败:', e)
+      console.error('【DailyQuote】加载日报价失败:', e)
       showErrorToast('加载日报价失败')
       quotes.value = []
     }
@@ -97,7 +97,7 @@ export const useDailyQuoteStore = defineStore('dailyQuote', () => {
       }
       publish('dailyQuote:refresh', { date, quote })
     } catch (e) {
-      console.error('保存日报价失败:', e)
+      console.error('【DailyQuote】保存日报价失败:', e)
       showErrorToast('保存日报价失败')
       throw e
     }
