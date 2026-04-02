@@ -139,6 +139,14 @@ const closeModal = () => {
 }
 
 const saveMerchant = () => {
+  // 校验手机号格式
+  if (!form.phone || !form.phone.match(/^1[3-9]\d{9}$/)) {
+    uni.showToast({
+      title: '请输入正确的手机号',
+      icon: 'none'
+    })
+    return
+  }
   // 校验差额必填
   if (!form.margin) {
     uni.showToast({

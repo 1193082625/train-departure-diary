@@ -120,7 +120,14 @@ export const userApi = {
   createUser: (data) => apiOps.insert('users', data),
   updateUser: (id, data) => apiOps.update('users', id, data),
   deleteUser: (id) => apiOps.delete('users', id),
-  getAllUsers: () => apiOps.queryAll('users')
+  getAllUsers: () => apiOps.queryAll('users'),
+  // 密码登录（后端验证密码）
+  login: (phone, password) => {
+    return request('/users/login', {
+      method: 'POST',
+      data: JSON.stringify({ phone, password })
+    })
+  }
 }
 
 // 邀请码相关 API

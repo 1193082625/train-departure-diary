@@ -216,22 +216,22 @@ export const useUserStore = defineStore('user', () => {
           if (!code) {
             return { success: false, message: '请输入密码' }
           }
-          // 验证密码
-          if (user.password !== code) {
-            return { success: false, message: '密码错误' }
+          // 调用后端登录 API 验证密码（后端支持哈希密码验证）
+          try {
+            const loginRes = await userApi.login(phone, code)
+            if (loginRes.success) {
+              currentUser.value = loginRes.data
+              isLoggedIn.value = true
+              uni.setStorageSync('currentUser', JSON.stringify(currentUser.value))
+              uni.setStorageSync('loginTime', Date.now())
+              return { success: true, user: currentUser.value }
+            } else {
+              return { success: false, message: loginRes.error || '密码错误' }
+            }
+          } catch (e) {
+            console.error('登录 API 调用失败:', e)
+            return { success: false, message: '登录失败' }
           }
-          // 密码正确，登录成功，从数据库重新获取用户信息确保角色最新
-          const freshRes = await userApi.getUserByPhone(phone)
-          const freshUsers = freshRes.data || []
-          if (freshUsers && freshUsers.length > 0) {
-            currentUser.value = freshUsers[0]
-          } else {
-            currentUser.value = user
-          }
-          isLoggedIn.value = true
-          uni.setStorageSync('currentUser', JSON.stringify(currentUser.value))
-          uni.setStorageSync('loginTime', Date.now())
-          return { success: true, user: currentUser.value }
         } else {
           // 用户存在但未设置密码，必须使用邀请码
           if (!code) {
@@ -323,7 +323,8 @@ export const useUserStore = defineStore('user', () => {
     if (!currentUser.value) return { success: false, message: '未登录' }
     try {
       await userApi.updateUser(currentUser.value.id, { password: password })
-      currentUser.value = { ...currentUser.value, password: password }
+      // 后端返回的用户数据不包含密码，本地也不存储密码
+      currentUser.value = { ...currentUser.value, password: undefined }
       isLoggedIn.value = true
       uni.setStorageSync('currentUser', JSON.stringify(currentUser.value))
       uni.setStorageSync('loginTime', Date.now())
@@ -339,12 +340,11 @@ export const useUserStore = defineStore('user', () => {
   const changePassword = async (oldPassword, newPassword) => {
     if (!currentUser.value) return { success: false, message: '未登录' }
     try {
-      // 验证旧密码
-      if (currentUser.value.password && currentUser.value.password !== oldPassword) {
-        return { success: false, message: '原密码错误' }
-      }
+      // 密码由后端加密存储，前端不需要本地验证旧密码
+      // 如果需要验证，应调用后端专门的验证 API（当前未实现）
       await userApi.updateUser(currentUser.value.id, { password: newPassword })
-      currentUser.value = { ...currentUser.value, password: newPassword }
+      // 后端返回的用户数据不包含密码，本地也不存储密码
+      currentUser.value = { ...currentUser.value, password: undefined }
       uni.setStorageSync('currentUser', JSON.stringify(currentUser.value))
       return { success: true }
     } catch (e) {

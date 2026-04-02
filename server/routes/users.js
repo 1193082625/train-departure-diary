@@ -4,9 +4,35 @@
  */
 
 import { getPool } from '../config/db.js'
+import bcrypt from 'bcryptjs'
 
 // JSON 字段列表
 const JSON_FIELDS = ['merchantDetails', 'truckRows', 'loadingWorkerIds', 'merchantAmount']
+
+// 手机号正则校验
+const PHONE_REGEX = /^1[3-9]\d{9}$/
+
+// 密码加密
+const hashPassword = async (password) => {
+  if (!password) return null
+  return await bcrypt.hash(password, 10)
+}
+
+// 密码校验（兼容旧明文密码）
+const verifyPassword = async (inputPassword, storedPassword) => {
+  if (!inputPassword || !storedPassword) return false
+  // bcrypt 哈希通常以 $2a$, $2b$ 开头，长度 60
+  if (storedPassword.length < 32 || !storedPassword.startsWith('$2')) {
+    // 旧明文密码，直接比较
+    return storedPassword === inputPassword
+  }
+  return await bcrypt.compare(inputPassword, storedPassword)
+}
+
+// 校验手机号
+const validatePhone = (phone) => {
+  return PHONE_REGEX.test(phone)
+}
 
 // 允许查询的字段白名单（防止 SQL 注入）
 const ALLOWED_QUERY_FIELDS = [
@@ -123,7 +149,20 @@ export const createCrudRouter = (tableName) => {
       try {
         const pool = getPool()
         console.log(`[DEBUG] POST /${tableName} body:`, JSON.stringify(req.body).substring(0, 200))
-        const data = serializeData(req.body)
+        let data = serializeData(req.body)
+
+        // users 表特殊处理：密码加密和手机号校验
+        if (tableName === 'users') {
+          // 手机号校验
+          if (data.phone && !validatePhone(data.phone)) {
+            return res.status(400).json({ success: false, error: '手机号格式不正确' })
+          }
+          // 密码加密
+          if (data.password) {
+            data.password = await hashPassword(data.password)
+          }
+        }
+
         console.log(`[DEBUG] serializeData result, fields:`, Object.keys(data))
         const fields = Object.keys(data)
         const placeholders = fields.map(() => '?').join(', ')
@@ -144,7 +183,20 @@ export const createCrudRouter = (tableName) => {
     update: async (req, res) => {
       try {
         const pool = getPool()
-        const data = serializeData(req.body)
+        let data = serializeData(req.body)
+
+        // users 表特殊处理：密码加密和手机号校验
+        if (tableName === 'users') {
+          // 手机号校验
+          if (data.phone && !validatePhone(data.phone)) {
+            return res.status(400).json({ success: false, error: '手机号格式不正确' })
+          }
+          // 密码加密（只有当密码不是哈希时才加密，避免重复加密）
+          if (data.password && !data.password.startsWith('$2')) {
+            data.password = await hashPassword(data.password)
+          }
+        }
+
         const fields = Object.keys(data)
         const sets = fields.map(f => `${f} = ?`).join(', ')
         const values = fields.map(f => data[f])
