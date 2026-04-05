@@ -17,11 +17,6 @@ const generateInviteCode = () => {
   return Math.floor(100000 + Math.random() * 900000).toString()
 }
 
-// 生成6位数字邀请码
-const generateRandomCode = () => {
-  return Math.floor(100000 + Math.random() * 900000).toString()
-}
-
 // 角色类型
 export const ROLES = {
   ADMIN: 'admin',      // 管理员
@@ -426,7 +421,7 @@ export const useUserStore = defineStore('user', () => {
     }
 
     try {
-      const code = generateRandomCode()
+      const code = generateInviteCode()
       const codeData = {
         id: generateUUID(),
         code: code,
