@@ -7,6 +7,15 @@ import { ROLES } from './user'
 import { showErrorToast } from '@/utils/errorHandler'
 import { publish } from '@/utils/eventBus'
 
+// 发车记录查询参数
+interface DepartureQueryParams {
+  page: number
+  pageSize: number
+  startDate?: string
+  endDate?: string
+  userId?: string
+}
+
 // 解析 JSON 字段，兼容字符串和对象
 const parseJsonField = (value) => {
   if (!value) return []
@@ -89,7 +98,7 @@ export const useDepartureStore = defineStore('departure', () => {
       const user = userStore.currentUser
 
       // 构建查询参数
-      const params: any = {
+      const params: DepartureQueryParams = {
         page: pagination.value.page,
         pageSize: pagination.value.pageSize
       }
