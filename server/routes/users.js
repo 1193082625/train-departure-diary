@@ -38,7 +38,7 @@ const validatePhone = (phone) => {
 const ALLOWED_QUERY_FIELDS = [
   'id', 'phone', 'userId', 'date', 'role', 'parentId', 'code',
   'name', 'type', 'targetId', 'targetType', 'createdAt',
-  'inviteCode', 'invitedBy', 'workerId', 'usedBy'
+  'inviteCode', 'invitedBy', 'workerId', 'usedBy', 'creatorId'
 ]
 
 /**
