@@ -174,7 +174,7 @@
   </view>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { onShow, onHide } from '@dcloudio/uni-app'
 import { useDepartureStore } from '@/store/departure'
@@ -318,12 +318,6 @@ const records = computed(() => {
     return departureStore.getRecordsByDateRange(startDate, endDate)
   }
 })
-
-// 获取月份结束日期
-const getMonthEndDate = (year, month) => {
-  const lastDay = new Date(year, month, 0).getDate()
-  return `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`
-}
 
 // 按日期分组（按月模式）
 const groupedRecords = computed(() => {
