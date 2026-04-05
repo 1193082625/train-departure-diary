@@ -25,9 +25,11 @@ CREATE TABLE IF NOT EXISTS `users` (
   `workerId` VARCHAR(50) DEFAULT NULL COMMENT '关联的员工ID',
   `workerType` VARCHAR(20) DEFAULT NULL COMMENT '员工类型 (departure/loading/both)',
   `createdAt` VARCHAR(30) DEFAULT NULL COMMENT '创建时间',
+  `deletedAt` VARCHAR(30) DEFAULT NULL COMMENT '逻辑删除时间',
   INDEX `idx_phone` (`phone`),
   INDEX `idx_role` (`role`),
-  INDEX `idx_parentId` (`parentId`)
+  INDEX `idx_parentId` (`parentId`),
+  INDEX `idx_deletedAt` (`deletedAt`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户表';
 
 -- =============================================
@@ -43,8 +45,10 @@ CREATE TABLE IF NOT EXISTS `merchants` (
   `note` TEXT DEFAULT NULL COMMENT '备注',
   `userId` VARCHAR(50) NOT NULL COMMENT '所属用户ID (中间商ID)',
   `createdAt` VARCHAR(30) DEFAULT NULL COMMENT '创建时间',
+  `deletedAt` VARCHAR(30) DEFAULT NULL COMMENT '逻辑删除时间',
   INDEX `idx_userId` (`userId`),
-  INDEX `idx_name` (`name`)
+  INDEX `idx_name` (`name`),
+  INDEX `idx_deletedAt` (`deletedAt`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='鸡场/商户表';
 
 -- =============================================
@@ -58,8 +62,10 @@ CREATE TABLE IF NOT EXISTS `workers` (
   `note` TEXT DEFAULT NULL COMMENT '备注',
   `userId` VARCHAR(50) NOT NULL COMMENT '所属用户ID (中间商ID)',
   `createdAt` VARCHAR(30) DEFAULT NULL COMMENT '创建时间',
+  `deletedAt` VARCHAR(30) DEFAULT NULL COMMENT '逻辑删除时间',
   INDEX `idx_userId` (`userId`),
-  INDEX `idx_type` (`type`)
+  INDEX `idx_type` (`type`),
+  INDEX `idx_deletedAt` (`deletedAt`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='员工表';
 
 -- =============================================
@@ -132,9 +138,11 @@ CREATE TABLE IF NOT EXISTS `departures` (
   `userId` VARCHAR(50) DEFAULT NULL COMMENT '用户ID',
   `note` TEXT DEFAULT NULL COMMENT '备注',
   `createdAt` VARCHAR(30) DEFAULT NULL COMMENT '创建时间',
+  `deletedAt` VARCHAR(30) DEFAULT NULL COMMENT '逻辑删除时间',
 
   INDEX `idx_date` (`date`),
-  INDEX `idx_userId` (`userId`)
+  INDEX `idx_userId` (`userId`),
+  INDEX `idx_deletedAt` (`deletedAt`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='发车记录表';
 
 -- =============================================
@@ -152,9 +160,11 @@ CREATE TABLE IF NOT EXISTS `invitation_codes` (
   `workerName` VARCHAR(50) DEFAULT NULL COMMENT '员工姓名',
   `workerType` VARCHAR(20) DEFAULT NULL COMMENT '员工类型',
   `createdAt` VARCHAR(30) DEFAULT NULL COMMENT '创建时间',
+  `deletedAt` VARCHAR(30) DEFAULT NULL COMMENT '逻辑删除时间',
   UNIQUE INDEX `idx_code` (`code`),
   INDEX `idx_creatorId` (`creatorId`),
-  INDEX `idx_usedBy` (`usedBy`)
+  INDEX `idx_usedBy` (`usedBy`),
+  INDEX `idx_deletedAt` (`deletedAt`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='邀请码表';
 
 -- =============================================
@@ -170,9 +180,11 @@ CREATE TABLE IF NOT EXISTS `transactions` (
   `userId` VARCHAR(50) DEFAULT NULL COMMENT '用户ID',
   `note` TEXT DEFAULT NULL COMMENT '备注',
   `createdAt` VARCHAR(30) DEFAULT NULL COMMENT '创建时间',
+  `deletedAt` VARCHAR(30) DEFAULT NULL COMMENT '逻辑删除时间',
   INDEX `idx_date` (`date`),
   INDEX `idx_userId` (`userId`),
-  INDEX `idx_targetId` (`targetId`)
+  INDEX `idx_targetId` (`targetId`),
+  INDEX `idx_deletedAt` (`deletedAt`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='交易记录表';
 
 -- =============================================
@@ -192,7 +204,9 @@ CREATE TABLE IF NOT EXISTS `settings` (
   `tollFee` DECIMAL(10,2) DEFAULT 0 COMMENT '过路费',
   `entryFee` DECIMAL(10,2) DEFAULT 0 COMMENT '入场费',
   `oilFee` DECIMAL(10,2) DEFAULT 0 COMMENT '油费',
-  UNIQUE INDEX `idx_userId` (`userId`)
+  `deletedAt` VARCHAR(30) DEFAULT NULL COMMENT '逻辑删除时间',
+  UNIQUE INDEX `idx_userId` (`userId`),
+  INDEX `idx_deletedAt` (`deletedAt`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='系统设置表';
 
 -- =============================================
@@ -204,8 +218,10 @@ CREATE TABLE IF NOT EXISTS `daily_quotes` (
   `quote` DECIMAL(10,2) DEFAULT 0 COMMENT '日报价',
   `userId` VARCHAR(50) NOT NULL COMMENT '所属用户ID (中间商ID)',
   `createdAt` VARCHAR(30) DEFAULT NULL COMMENT '创建时间',
+  `deletedAt` VARCHAR(30) DEFAULT NULL COMMENT '逻辑删除时间',
   UNIQUE INDEX `idx_date_userId` (`date`, `userId`),
-  INDEX `idx_userId` (`userId`)
+  INDEX `idx_userId` (`userId`),
+  INDEX `idx_deletedAt` (`deletedAt`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='日报价表';
 
 -- =============================================

@@ -208,7 +208,7 @@ export const userDbOps = {
 
     try {
       const [rows] = await db.query(
-        'SELECT * FROM users WHERE phone = ?',
+        'SELECT * FROM users WHERE phone = ? AND deletedAt IS NULL',
         [phone]
       )
       return rows || []
@@ -228,7 +228,7 @@ export const userDbOps = {
 
     try {
       const [rows] = await db.query(
-        'SELECT * FROM users WHERE id = ?',
+        'SELECT * FROM users WHERE id = ? AND deletedAt IS NULL',
         [id]
       )
       return rows || []
@@ -248,7 +248,7 @@ export const userDbOps = {
 
     try {
       const [rows] = await db.query(
-        'SELECT * FROM users WHERE inviteCode = ?',
+        'SELECT * FROM users WHERE inviteCode = ? AND deletedAt IS NULL',
         [inviteCode]
       )
       return rows || []
@@ -315,7 +315,7 @@ export const userDbOps = {
     }
 
     try {
-      const [rows] = await db.query('SELECT * FROM users')
+      const [rows] = await db.query('SELECT * FROM users WHERE deletedAt IS NULL')
       return rows || []
     } catch (err) {
       console.error('【getAllUsers】查询失败:', err)
@@ -338,7 +338,7 @@ export const inviteDbOps = {
 
     try {
       const [rows] = await db.query(
-        'SELECT * FROM invitation_codes WHERE code = ? AND usedBy IS NULL',
+        'SELECT * FROM invitation_codes WHERE code = ? AND usedBy IS NULL AND deletedAt IS NULL',
         [code]
       )
       return rows || []
@@ -402,7 +402,7 @@ export const inviteDbOps = {
 
     try {
       const [rows] = await db.query(
-        'SELECT * FROM invitation_codes WHERE creatorId = ?',
+        'SELECT * FROM invitation_codes WHERE creatorId = ? AND deletedAt IS NULL',
         [creatorId]
       )
       return rows || []
@@ -421,7 +421,7 @@ export const inviteDbOps = {
     }
 
     try {
-      const [rows] = await db.query('SELECT * FROM invitation_codes')
+      const [rows] = await db.query('SELECT * FROM invitation_codes WHERE deletedAt IS NULL')
       return rows || []
     } catch (err) {
       console.error('【getAll】查询失败:', err)
@@ -444,7 +444,7 @@ export const dbOps = {
 
     try {
       const [rows] = await db.query(
-        `SELECT * FROM ${table} LIMIT ?`,
+        `SELECT * FROM ${table} WHERE deletedAt IS NULL LIMIT ?`,
         [limit]
       )
       // 反序列化 JSON 字段
@@ -514,7 +514,7 @@ export const dbOps = {
     }
   },
 
-  // 删除记录
+  // 删除记录（逻辑删除）
   delete: async (table, id) => {
     const db = await initDB()
     if (!db) {
@@ -523,9 +523,10 @@ export const dbOps = {
     }
 
     try {
+      const deletedAt = new Date().toISOString()
       await db.query(
-        `DELETE FROM ${table} WHERE id = ?`,
-        [id]
+        `UPDATE ${table} SET deletedAt = ? WHERE id = ? AND deletedAt IS NULL`,
+        [deletedAt, id]
       )
     } catch (err) {
       console.error(`【delete:${table}】删除失败:`, err)
@@ -543,7 +544,7 @@ export const dbOps = {
 
     try {
       const [rows] = await db.query(
-        `SELECT * FROM ${table} WHERE ${field} = ?`,
+        `SELECT * FROM ${table} WHERE ${field} = ? AND deletedAt IS NULL`,
         [value]
       )
       // 反序列化 JSON 字段
@@ -554,7 +555,7 @@ export const dbOps = {
     }
   },
 
-  // 删除表中所有记录
+  // 删除表中所有记录（逻辑删除）
   deleteAll: async (table) => {
     const db = await initDB()
     if (!db) {
@@ -563,7 +564,8 @@ export const dbOps = {
     }
 
     try {
-      await db.query(`DELETE FROM ${table}`)
+      const deletedAt = new Date().toISOString()
+      await db.query(`UPDATE ${table} SET deletedAt = ? WHERE deletedAt IS NULL`, [deletedAt])
     } catch (err) {
       console.error(`【deleteAll:${table}】清空表失败:`, err)
       throw err

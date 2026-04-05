@@ -94,7 +94,7 @@ export const createCrudRouter = (tableName) => {
     getAll: async (req, res) => {
       try {
         const pool = getPool()
-        const [rows] = await pool.query(`SELECT * FROM ${tableName} LIMIT 500`)
+        const [rows] = await pool.query(`SELECT * FROM ${tableName} WHERE deletedAt IS NULL LIMIT 500`)
         const data = (rows || []).map(row => deserializeData(row))
         res.json({ success: true, data })
       } catch (err) {
@@ -108,7 +108,7 @@ export const createCrudRouter = (tableName) => {
       try {
         const pool = getPool()
         const [rows] = await pool.query(
-          `SELECT * FROM ${tableName} WHERE id = ?`,
+          `SELECT * FROM ${tableName} WHERE id = ? AND deletedAt IS NULL`,
           [req.params.id]
         )
         if (rows.length === 0) {
@@ -133,7 +133,7 @@ export const createCrudRouter = (tableName) => {
         }
 
         const [rows] = await pool.query(
-          `SELECT * FROM ${tableName} WHERE ${field} = ?`,
+          `SELECT * FROM ${tableName} WHERE ${field} = ? AND deletedAt IS NULL`,
           [value]
         )
         const data = (rows || []).map(row => deserializeData(row))
@@ -216,17 +216,18 @@ export const createCrudRouter = (tableName) => {
       }
     },
 
-    // DELETE /:table/:id - 删除
+    // DELETE /:table/:id - 逻辑删除
     delete: async (req, res) => {
       try {
         const pool = getPool()
+        const deletedAt = new Date().toISOString()
         const [result] = await pool.query(
-          `DELETE FROM ${tableName} WHERE id = ?`,
-          [req.params.id]
+          `UPDATE ${tableName} SET deletedAt = ? WHERE id = ? AND deletedAt IS NULL`,
+          [deletedAt, req.params.id]
         )
 
         if (result.affectedRows === 0) {
-          return res.status(404).json({ success: false, error: '记录不存在' })
+          return res.status(404).json({ success: false, error: '记录不存在或已删除' })
         }
         res.json({ success: true })
       } catch (err) {
@@ -235,11 +236,12 @@ export const createCrudRouter = (tableName) => {
       }
     },
 
-    // DELETE /:table - 清空表
+    // DELETE /:table - 清空表（逻辑删除）
     deleteAll: async (req, res) => {
       try {
         const pool = getPool()
-        await pool.query(`DELETE FROM ${tableName}`)
+        const deletedAt = new Date().toISOString()
+        await pool.query(`UPDATE ${tableName} SET deletedAt = ? WHERE deletedAt IS NULL`, [deletedAt])
         res.json({ success: true })
       } catch (err) {
         console.error(`清空 ${tableName} 失败:`, err)
@@ -264,7 +266,7 @@ export const createCrudRouter = (tableName) => {
         const values = fields.map(f => data[f])
 
         const [result] = await pool.query(
-          `UPDATE ${tableName} SET ${sets} WHERE ${field} = ?`,
+          `UPDATE ${tableName} SET ${sets} WHERE ${field} = ? AND deletedAt IS NULL`,
           [...values, value]
         )
 
