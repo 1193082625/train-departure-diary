@@ -97,17 +97,29 @@ export const createCrudRouter = (tableName) => {
         const page = Math.max(1, parseInt(req.query.page) || 1)
         const pageSize = Math.min(100, Math.max(1, parseInt(req.query.pageSize) || 20))
         const offset = (page - 1) * pageSize
+        const userId = req.query.userId // 从请求参数获取 userId
+
+        // 构建 WHERE 条件
+        let whereClause = 'deletedAt IS NULL'
+        let queryParams = []
+
+        // 如果传入了 userId，则按 userId 过滤
+        if (userId) {
+          whereClause += ' AND userId = ?'
+          queryParams.push(userId)
+        }
 
         // 查询总数
         const [countResult] = await pool.query(
-          `SELECT COUNT(*) as total FROM ${tableName} WHERE deletedAt IS NULL`
+          `SELECT COUNT(*) as total FROM ${tableName} WHERE ${whereClause}`,
+          queryParams
         )
         const total = countResult[0].total
 
         // 查询分页数据
         const [rows] = await pool.query(
-          `SELECT * FROM ${tableName} WHERE deletedAt IS NULL ORDER BY createdAt DESC LIMIT ? OFFSET ?`,
-          [pageSize, offset]
+          `SELECT * FROM ${tableName} WHERE ${whereClause} ORDER BY createdAt DESC LIMIT ? OFFSET ?`,
+          [...queryParams, pageSize, offset]
         )
         const data = (rows || []).map(row => deserializeData(row))
 

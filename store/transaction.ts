@@ -29,10 +29,35 @@ export const useTransactionStore = defineStore('transaction', () => {
     loading.value = true
 
     try {
+      const userStore = useUserStore()
+      const user = userStore.currentUser
+
+      // 构建查询参数
       const params = {
         page: pagination.value.page,
         pageSize: pagination.value.pageSize
       }
+
+      // 根据角色设置 userId 过滤
+      if (user.role === ROLES.ADMIN) {
+        // 管理员：如果选择了中间商，按中间商过滤
+        if (userStore.currentMiddlemanId) {
+          params.userId = userStore.currentMiddlemanId
+        }
+        // 不传 userId 则查看全部
+      } else if (user.role === ROLES.MIDDLEMAN) {
+        // 中间商：查看自己的交易记录
+        params.userId = user.id
+      } else if (user.role === ROLES.LOADER) {
+        // 装发车：查看所属中间商的交易记录
+        if (user.parentId) {
+          params.userId = user.parentId
+        }
+      } else if (user.role === ROLES.FARM) {
+        // 鸡场：查看自己的交易记录
+        params.userId = user.id
+      }
+
       const res = await apiOps.queryAll('transactions', params)
 
       if (refresh) {

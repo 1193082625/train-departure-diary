@@ -415,6 +415,7 @@ Express 后端提供 RESTful API，数据库操作在服务端完成。
 - **HTTP API 调用**: 所有数据库操作通过 `utils/api.js` 封装
 - **统一错误处理**: API 请求失败时抛出异常，由调用方处理
 - **JSON 字段处理**: merchantDetails, truckRows 等字段在调用方序列化/反序列化
+- **数据隔离**: `getAll` 方法支持 `userId` 参数进行数据隔离，非管理员必须传入 userId
 
 ---
 
