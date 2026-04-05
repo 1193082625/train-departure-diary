@@ -513,7 +513,7 @@ return amount
 3. **JSON 字段**: merchantDetails, truckRows, merchantAmount 等为 JSON 字符串
 4. **会话管理**: 登录状态通过 localStorage 存储，7 天有效期
 5. **邀请码**: 6 位数字，唯一性由云端 MySQL 保证
-6. **后端服务**: 前端 API 请求发送至 `http://47.96.90.103:8080/api`
+6. **后端服务**: 前端 API 请求发送至 `http://47.96.90.103:3000/api`
 
 ## 角色与数据相关逻辑
 
