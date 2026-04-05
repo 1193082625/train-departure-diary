@@ -191,7 +191,7 @@ let unsubscribe = null
 
 onShow(() => {
   unsubscribe = subscribe('departure:refresh', () => {
-    departureStore.loadRecords()
+    loadRecordsWithDateRange(true)
   })
 })
 
@@ -229,45 +229,79 @@ const yearOptions = computed(() => {
 // 月份选项
 const monthOptions = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
 
+// 获取月份结束日期
+const getMonthEndDate = (year, month) => {
+  const lastDay = new Date(year, month, 0).getDate()
+  return `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`
+}
+
+// 根据视图模式获取日期范围
+const getDateRangeForViewMode = (): [string, string] => {
+  if (viewMode.value === 'day') {
+    return [selectedDate.value, selectedDate.value]
+  } else if (viewMode.value === 'month') {
+    const startDate = `${selectedYear.value}-${String(selectedMonth.value).padStart(2, '0')}-01`
+    const endDate = getMonthEndDate(selectedYear.value, selectedMonth.value)
+    return [startDate, endDate]
+  } else {
+    const year = selectedYearForYear.value
+    return [`${year}-01-01`, `${year}-12-31`]
+  }
+}
+
+// 加载记录（带日期范围）
+const loadRecordsWithDateRange = (refresh = true) => {
+  const [startDate, endDate] = getDateRangeForViewMode()
+  departureStore.loadRecords(refresh, startDate, endDate)
+}
+
 // 切换视图模式
 const switchViewMode = (mode) => {
   viewMode.value = mode
+  loadRecordsWithDateRange(true)
 }
 
 // 快捷选择今天
 const selectToday = () => {
   selectedDate.value = today
+  loadRecordsWithDateRange(true)
 }
 
 // 快捷选择本月
 const selectCurrentMonth = () => {
   selectedYear.value = currentYear
   selectedMonth.value = currentMonth
+  loadRecordsWithDateRange(true)
 }
 
 // 快捷选择本年
 const selectCurrentYear = () => {
   selectedYearForYear.value = currentYear
+  loadRecordsWithDateRange(true)
 }
 
 // 日期变化
 const onDateChange = (e) => {
   selectedDate.value = e.detail.value
+  loadRecordsWithDateRange(true)
 }
 
 // 年份变化（按月模式）
 const onYearChange = (e) => {
   selectedYear.value = yearOptions.value[e.detail.value]
+  loadRecordsWithDateRange(true)
 }
 
 // 月份变化
 const onMonthChange = (e) => {
   selectedMonth.value = monthOptions[e.detail.value]
+  loadRecordsWithDateRange(true)
 }
 
 // 年份变化（按年模式）
 const onYearForYearChange = (e) => {
   selectedYearForYear.value = yearOptions.value[e.detail.value]
+  loadRecordsWithDateRange(true)
 }
 
 // 根据视图模式获取记录
@@ -392,12 +426,12 @@ const calculateTotalWeight = (record) => {
 }
 
 onMounted(() => {
-  departureStore.loadRecords(true)
+  loadRecordsWithDateRange(true)
 })
 
 // 下拉刷新
 const onRefresh = async () => {
-  await departureStore.loadRecords(true)
+  loadRecordsWithDateRange(true)
 }
 
 // 上拉加载

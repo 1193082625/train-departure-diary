@@ -74,7 +74,7 @@ export const useDepartureStore = defineStore('departure', () => {
     return []
   })
 
-  const loadRecords = async (refresh = false) => {
+  const loadRecords = async (refresh = false, startDate?: string, endDate?: string) => {
     if (loading.value && !refresh) return
     if (refresh) {
       pagination.value.page = 1
@@ -89,10 +89,14 @@ export const useDepartureStore = defineStore('departure', () => {
       const user = userStore.currentUser
 
       // 构建查询参数
-      const params = {
+      const params: any = {
         page: pagination.value.page,
         pageSize: pagination.value.pageSize
       }
+
+      // 添加日期范围参数
+      if (startDate) params.startDate = startDate
+      if (endDate) params.endDate = endDate
 
       // 根据角色设置 userId 过滤
       if (user.role === ROLES.ADMIN) {

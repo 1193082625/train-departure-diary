@@ -109,6 +109,20 @@ export const createCrudRouter = (tableName) => {
           queryParams.push(userId)
         }
 
+        // 日期范围过滤
+        const startDate = req.query.startDate
+        const endDate = req.query.endDate
+
+        if (startDate) {
+          whereClause += ' AND date >= ?'
+          queryParams.push(startDate)
+        }
+
+        if (endDate) {
+          whereClause += ' AND date <= ?'
+          queryParams.push(endDate)
+        }
+
         // 查询总数
         const [countResult] = await pool.query(
           `SELECT COUNT(*) as total FROM ${tableName} WHERE ${whereClause}`,
