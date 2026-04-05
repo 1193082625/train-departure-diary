@@ -29,21 +29,25 @@
 
       <!-- 非管理员直接展示 -->
       <template v-else>
-        <view v-for="worker in workerStore.filteredWorkers" :key="worker.id" class="worker-card">
-          <view class="worker-info">
-            <text class="name">{{ worker.name }}</text>
-            <text class="phone">{{ worker.phone }}</text>
+        <scroll-view scroll-y class="scroll-container" @scrolltolower="onLoadMore" :refresher-enabled="true" :refresher-triggered="workerStore.refreshing" @refresherrefresh="onRefresh">
+          <view v-for="worker in workerStore.filteredWorkers" :key="worker.id" class="worker-card">
+            <view class="worker-info">
+              <text class="name">{{ worker.name }}</text>
+              <text class="phone">{{ worker.phone }}</text>
+            </view>
+            <view class="worker-type">
+              <text v-if="worker.type === 'departure'" class="tag departure">发车</text>
+              <text v-else-if="worker.type === 'loading'" class="tag loading">装车</text>
+              <text v-else class="tag both">发车+装车</text>
+            </view>
+            <view class="actions">
+              <text @click="editWorker(worker)">编辑</text>
+              <text @click="deleteWorker(worker.id)" class="delete">删除</text>
+            </view>
           </view>
-          <view class="worker-type">
-            <text v-if="worker.type === 'departure'" class="tag departure">发车</text>
-            <text v-else-if="worker.type === 'loading'" class="tag loading">装车</text>
-            <text v-else class="tag both">发车+装车</text>
-          </view>
-          <view class="actions">
-            <text @click="editWorker(worker)">编辑</text>
-            <text @click="deleteWorker(worker.id)" class="delete">删除</text>
-          </view>
-        </view>
+          <view v-if="workerStore.loading && !workerStore.refreshing" class="loading-tip">加载中...</view>
+          <view v-if="!workerStore.pagination.hasMore && workerStore.filteredWorkers.length > 0" class="loading-tip">没有更多了</view>
+        </scroll-view>
       </template>
     </view>
 
@@ -87,7 +91,7 @@ let unsubscribe = null
 
 onShow(() => {
   unsubscribe = subscribe('worker:refresh', () => {
-    workerStore.loadWorkers()
+    workerStore.loadWorkers(true)
   })
 })
 
@@ -190,6 +194,16 @@ const deleteWorker = (id) => {
 const onTypeChange = (e) => {
   form.typeIndex = parseInt(e.detail.value)
 }
+
+// 下拉刷新
+const onRefresh = async () => {
+  await workerStore.loadWorkers(true)
+}
+
+// 上拉加载
+const onLoadMore = () => {
+  workerStore.loadMore()
+}
 </script>
 
 <style scoped>
@@ -213,4 +227,6 @@ const onTypeChange = (e) => {
 .input { border: 1px solid #ddd; padding: 10px; border-radius: 4px; margin-bottom: 10px; width: 100%; box-sizing: border-box; }
 .picker { border: 1px solid #ddd; padding: 10px; border-radius: 4px; margin-bottom: 10px; }
 .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+.loading-tip { text-align: center; color: #999; padding: 20px; }
+.scroll-container { height: calc(100vh - 150px); }
 </style>

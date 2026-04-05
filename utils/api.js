@@ -65,15 +65,27 @@ const request = async (endpoint, options = {}) => {
 
 // API 操作封装 - 与原有 dbOps 接口一致
 
+// 手动构建查询字符串（兼容小程序环境）
+const buildQueryString = (params = {}) => {
+  if (!params || Object.keys(params).length === 0) return ''
+  return Object.entries(params)
+    .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+    .join('&')
+}
+
 export const apiOps = {
-  // 查询所有记录
-  queryAll: (table, limit = 500) => {
-    return request(`/${table}`)
+  // 查询所有记录（支持分页参数）
+  queryAll: (table, params = {}) => {
+    const queryString = buildQueryString(params)
+    const endpoint = queryString ? `/${table}?${queryString}` : `/${table}`
+    return request(endpoint)
   },
 
-  // 根据字段查询
-  queryBy: (table, field, value) => {
-    return request(`/${table}/by/${field}/${value}`)
+  // 根据字段查询（支持分页参数）
+  queryBy: (table, field, value, params = {}) => {
+    const queryString = buildQueryString(params)
+    const endpoint = `/${table}/by/${field}/${value}${queryString ? '?' + queryString : ''}`
+    return request(endpoint)
   },
 
   // 根据 ID 查询

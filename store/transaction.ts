@@ -9,15 +9,59 @@ import { publish } from '@/utils/eventBus'
 export const useTransactionStore = defineStore('transaction', () => {
   const transactions = ref([])
 
-  const loadTransactions = async () => {
+  // 分页状态
+  const pagination = ref({
+    page: 1,
+    pageSize: 20,
+    total: 0,
+    totalPages: 0,
+    hasMore: true
+  })
+  const loading = ref(false)
+  const refreshing = ref(false)
+
+  const loadTransactions = async (refresh = false) => {
+    if (loading.value && !refresh) return
+    if (refresh) {
+      pagination.value.page = 1
+      refreshing.value = true
+    }
+    loading.value = true
+
     try {
-      const res = await apiOps.queryAll('transactions')
-      transactions.value = res.data || []
+      const params = {
+        page: pagination.value.page,
+        pageSize: pagination.value.pageSize
+      }
+      const res = await apiOps.queryAll('transactions', params)
+
+      if (refresh) {
+        transactions.value = res.data || []
+      } else {
+        transactions.value = [...transactions.value, ...(res.data || [])]
+      }
+
+      // 更新分页信息
+      if (res.pagination) {
+        pagination.value = {
+          ...pagination.value,
+          ...res.pagination,
+          hasMore: pagination.value.page < res.pagination.totalPages
+        }
+      }
     } catch (e) {
       console.error('【Transaction】加载交易记录失败:', e)
       showErrorToast('加载交易记录失败')
-      transactions.value = []
+    } finally {
+      loading.value = false
+      refreshing.value = false
     }
+  }
+
+  const loadMore = () => {
+    if (!pagination.value.hasMore || loading.value) return
+    pagination.value.page++
+    loadTransactions()
   }
 
   const saveTransactions = async () => {
@@ -122,11 +166,15 @@ export const useTransactionStore = defineStore('transaction', () => {
 
   return {
     transactions,
+    pagination,
+    loading,
+    refreshing,
     addTransaction,
     deleteTransaction,
     getTransactionsByTarget,
     getTransactionsByDateRange,
     getFilteredTransactions,
-    loadTransactions
+    loadTransactions,
+    loadMore
   }
 })

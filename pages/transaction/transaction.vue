@@ -38,16 +38,20 @@
 
     <view class="records">
       <text class="title">结账记录</text>
-      <view v-for="t in recentTransactions" :key="t.id" class="record-item">
-        <view class="record-info">
-          <text class="target">{{ t.targetName }}</text>
-          <text class="date">{{ t.date }}</text>
+      <scroll-view scroll-y class="scroll-container" @scrolltolower="onLoadMore" :refresher-enabled="true" :refresher-triggered="transactionStore.refreshing" @refresherrefresh="onRefresh">
+        <view v-for="t in recentTransactions" :key="t.id" class="record-item">
+          <view class="record-info">
+            <text class="target">{{ t.targetName }}</text>
+            <text class="date">{{ t.date }}</text>
+          </view>
+          <view class="record-right">
+            <text class="amount">-¥{{ t.amount }}</text>
+            <text @click="deleteTransaction(t.id)" class="delete">删除</text>
+          </view>
         </view>
-        <view class="record-right">
-          <text class="amount">-¥{{ t.amount }}</text>
-          <text @click="deleteTransaction(t.id)" class="delete">删除</text>
-        </view>
-      </view>
+        <view v-if="transactionStore.loading && !transactionStore.refreshing" class="loading-tip">加载中...</view>
+        <view v-if="!transactionStore.pagination.hasMore && recentTransactions.length > 0" class="loading-tip">没有更多了</view>
+      </scroll-view>
     </view>
   </view>
 </template>
@@ -68,7 +72,7 @@ let unsubscribe = null
 
 onShow(() => {
   unsubscribe = subscribe('transaction:refresh', () => {
-    transactionStore.loadTransactions()
+    transactionStore.loadTransactions(true)
   })
 })
 
@@ -142,6 +146,16 @@ const deleteTransaction = (id) => {
     }
   })
 }
+
+// 下拉刷新
+const onRefresh = async () => {
+  await transactionStore.loadTransactions(true)
+}
+
+// 上拉加载
+const onLoadMore = () => {
+  transactionStore.loadMore()
+}
 </script>
 
 <style scoped>
@@ -164,4 +178,6 @@ const deleteTransaction = (id) => {
 .record-right { display: flex; align-items: center; gap: 10px; }
 .amount { color: #ff4d4f; font-weight: bold; }
 .delete { color: #999; font-size: 12px; }
+.loading-tip { text-align: center; color: #999; padding: 20px; }
+.scroll-container { height: calc(100vh - 350px); }
 </style>

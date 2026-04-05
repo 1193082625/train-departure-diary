@@ -104,7 +104,7 @@
     </view>
 
     <!-- 记录列表 -->
-    <view class="record-list">
+    <scroll-view scroll-y class="scroll-container" @scrolltolower="onLoadMore" :refresher-enabled="true" :refresher-triggered="departureStore.refreshing" @refresherrefresh="onRefresh">
       <!-- 按月/按年模式：分组展示 -->
       <template v-if="viewMode !== 'day'">
         <view v-for="(group, groupKey) in groupedRecords" :key="groupKey" class="record-group">
@@ -165,10 +165,12 @@
         </view>
       </template>
 
+      <view v-if="departureStore.loading && !departureStore.refreshing" class="loading-tip">加载中...</view>
+      <view v-if="!departureStore.pagination.hasMore && records.length > 0" class="loading-tip">没有更多了</view>
       <view v-if="records.length === 0" class="empty">
         <text>{{ getEmptyText() }}</text>
       </view>
-    </view>
+    </scroll-view>
   </view>
 </template>
 
@@ -390,8 +392,18 @@ const calculateTotalWeight = (record) => {
 }
 
 onMounted(() => {
-  departureStore.loadRecords()
+  departureStore.loadRecords(true)
 })
+
+// 下拉刷新
+const onRefresh = async () => {
+  await departureStore.loadRecords(true)
+}
+
+// 上拉加载
+const onLoadMore = () => {
+  departureStore.loadMore()
+}
 </script>
 
 <style scoped>
@@ -439,4 +451,6 @@ onMounted(() => {
 .record-stats { display: flex; gap: 20px; margin-top: 10px; color: #007aff; flex-wrap: wrap; }
 .profit { color: #52c41a; font-weight: bold; }
 .empty { text-align: center; color: #999; padding: 40px; }
+.loading-tip { text-align: center; color: #999; padding: 20px; }
+.scroll-container { height: calc(100vh - 350px); }
 </style>

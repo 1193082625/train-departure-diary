@@ -9,6 +9,17 @@ import { publish } from '@/utils/eventBus'
 export const useMerchantStore = defineStore('merchant', () => {
   const merchants = ref([])
 
+  // 分页状态
+  const pagination = ref({
+    page: 1,
+    pageSize: 20,
+    total: 0,
+    totalPages: 0,
+    hasMore: true
+  })
+  const loading = ref(false)
+  const refreshing = ref(false)
+
   // 根据用户角色过滤商户
   const filteredMerchants = computed(() => {
     const userStore = useUserStore()
@@ -34,15 +45,48 @@ export const useMerchantStore = defineStore('merchant', () => {
     return []
   })
 
-  const loadMerchants = async () => {
+  const loadMerchants = async (refresh = false) => {
+    if (loading.value && !refresh) return
+    if (refresh) {
+      pagination.value.page = 1
+      refreshing.value = true
+    }
+    loading.value = true
+
     try {
-      const res = await apiOps.queryAll('merchants')
-      merchants.value = res.data || []
+      const params = {
+        page: pagination.value.page,
+        pageSize: pagination.value.pageSize
+      }
+      const res = await apiOps.queryAll('merchants', params)
+
+      if (refresh) {
+        merchants.value = res.data || []
+      } else {
+        merchants.value = [...merchants.value, ...(res.data || [])]
+      }
+
+      // 更新分页信息
+      if (res.pagination) {
+        pagination.value = {
+          ...pagination.value,
+          ...res.pagination,
+          hasMore: pagination.value.page < res.pagination.totalPages
+        }
+      }
     } catch (e) {
       console.error('【Merchant】加载商户列表失败:', e)
       showErrorToast('加载商户列表失败')
-      merchants.value = []
+    } finally {
+      loading.value = false
+      refreshing.value = false
     }
+  }
+
+  const loadMore = () => {
+    if (!pagination.value.hasMore || loading.value) return
+    pagination.value.page++
+    loadMerchants()
   }
 
   const saveMerchants = async () => {
@@ -138,10 +182,14 @@ export const useMerchantStore = defineStore('merchant', () => {
   return {
     merchants,
     filteredMerchants,
+    pagination,
+    loading,
+    refreshing,
     addMerchant,
     updateMerchant,
     deleteMerchant,
     getMerchantById,
-    loadMerchants
+    loadMerchants,
+    loadMore
   }
 })

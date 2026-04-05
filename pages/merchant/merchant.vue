@@ -28,19 +28,23 @@
 
       <!-- 非管理员直接展示 -->
       <template v-else>
-        <view v-for="merchant in merchantStore.filteredMerchants" :key="merchant.id" class="merchant-card">
-          <view class="merchant-info">
-            <text class="name">{{ merchant.name }}</text>
-            <text class="phone">{{ merchant.phone }}</text>
+        <scroll-view scroll-y class="scroll-container" @scrolltolower="onLoadMore" :refresher-enabled="true" :refresher-triggered="merchantStore.refreshing" @refresherrefresh="onRefresh">
+          <view v-for="merchant in merchantStore.filteredMerchants" :key="merchant.id" class="merchant-card">
+            <view class="merchant-info">
+              <text class="name">{{ merchant.name }}</text>
+              <text class="phone">{{ merchant.phone }}</text>
+            </view>
+            <view class="merchant-margin">
+              <text>差额: {{ merchant.margin }}元/框</text>
+            </view>
+            <view class="actions">
+              <text @click="editMerchant(merchant)">编辑</text>
+              <text @click="deleteMerchant(merchant.id)" class="delete">删除</text>
+            </view>
           </view>
-          <view class="merchant-margin">
-            <text>差额: {{ merchant.margin }}元/框</text>
-          </view>
-          <view class="actions">
-            <text @click="editMerchant(merchant)">编辑</text>
-            <text @click="deleteMerchant(merchant.id)" class="delete">删除</text>
-          </view>
-        </view>
+          <view v-if="merchantStore.loading && !merchantStore.refreshing" class="loading-tip">加载中...</view>
+          <view v-if="!merchantStore.pagination.hasMore && merchantStore.filteredMerchants.length > 0" class="loading-tip">没有更多了</view>
+        </scroll-view>
       </template>
     </view>
 
@@ -82,7 +86,7 @@ let unsubscribe = null
 
 onShow(() => {
   unsubscribe = subscribe('merchant:refresh', () => {
-    merchantStore.loadMerchants()
+    merchantStore.loadMerchants(true)
   })
 })
 
@@ -180,6 +184,16 @@ const deleteMerchant = (id) => {
     }
   })
 }
+
+// 下拉刷新
+const onRefresh = async () => {
+  await merchantStore.loadMerchants(true)
+}
+
+// 上拉加载
+const onLoadMore = () => {
+  merchantStore.loadMore()
+}
 </script>
 
 <style scoped>
@@ -199,4 +213,6 @@ const deleteMerchant = (id) => {
 .modal-title { font-size: 18px; font-weight: bold; margin-bottom: 15px; display: block; }
 .input { border: 1px solid #ddd; padding: 10px; border-radius: 4px; margin-bottom: 10px; width: 100%; box-sizing: border-box; }
 .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+.loading-tip { text-align: center; color: #999; padding: 20px; }
+.scroll-container { height: calc(100vh - 150px); }
 </style>

@@ -9,6 +9,17 @@ import { publish } from '@/utils/eventBus'
 export const useWorkerStore = defineStore('worker', () => {
   const workers = ref([])
 
+  // 分页状态
+  const pagination = ref({
+    page: 1,
+    pageSize: 20,
+    total: 0,
+    totalPages: 0,
+    hasMore: true
+  })
+  const loading = ref(false)
+  const refreshing = ref(false)
+
   // 根据用户角色过滤员工
   const filteredWorkers = computed(() => {
     const userStore = useUserStore()
@@ -34,15 +45,48 @@ export const useWorkerStore = defineStore('worker', () => {
     return []
   })
 
-  const loadWorkers = async () => {
+  const loadWorkers = async (refresh = false) => {
+    if (loading.value && !refresh) return
+    if (refresh) {
+      pagination.value.page = 1
+      refreshing.value = true
+    }
+    loading.value = true
+
     try {
-      const res = await apiOps.queryAll('workers')
-      workers.value = res.data || []
+      const params = {
+        page: pagination.value.page,
+        pageSize: pagination.value.pageSize
+      }
+      const res = await apiOps.queryAll('workers', params)
+
+      if (refresh) {
+        workers.value = res.data || []
+      } else {
+        workers.value = [...workers.value, ...(res.data || [])]
+      }
+
+      // 更新分页信息
+      if (res.pagination) {
+        pagination.value = {
+          ...pagination.value,
+          ...res.pagination,
+          hasMore: pagination.value.page < res.pagination.totalPages
+        }
+      }
     } catch (e) {
       console.error('【Worker】加载员工列表失败:', e)
       showErrorToast('加载员工列表失败')
-      workers.value = []
+    } finally {
+      loading.value = false
+      refreshing.value = false
     }
+  }
+
+  const loadMore = () => {
+    if (!pagination.value.hasMore || loading.value) return
+    pagination.value.page++
+    loadWorkers()
   }
 
   const saveWorkers = async () => {
@@ -148,10 +192,14 @@ export const useWorkerStore = defineStore('worker', () => {
     filteredWorkers,
     departureWorkers,
     loadingWorkers,
+    pagination,
+    loading,
+    refreshing,
     addWorker,
     updateWorker,
     deleteWorker,
     getWorkerById,
-    loadWorkers
+    loadWorkers,
+    loadMore
   }
 })

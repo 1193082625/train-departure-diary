@@ -10,6 +10,17 @@ export const useDailyQuoteStore = defineStore('dailyQuote', () => {
   const quotes = ref([]) // 日报价列表
   const userStore = useUserStore()
 
+  // 分页状态
+  const pagination = ref({
+    page: 1,
+    pageSize: 20,
+    total: 0,
+    totalPages: 0,
+    hasMore: true
+  })
+  const loading = ref(false)
+  const refreshing = ref(false)
+
   // 按当前用户过滤的报价列表
   const filteredQuotes = computed(() => {
     const user = userStore.currentUser
@@ -32,20 +43,48 @@ export const useDailyQuoteStore = defineStore('dailyQuote', () => {
   })
 
   // 加载所有日报价
-  const loadQuotes = async () => {
+  const loadQuotes = async (refresh = false) => {
+    if (loading.value && !refresh) return
+    if (refresh) {
+      pagination.value.page = 1
+      refreshing.value = true
+    }
+    loading.value = true
+
     try {
-      const res = await apiOps.queryAll('daily_quotes')
-      const results = res.data || []
-      if (results && results.length > 0) {
-        quotes.value = results
+      const params = {
+        page: pagination.value.page,
+        pageSize: pagination.value.pageSize
+      }
+      const res = await apiOps.queryAll('daily_quotes', params)
+
+      if (refresh) {
+        quotes.value = res.data || []
       } else {
-        quotes.value = []
+        quotes.value = [...quotes.value, ...(res.data || [])]
+      }
+
+      // 更新分页信息
+      if (res.pagination) {
+        pagination.value = {
+          ...pagination.value,
+          ...res.pagination,
+          hasMore: pagination.value.page < res.pagination.totalPages
+        }
       }
     } catch (e) {
       console.error('【DailyQuote】加载日报价失败:', e)
       showErrorToast('加载日报价失败')
-      quotes.value = []
+    } finally {
+      loading.value = false
+      refreshing.value = false
     }
+  }
+
+  const loadMore = () => {
+    if (!pagination.value.hasMore || loading.value) return
+    pagination.value.page++
+    loadQuotes()
   }
 
   // 保存单条日报价到云端
@@ -126,7 +165,11 @@ export const useDailyQuoteStore = defineStore('dailyQuote', () => {
   return {
     quotes,
     filteredQuotes,
+    pagination,
+    loading,
+    refreshing,
     loadQuotes,
+    loadMore,
     saveQuote,
     getQuoteByDate
   }

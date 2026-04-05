@@ -24,6 +24,17 @@ const parseJsonField = (value) => {
 export const useDepartureStore = defineStore('departure', () => {
   const records = ref([])
   const userStore = useUserStore()
+
+  // 分页状态
+  const pagination = ref({
+    page: 1,
+    pageSize: 20,
+    total: 0,
+    totalPages: 0,
+    hasMore: true
+  })
+  const loading = ref(false)
+  const refreshing = ref(false)
   // 根据用户角色过滤发车记录
   const filteredRecords = computed(() => {
     const user = userStore.currentUser
@@ -63,29 +74,60 @@ export const useDepartureStore = defineStore('departure', () => {
     return []
   })
 
-  const loadRecords = async () => {
+  const loadRecords = async (refresh = false) => {
+    if (loading.value && !refresh) return
+    if (refresh) {
+      pagination.value.page = 1
+      refreshing.value = true
+    }
+    loading.value = true
+
     try {
       // 先刷新用户列表，确保中间商能看到最新的下级用户
       await userStore.loadUsers()
-      const res = await apiOps.queryAll('departures')
+      const params = {
+        page: pagination.value.page,
+        pageSize: pagination.value.pageSize
+      }
+      const res = await apiOps.queryAll('departures', params)
       const results = res.data || []
-      if (results && results.length > 0) {
-        // 解析 JSON 字符串字段（兼容已解析和未解析的数据）
-        records.value = results.map(r => ({
-          ...r,
-          merchantDetails: parseJsonField(r.merchantDetails),
-          loadingWorkerIds: parseJsonField(r.loadingWorkerIds),
-          truckRows: parseJsonField(r.truckRows),
-          merchantAmount: parseJsonField(r.merchantAmount)
-        }))
+
+      // 解析 JSON 字符串字段（兼容已解析和未解析的数据）
+      const parsedResults = (results || []).map(r => ({
+        ...r,
+        merchantDetails: parseJsonField(r.merchantDetails),
+        loadingWorkerIds: parseJsonField(r.loadingWorkerIds),
+        truckRows: parseJsonField(r.truckRows),
+        merchantAmount: parseJsonField(r.merchantAmount)
+      }))
+
+      if (refresh) {
+        records.value = parsedResults
       } else {
-        records.value = []
+        records.value = [...records.value, ...parsedResults]
+      }
+
+      // 更新分页信息
+      if (res.pagination) {
+        pagination.value = {
+          ...pagination.value,
+          ...res.pagination,
+          hasMore: pagination.value.page < res.pagination.totalPages
+        }
       }
     } catch (e) {
       console.error('【Departure】加载发车记录失败:', e)
       showErrorToast('加载发车记录失败')
-      records.value = []
+    } finally {
+      loading.value = false
+      refreshing.value = false
     }
+  }
+
+  const loadMore = () => {
+    if (!pagination.value.hasMore || loading.value) return
+    pagination.value.page++
+    loadRecords()
   }
 
   const saveRecords = async () => {
@@ -192,12 +234,16 @@ export const useDepartureStore = defineStore('departure', () => {
   return {
     records,
     filteredRecords,
+    pagination,
+    loading,
+    refreshing,
     addRecord,
     updateRecord,
     deleteRecord,
     getRecordsByDate,
     getRecordsByDateRange,
     getTodayRecords,
-    loadRecords
+    loadRecords,
+    loadMore
   }
 })

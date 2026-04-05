@@ -90,13 +90,32 @@ const deserializeData = (data) => {
  */
 export const createCrudRouter = (tableName) => {
   const router = {
-    // GET /:table - 查询所有
+    // GET /:table - 查询所有（分页）
     getAll: async (req, res) => {
       try {
         const pool = getPool()
-        const [rows] = await pool.query(`SELECT * FROM ${tableName} WHERE deletedAt IS NULL LIMIT 500`)
+        const page = Math.max(1, parseInt(req.query.page) || 1)
+        const pageSize = Math.min(100, Math.max(1, parseInt(req.query.pageSize) || 20))
+        const offset = (page - 1) * pageSize
+
+        // 查询总数
+        const [countResult] = await pool.query(
+          `SELECT COUNT(*) as total FROM ${tableName} WHERE deletedAt IS NULL`
+        )
+        const total = countResult[0].total
+
+        // 查询分页数据
+        const [rows] = await pool.query(
+          `SELECT * FROM ${tableName} WHERE deletedAt IS NULL ORDER BY createdAt DESC LIMIT ? OFFSET ?`,
+          [pageSize, offset]
+        )
         const data = (rows || []).map(row => deserializeData(row))
-        res.json({ success: true, data })
+
+        res.json({
+          success: true,
+          data,
+          pagination: { page, pageSize, total, totalPages: Math.ceil(total / pageSize) }
+        })
       } catch (err) {
         console.error(`查询 ${tableName} 失败:`, err)
         res.status(500).json({ success: false, error: err.message })
@@ -121,23 +140,39 @@ export const createCrudRouter = (tableName) => {
       }
     },
 
-    // GET /:table/by/:field/:value - 根据字段查询
+    // GET /:table/by/:field/:value - 根据字段查询（分页）
     getByField: async (req, res) => {
       try {
         const pool = getPool()
         const { field, value } = req.params
+        const page = Math.max(1, parseInt(req.query.page) || 1)
+        const pageSize = Math.min(100, Math.max(1, parseInt(req.query.pageSize) || 20))
+        const offset = (page - 1) * pageSize
 
         // 白名单验证，防止 SQL 注入
         if (!ALLOWED_QUERY_FIELDS.includes(field)) {
           return res.status(400).json({ success: false, error: '无效的查询字段' })
         }
 
-        const [rows] = await pool.query(
-          `SELECT * FROM ${tableName} WHERE ${field} = ? AND deletedAt IS NULL`,
+        // 查询总数
+        const [countResult] = await pool.query(
+          `SELECT COUNT(*) as total FROM ${tableName} WHERE ${field} = ? AND deletedAt IS NULL`,
           [value]
         )
+        const total = countResult[0].total
+
+        // 查询分页数据
+        const [rows] = await pool.query(
+          `SELECT * FROM ${tableName} WHERE ${field} = ? AND deletedAt IS NULL ORDER BY createdAt DESC LIMIT ? OFFSET ?`,
+          [value, pageSize, offset]
+        )
         const data = (rows || []).map(row => deserializeData(row))
-        res.json({ success: true, data })
+
+        res.json({
+          success: true,
+          data,
+          pagination: { page, pageSize, total, totalPages: Math.ceil(total / pageSize) }
+        })
       } catch (err) {
         console.error(`查询 ${tableName} 失败:`, err)
         res.status(500).json({ success: false, error: err.message })
