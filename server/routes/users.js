@@ -180,9 +180,9 @@ export const createCrudRouter = (tableName) => {
         )
         const total = countResult[0].total
 
-        // 查询分页数据
+        // 查询分页数据（使用 id 排序，因为不是所有表都有 createdAt）
         const [rows] = await pool.query(
-          `SELECT * FROM ${tableName} WHERE ${whereClause} ORDER BY createdAt DESC LIMIT ? OFFSET ?`,
+          `SELECT * FROM ${tableName} WHERE ${whereClause} ORDER BY id DESC LIMIT ? OFFSET ?`,
           [...queryParams, pageSize, offset]
         )
         const data = (rows || []).map(row => deserializeData(row))
@@ -237,9 +237,9 @@ export const createCrudRouter = (tableName) => {
         )
         const total = countResult[0].total
 
-        // 查询分页数据
+        // 查询分页数据（使用 id 排序，因为不是所有表都有 createdAt）
         const [rows] = await pool.query(
-          `SELECT * FROM ${tableName} WHERE ${field} = ? AND deletedAt IS NULL ORDER BY createdAt DESC LIMIT ? OFFSET ?`,
+          `SELECT * FROM ${tableName} WHERE ${field} = ? AND deletedAt IS NULL ORDER BY id DESC LIMIT ? OFFSET ?`,
           [value, pageSize, offset]
         )
         const data = (rows || []).map(row => deserializeData(row))
