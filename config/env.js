@@ -20,13 +20,19 @@ const ENV_CONFIG = {
 // 获取当前环境模式
 const getEnvMode = () => {
   // 优先使用本地存储的设置
+  /**
+   * 切换对应环境
+   * 在微信开发者工具的 Console 中直接执行： uni.setStorageSync('ENV_MODE', 'production') 
+   */
   const storedMode = uni.getStorageSync('ENV_MODE')
+  console.log(223, storedMode);
+  
   if (storedMode && ENV_CONFIG[storedMode]) {
     return storedMode
   }
   // 默认为本地开发
   // 改这里：'local' 或 'production'
-  return 'local'
+  return 'production'
 }
 
 // 获取 API 地址
