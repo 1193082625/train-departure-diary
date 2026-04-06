@@ -190,6 +190,8 @@ const userStore = useUserStore()
 let unsubscribe = null
 
 onShow(() => {
+  // 页面显示时加载数据
+  loadRecordsWithDateRange(true)
   unsubscribe = subscribe('departure:refresh', () => {
     loadRecordsWithDateRange(true)
   })

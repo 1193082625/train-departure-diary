@@ -90,6 +90,8 @@ const userStore = useUserStore()
 let unsubscribe = null
 
 onShow(() => {
+  // 页面显示时加载数据
+  workerStore.loadWorkers(true)
   unsubscribe = subscribe('worker:refresh', () => {
     workerStore.loadWorkers(true)
   })

@@ -85,6 +85,8 @@ const userStore = useUserStore()
 let unsubscribe = null
 
 onShow(() => {
+  // 页面显示时加载数据
+  merchantStore.loadMerchants(true)
   unsubscribe = subscribe('merchant:refresh', () => {
     merchantStore.loadMerchants(true)
   })

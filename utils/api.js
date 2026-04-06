@@ -6,7 +6,7 @@
 
 import { ref } from 'vue'
 import { getApiBaseUrl } from '../config/env.js'
-import { showErrorToast } from './errorHandler.js'
+import { showErrorToast } from './errorHandler'
 
 // API 基础 URL - 根据环境配置动态获取
 const BASE_URL = ref(getApiBaseUrl())

@@ -71,6 +71,8 @@ const transactionStore = useTransactionStore()
 let unsubscribe = null
 
 onShow(() => {
+  // 页面显示时加载数据
+  transactionStore.loadTransactions(true)
   unsubscribe = subscribe('transaction:refresh', () => {
     transactionStore.loadTransactions(true)
   })
