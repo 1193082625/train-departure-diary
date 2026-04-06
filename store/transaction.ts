@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { apiOps } from '@/utils/api'
 import { useUserStore } from './user'
-import { ROLES } from './user'
+import { ROLES } from '@/enums/roles'
 import { showErrorToast } from '@/utils/errorHandler'
 import { publish } from '@/utils/eventBus'
 

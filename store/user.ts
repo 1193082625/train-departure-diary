@@ -2,43 +2,13 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { apiOps, userApi, inviteApi, setToken, clearToken } from '@/utils/api'
 import { showErrorToast } from '@/utils/errorHandler'
+import { ADMIN_PHONE, ADMIN_CODE, SESSION_EXPIRY } from '@/constants/auth'
+import { USERS_CACHE_KEY, USERS_CACHE_TIME_KEY, USERS_CACHE_MAX_AGE } from '@/constants/cache'
+import { ROLES, ROLE_NAMES } from '@/enums/roles'
+import { generateUUID, generateInviteCode } from '@/utils/uuid'
 
-// 生成UUID
-const generateUUID = () => {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-    const r = Math.random() * 16 | 0
-    const v = c === 'x' ? r : (r & 0x3 | 0x8)
-    return v.toString(16)
-  })
-}
-
-// 生成邀请码
-const generateInviteCode = () => {
-  return Math.floor(100000 + Math.random() * 900000).toString()
-}
-
-// 角色类型
-export const ROLES = {
-  ADMIN: 'admin',      // 管理员
-  MIDDLEMAN: 'middleman', // 中间商
-  LOADER: 'loader',    // 装发车
-  FARM: 'farm'         // 鸡场
-}
-
-// 角色名称映射
-export const ROLE_NAMES = {
-  [ROLES.ADMIN]: '管理员',
-  [ROLES.MIDDLEMAN]: '中间商',
-  [ROLES.LOADER]: '装发车',
-  [ROLES.FARM]: '鸡场'
-}
-
-// 预设管理员信息
-const ADMIN_PHONE = '15369375170'
-const ADMIN_CODE = '888888'
-
-// 会话有效期：7 天（毫秒）
-const SESSION_EXPIRY = 7 * 24 * 60 * 60 * 1000
+// 重新导出，保持向后兼容
+export { ROLES, ROLE_NAMES }
 
 // 测试用户数据
 const TEST_USERS = [
@@ -142,11 +112,6 @@ export const useUserStore = defineStore('user', () => {
   const setCurrentMiddleman = (middlemanId: string | null) => {
     currentMiddlemanId.value = middlemanId
   }
-
-  // 用户列表缓存键名
-  const USERS_CACHE_KEY = 'usersCache'
-  const USERS_CACHE_TIME_KEY = 'usersCacheTime'
-  const USERS_CACHE_MAX_AGE = 5 * 60 * 1000 // 5分钟缓存
 
   // 尝试从本地缓存恢复用户列表
   const restoreUsersFromCache = () => {

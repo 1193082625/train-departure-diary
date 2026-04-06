@@ -3,7 +3,7 @@ import { ref, computed } from 'vue'
 import { apiOps } from '@/utils/api'
 import { useUserStore } from './user'
 import { useWorkerStore } from './worker'
-import { ROLES } from './user'
+import { ROLES } from '@/enums/roles'
 import { showErrorToast } from '@/utils/errorHandler'
 import { publish } from '@/utils/eventBus'
 

@@ -1,8 +1,6 @@
 <script>
 	import { useUserStore } from '@/store/user'
-
-	// 会话有效期：7 天（毫秒）
-	const SESSION_EXPIRY = 7 * 24 * 60 * 60 * 1000
+	import { SESSION_EXPIRY } from '@/constants/auth'
 
 	// 检查会话是否过期
 	const isSessionExpired = () => {

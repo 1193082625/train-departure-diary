@@ -1,12 +1,5 @@
 import { describe, it, expect } from 'vitest'
-
-// 定义角色常量 (从 store/user.ts 复制)
-const ROLES = {
-  ADMIN: 'admin',
-  MIDDLEMAN: 'middleman',
-  LOADER: 'loader',
-  FARM: 'farm'
-}
+import { ROLES } from '@/enums/roles'
 
 // 测试数据
 const mockUsers = [
