@@ -92,8 +92,8 @@ export const useDepartureStore = defineStore('departure', () => {
     loading.value = true
 
     try {
-      // 先刷新用户列表，确保中间商能看到最新的下级用户
-      await userStore.loadUsers()
+      // 确保用户列表已加载（用于过滤下级用户）
+      await userStore.ensureUsersLoaded()
 
       const user = userStore.currentUser
 
@@ -263,7 +263,7 @@ export const useDepartureStore = defineStore('departure', () => {
   }
 
   // 自动调用 loadRecords() 加载发车记录
-  loadRecords()
+  // loadRecords() // 移除模块级别自动加载，改由页面按需调用
 
   return {
     records,

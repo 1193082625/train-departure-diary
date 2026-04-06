@@ -43,6 +43,8 @@
 import { ref } from 'vue'
 import { onShow, onHide } from '@dcloudio/uni-app'
 import { useDepartureStore } from '@/store/departure'
+import { useDailyQuoteStore } from '@/store/dailyQuote'
+import { useUserStore } from '@/store/user'
 import { subscribe } from '@/utils/eventBus'
 import MiddlemanSelector from '@/components/middleman-selector.vue'
 import QuickEntry from './components/quick-entry.vue'
@@ -51,9 +53,16 @@ import TodayRecords from './components/today-records.vue'
 
 const dailyQuotesRef = ref(null)
 const departureStore = useDepartureStore()
+const dailyQuoteStore = useDailyQuoteStore()
+const userStore = useUserStore()
 let unsubscribe = null
 
-onShow(() => {
+onShow(async () => {
+  // 每次进入页面时按需加载数据
+  await userStore.ensureUsersLoaded()
+  await departureStore.loadRecords()
+  await dailyQuoteStore.loadQuotes()
+
   unsubscribe = subscribe('departure:refresh', () => {
     departureStore.loadRecords()
   })

@@ -9,6 +9,44 @@ import bcrypt from 'bcryptjs'
 // JSON 字段列表
 const JSON_FIELDS = ['merchantDetails', 'truckRows', 'loadingWorkerIds', 'merchantAmount']
 
+// 允许查询的字段白名单（防止 SQL 注入）
+const ALLOWED_QUERY_FIELDS = [
+  'id', 'phone', 'userId', 'date', 'role', 'parentId', 'code',
+  'name', 'type', 'targetId', 'targetType', 'createdAt',
+  'inviteCode', 'invitedBy', 'workerId', 'usedBy', 'creatorId'
+]
+
+/**
+ * 根据 JWT token 中的用户信息获取查询过滤器
+ * 用于数据隔离
+ */
+const getQueryFilter = (req) => {
+  const { userId, role } = req.user || {}
+
+  // 如果没有用户信息（可选认证场景），返回 null 表示不限制
+  if (!userId || !role) {
+    return { userId: null, isAdmin: false }
+  }
+
+  // 管理员：可指定 userId 查询某个中间商的数据，不指定则查全部
+  if (role === 'admin') {
+    return { userId: req.query.userId || null, isAdmin: true }
+  }
+
+  // 中间商：查自己的数据
+  if (role === 'middleman') {
+    return { userId, role, isMiddleman: true }
+  }
+
+  // 装发车：只能查自己的
+  if (role === 'loader') {
+    return { userId }
+  }
+
+  // 鸡场：无发车记录权限（后续路由可以根据 table 拒绝访问）
+  return { userId: null, noAccess: true }
+}
+
 // 手机号正则校验
 const PHONE_REGEX = /^1[3-9]\d{9}$/
 
@@ -33,13 +71,6 @@ const verifyPassword = async (inputPassword, storedPassword) => {
 const validatePhone = (phone) => {
   return PHONE_REGEX.test(phone)
 }
-
-// 允许查询的字段白名单（防止 SQL 注入）
-const ALLOWED_QUERY_FIELDS = [
-  'id', 'phone', 'userId', 'date', 'role', 'parentId', 'code',
-  'name', 'type', 'targetId', 'targetType', 'createdAt',
-  'inviteCode', 'invitedBy', 'workerId', 'usedBy', 'creatorId'
-]
 
 /**
  * 序列化数据
@@ -97,16 +128,35 @@ export const createCrudRouter = (tableName) => {
         const page = Math.max(1, parseInt(req.query.page) || 1)
         const pageSize = Math.min(100, Math.max(1, parseInt(req.query.pageSize) || 20))
         const offset = (page - 1) * pageSize
-        const userId = req.query.userId // 从请求参数获取 userId
+
+        // 获取 JWT 中的用户信息和角色过滤逻辑
+        const filter = getQueryFilter(req)
+
+        // 鸡场角色无数据访问权限
+        if (filter.noAccess) {
+          return res.json({
+            success: true,
+            data: [],
+            pagination: { page, pageSize, total: 0, totalPages: 0 }
+          })
+        }
 
         // 构建 WHERE 条件
         let whereClause = 'deletedAt IS NULL'
         let queryParams = []
 
-        // 如果传入了 userId，则按 userId 过滤
-        if (userId) {
-          whereClause += ' AND userId = ?'
-          queryParams.push(userId)
+        // users 表的主键是 id，其他表的主键是 userId
+        const userIdColumn = tableName === 'users' ? 'id' : 'userId'
+
+        // 如果是管理员且没有指定 userId，则不限制（查全部）
+        // 如果是管理员指定了 userId，则按指定 userId 过滤
+        // 如果是中间商或装发车，则只能查自己的数据
+        if (filter.userId) {
+          whereClause += ` AND ${userIdColumn} = ?`
+          queryParams.push(filter.userId)
+        } else if (!filter.isAdmin) {
+          // 非管理员且没有 userId（不应该出现），拒绝访问
+          return res.status(403).json({ success: false, error: '无权限访问该资源' })
         }
 
         // 日期范围过滤

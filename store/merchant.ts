@@ -197,7 +197,7 @@ export const useMerchantStore = defineStore('merchant', () => {
   const getMerchantById = (id) => merchants.value.find(m => m.id === id)
 
   // 初始化加载
-  loadMerchants()
+  // loadMerchants() // 移除模块级别自动加载，改由页面按需调用
 
   return {
     merchants,

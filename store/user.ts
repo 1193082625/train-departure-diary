@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { apiOps, userApi, inviteApi } from '@/utils/api'
+import { apiOps, userApi, inviteApi, setToken, clearToken } from '@/utils/api'
 import { showErrorToast } from '@/utils/errorHandler'
 
 // 生成UUID
@@ -143,15 +143,69 @@ export const useUserStore = defineStore('user', () => {
     currentMiddlemanId.value = middlemanId
   }
 
-  // 加载所有用户
-  const loadUsers = async () => {
+  // 用户列表缓存键名
+  const USERS_CACHE_KEY = 'usersCache'
+  const USERS_CACHE_TIME_KEY = 'usersCacheTime'
+  const USERS_CACHE_MAX_AGE = 5 * 60 * 1000 // 5分钟缓存
+
+  // 尝试从本地缓存恢复用户列表
+  const restoreUsersFromCache = () => {
+    try {
+      const cached = uni.getStorageSync(USERS_CACHE_KEY)
+      if (cached) {
+        users.value = JSON.parse(cached)
+        console.log('【User】从缓存恢复用户列表:', users.value.length)
+      }
+    } catch (e) {
+      console.warn('【User】恢复缓存失败:', e)
+    }
+  }
+
+  // 保存用户列表到本地缓存
+  const saveUsersToCache = () => {
+    try {
+      uni.setStorageSync(USERS_CACHE_KEY, JSON.stringify(users.value))
+      uni.setStorageSync(USERS_CACHE_TIME_KEY, Date.now())
+    } catch (e) {
+      console.warn('【User】保存缓存失败:', e)
+    }
+  }
+
+  // 加载所有用户（带缓存）
+  const loadUsers = async (forceRefresh = false) => {
+    // 如果用户列表已有数据且不是强制刷新，直接返回
+    if (!forceRefresh && users.value.length > 0) {
+      console.log('【User】用户列表已加载，跳过:', users.value.length)
+      return
+    }
+
+    // 尝试从缓存恢复
+    if (!forceRefresh) {
+      restoreUsersFromCache()
+      if (users.value.length > 0) {
+        return
+      }
+    }
+
     try {
       const res = await userApi.getAllUsers()
       users.value = res.data || []
+      saveUsersToCache()
+      console.log('【User】从服务器加载用户列表:', users.value.length)
     } catch (e) {
       console.error('【User】加载用户列表失败:', e)
       showErrorToast('加载用户列表失败')
-      users.value = []
+      // 加载失败时尝试用缓存
+      if (users.value.length === 0) {
+        restoreUsersFromCache()
+      }
+    }
+  }
+
+  // 确保用户列表已加载（按需加载）
+  const ensureUsersLoaded = async () => {
+    if (users.value.length === 0) {
+      await loadUsers()
     }
   }
 
@@ -160,9 +214,6 @@ export const useUserStore = defineStore('user', () => {
     try {
       // 先初始化测试数据
       // await initTestData()
-
-      // 加载所有用户
-      await loadUsers()
 
       // 从本地存储恢复登录状态
       const userData = uni.getStorageSync('currentUser')
@@ -200,13 +251,22 @@ export const useUserStore = defineStore('user', () => {
         isLoggedIn.value = true
         uni.setStorageSync('currentUser', JSON.stringify(currentUser.value))
         uni.setStorageSync('loginTime', Date.now())
+        // 管理员登录也需要获取 token
+        try {
+          const loginRes = await userApi.login(phone, code)
+          if (loginRes.token) {
+            setToken(loginRes.token)
+          }
+        } catch (e) {
+          console.error('【User】获取管理员 token 失败:', e)
+        }
         return { success: true, user: currentUser.value }
       }
 
       // 如果用户已存在且设置了密码，必须使用密码登录
       if (existingUsers && existingUsers.length > 0) {
         const user = existingUsers[0]
-        if (user.password) {
+        if (user.hasPassword) {
           // 需要密码登录
           if (!code) {
             return { success: false, message: '请输入密码' }
@@ -217,6 +277,10 @@ export const useUserStore = defineStore('user', () => {
             if (loginRes.success) {
               currentUser.value = loginRes.data
               isLoggedIn.value = true
+              // 存储 JWT token
+              if (loginRes.token) {
+                setToken(loginRes.token)
+              }
               uni.setStorageSync('currentUser', JSON.stringify(currentUser.value))
               uni.setStorageSync('loginTime', Date.now())
               return { success: true, user: currentUser.value }
@@ -401,6 +465,7 @@ export const useUserStore = defineStore('user', () => {
   const logout = () => {
     currentUser.value = null
     isLoggedIn.value = false
+    clearToken() // 清除 JWT token
     uni.removeStorageSync('currentUser')
     uni.removeStorageSync('loginTime')
   }
@@ -493,7 +558,9 @@ export const useUserStore = defineStore('user', () => {
       let hasPassword = false
       if(existingUsers.length > 0) {
         const user = existingUsers[0]
-        hasPassword = !!user.password
+        console.log(111, user);
+        
+        hasPassword = !!user.hasPassword
       }
       return existingUsers && existingUsers.length > 0 && hasPassword
     } catch (e) {
@@ -692,6 +759,7 @@ export const useUserStore = defineStore('user', () => {
     middlemanList,
     setCurrentMiddleman,
     loadUsers,
+    ensureUsersLoaded,
     login,
     selectRole,
     logout,

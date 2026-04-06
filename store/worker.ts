@@ -205,7 +205,7 @@ export const useWorkerStore = defineStore('worker', () => {
   )
 
   // 初始化加载
-  loadWorkers()
+  // loadWorkers() // 移除模块级别自动加载，改由页面按需调用
 
   return {
     workers,

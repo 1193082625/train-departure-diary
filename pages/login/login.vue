@@ -159,6 +159,8 @@ const handlePhoneInput = async () => {
   if (validatePhone(phone.value)) {
     // checkPhoneExists 内部会确保数据库就绪
     const exists = await userStore.checkPhoneExists(phone.value)
+    console.log(55, exists);
+    
     phoneChecked.value = true
     if (exists) {
       loginType.value = 'password'
@@ -256,9 +258,22 @@ const handleLogin = async () => {
     if (result.needSetPassword) {
       showSetPassword.value = true
     } else {
-      uni.switchTab({
-        url: '/pages/home/home'
-      })
+      // 验证 token 已存储后再跳转
+      const token = uni.getStorageSync('authToken')
+      if (token) {
+        uni.switchTab({
+          url: '/pages/home/home'
+        })
+      } else {
+        // 等待一下再重试
+        await new Promise(resolve => setTimeout(resolve, 100))
+        const retryToken = uni.getStorageSync('authToken')
+        if (retryToken) {
+          uni.switchTab({ url: '/pages/home/home' })
+        } else {
+          showMessage('登录异常，请重试')
+        }
+      }
     }
   } else {
     // 登录失败，检查是否需要切换登录方式
@@ -289,9 +304,14 @@ const handleSetPassword = async () => {
 
   const result = await userStore.setPassword(password.value)
   if (result.success) {
-    uni.switchTab({
-      url: '/pages/home/home'
-    })
+    // 验证 token 已存储后再跳转
+    const token = uni.getStorageSync('authToken')
+    if (token) {
+      uni.switchTab({ url: '/pages/home/home' })
+    } else {
+      await new Promise(resolve => setTimeout(resolve, 100))
+      uni.switchTab({ url: '/pages/home/home' })
+    }
   } else {
     showMessage(result.message || '设置密码失败')
   }

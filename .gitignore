@@ -25,3 +25,7 @@ Thumbs.db
 # Test
 test/
 coverage/
+
+# Environment - local files (do not commit)
+.env.local
+server/config/.env.local

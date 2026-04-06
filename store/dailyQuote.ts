@@ -179,7 +179,7 @@ export const useDailyQuoteStore = defineStore('dailyQuote', () => {
   }
 
   // 初始化加载
-  loadQuotes()
+  // loadQuotes() // 移除模块级别自动加载，改由页面按需调用
 
   return {
     quotes,

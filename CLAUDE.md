@@ -29,11 +29,11 @@
 
 | 类别     | 技术              |
 | -------- | ----------------- |
-| 框架     | UniApp (Vue 3)   |
+| 框架     | UniApp (Vue 3)    |
 | 状态管理 | Pinia             |
-| 数据库   | 自建阿里云 MySQL |
+| 数据库   | 自建阿里云 MySQL  |
 | 后端     | Express (Node.js) |
-| API      | HTTP REST API    |
+| API      | HTTP REST API     |
 | 图表     | uCharts           |
 | UI 组件  | uni-ui            |
 
@@ -89,10 +89,10 @@
 | 表名               | 说明       | 主要字段                                                             |
 | ------------------ | ---------- | -------------------------------------------------------------------- |
 | `users`            | 用户表     | id, phone, nickname, password, role, inviteCode, parentId            |
-| `merchants`        | 鸡场表     | id, name, margin, contact, phone, address, userId                   |
+| `merchants`        | 鸡场表     | id, name, margin, contact, phone, address, userId                    |
 | `workers`          | 员工表     | id, name, type(departure/loading/both), phone, userId                |
 | `departures`       | 发车记录表 | id, date, dailyQuote, merchantDetails(JSON), truckRows(JSON), userId |
-| `invitation_codes` | 邀请码表   | id, code, type, creatorId, usedBy, workerInfo                       |
+| `invitation_codes` | 邀请码表   | id, code, type, creatorId, usedBy, workerInfo                        |
 | `transactions`     | 交易记录表 | id, date, targetId, amount, type, userId                             |
 | `settings`         | 设置表     | id, userId, 各种斤数和费用默认值                                     |
 | `daily_quotes`     | 日报价表   | id, date, quote, userId                                              |
@@ -143,54 +143,54 @@
 
 #### departures (发车记录表)
 
-| 字段                  | 类型   | 说明                      |
-| --------------------- | ------ | ------------------------- |
-| id                    | string | ID                        |
-| date                  | string | 日期                      |
-| dailyQuote            | double | 日报价                    |
-| merchantDetails       | string | 商户明细 (JSON)           |
-| reservedBigBoxes      | int    | 预留大箱                  |
-| reservedSmallBoxes    | int    | 预留小箱                  |
-| reservedBigBoxesTotal | int    | 预留大箱合计              |
-| reservedSmallBoxesTotal | int  | 预留小箱合计              |
-| reservedTotal         | double | 预留合计                  |
-| departureWorkerId     | string | 发车人员 ID               |
-| loadingWorkerIds      | string | 装车人员 ID 列表 (JSON)   |
-| fuelCost / oilFee     | double | 油费                      |
-| entryFee              | double | 入场费                    |
-| tollFee               | double | 过路费                    |
-| loadingFee            | double | 装车费                    |
-| unloadingFee          | double | 卸车费                    |
-| departureFee          | double | 发车费                    |
-| truckRows             | string | 车行 (JSON)               |
-| truckBig              | int    | 车辆大箱                  |
-| truckSmall            | int    | 车辆小箱                  |
-| truckCartonBoxesBig   | int    | 车辆纸箱大箱              |
-| truckCartonBoxesSmall | int    | 车辆纸箱小箱              |
-| truckWeightTotal      | double | 车辆重量合计              |
-| arrivalBigBoxes       | int    | 到达大箱                  |
-| arrivalSmallBoxes     | int    | 到达小箱                  |
-| returnedBigBoxes      | int    | 返回大箱                  |
-| returnedSmallBoxes    | int    | 返回小箱                  |
-| depotBigBoxes         | int    | 库存大箱                  |
-| depotSmallBoxes       | int    | 库存小箱                  |
-| depotCartonBoxesBig   | int    | 库存纸箱大箱              |
-| depotCartonBoxesSmall | int    | 库存纸箱小箱              |
-| smallBoxWeight        | double | 小箱重量                  |
-| totalBigBoxes         | int    | 大箱合计                  |
-| totalSmallBoxes       | int    | 小箱合计                  |
-| merchantBigTotal      | int    | 商户大箱合计              |
-| merchantSmallTotal     | int    | 商户小箱合计              |
-| merchantWeightTotal   | double | 商户重量合计              |
-| allMerchantWeight     | double | 商户总重量                |
-| totalReceivePrice     | double | 收款金额合计              |
-| totalDeliveryPrice    | double | 付金额合计                |
-| merchantAmount        | string | 商户金额 (JSON)           |
-| getMoney              | double | 收款金额                  |
-| profit                | double | 利润                      |
-| userId                | string | 用户 ID                   |
-| note                  | string | 备注                      |
-| createdAt             | string | 创建时间                  |
+| 字段                    | 类型   | 说明                    |
+| ----------------------- | ------ | ----------------------- |
+| id                      | string | ID                      |
+| date                    | string | 日期                    |
+| dailyQuote              | double | 日报价                  |
+| merchantDetails         | string | 商户明细 (JSON)         |
+| reservedBigBoxes        | int    | 预留大箱                |
+| reservedSmallBoxes      | int    | 预留小箱                |
+| reservedBigBoxesTotal   | int    | 预留大箱合计            |
+| reservedSmallBoxesTotal | int    | 预留小箱合计            |
+| reservedTotal           | double | 预留合计                |
+| departureWorkerId       | string | 发车人员 ID             |
+| loadingWorkerIds        | string | 装车人员 ID 列表 (JSON) |
+| fuelCost / oilFee       | double | 油费                    |
+| entryFee                | double | 入场费                  |
+| tollFee                 | double | 过路费                  |
+| loadingFee              | double | 装车费                  |
+| unloadingFee            | double | 卸车费                  |
+| departureFee            | double | 发车费                  |
+| truckRows               | string | 车行 (JSON)             |
+| truckBig                | int    | 车辆大箱                |
+| truckSmall              | int    | 车辆小箱                |
+| truckCartonBoxesBig     | int    | 车辆纸箱大箱            |
+| truckCartonBoxesSmall   | int    | 车辆纸箱小箱            |
+| truckWeightTotal        | double | 车辆重量合计            |
+| arrivalBigBoxes         | int    | 到达大箱                |
+| arrivalSmallBoxes       | int    | 到达小箱                |
+| returnedBigBoxes        | int    | 返回大箱                |
+| returnedSmallBoxes      | int    | 返回小箱                |
+| depotBigBoxes           | int    | 库存大箱                |
+| depotSmallBoxes         | int    | 库存小箱                |
+| depotCartonBoxesBig     | int    | 库存纸箱大箱            |
+| depotCartonBoxesSmall   | int    | 库存纸箱小箱            |
+| smallBoxWeight          | double | 小箱重量                |
+| totalBigBoxes           | int    | 大箱合计                |
+| totalSmallBoxes         | int    | 小箱合计                |
+| merchantBigTotal        | int    | 商户大箱合计            |
+| merchantSmallTotal      | int    | 商户小箱合计            |
+| merchantWeightTotal     | double | 商户重量合计            |
+| allMerchantWeight       | double | 商户总重量              |
+| totalReceivePrice       | double | 收款金额合计            |
+| totalDeliveryPrice      | double | 付金额合计              |
+| merchantAmount          | string | 商户金额 (JSON)         |
+| getMoney                | double | 收款金额                |
+| profit                  | double | 利润                    |
+| userId                  | string | 用户 ID                 |
+| note                    | string | 备注                    |
+| createdAt               | string | 创建时间                |
 
 #### invitation_codes (邀请码表)
 
@@ -224,31 +224,31 @@
 
 #### settings (设置表)
 
-| 字段                  | 类型   | 说明                   |
-| --------------------- | ------ | ---------------------- |
-| id                    | string | ID (UUID)              |
+| 字段                  | 类型   | 说明                    |
+| --------------------- | ------ | ----------------------- |
+| id                    | string | ID (UUID)               |
 | userId                | string | 所属用户 ID (中间商 ID) |
-| receiptBigBoxWeight   | double | 收货大箱重量 (默认 45) |
-| deliveryBigBoxWeight  | double | 发货大箱重量 (默认 44) |
-| smallBoxWeight        | double | 小箱重量 (默认 29.5)   |
-| loadingFee            | double | 装车费                 |
-| depotCartonBoxesBig   | double | 大箱斤数 (默认 43)     |
-| depotCartonBoxesSmall | double | 小箱斤数 (默认 30)     |
-| unloadingFee          | double | 卸车费                 |
-| departureFee          | double | 发车费                 |
-| tollFee               | double | 过路费                 |
-| entryFee              | double | 入场费                 |
-| oilFee                | double | 油费                   |
+| receiptBigBoxWeight   | double | 收货大箱重量 (默认 45)  |
+| deliveryBigBoxWeight  | double | 发货大箱重量 (默认 44)  |
+| smallBoxWeight        | double | 小箱重量 (默认 29.5)    |
+| loadingFee            | double | 装车费                  |
+| depotCartonBoxesBig   | double | 大箱斤数 (默认 43)      |
+| depotCartonBoxesSmall | double | 小箱斤数 (默认 30)      |
+| unloadingFee          | double | 卸车费                  |
+| departureFee          | double | 发车费                  |
+| tollFee               | double | 过路费                  |
+| entryFee              | double | 入场费                  |
+| oilFee                | double | 油费                    |
 
 #### daily_quotes (日报价表)
 
-| 字段      | 类型   | 说明                   |
-| --------- | ------ | ---------------------- |
-| id        | string | ID (UUID)              |
+| 字段      | 类型   | 说明                    |
+| --------- | ------ | ----------------------- |
+| id        | string | ID (UUID)               |
 | date      | string | 日期 (YYYY-MM-DD)       |
-| quote     | double | 日报价                 |
+| quote     | double | 日报价                  |
 | userId    | string | 所属用户 ID (中间商 ID) |
-| createdAt | string | 创建时间               |
+| createdAt | string | 创建时间                |
 
 ---
 
@@ -382,33 +382,33 @@ filteredRecords = computed(() => {
 
 前端通过 HTTP API 与后端通信，封装了所有数据库操作。
 
-| 模块        | 方法                                                      | 说明               |
-| ----------- | -------------------------------------------------------- | ------------------ |
-| apiOps      | queryAll, queryBy, getById, insert, update, delete       | 通用 CRUD          |
-| userApi     | getUserByPhone, getUserById, getUserByInviteCode, etc.  | 用户操作           |
-| inviteApi   | getByCode, create, useCode, getByCreator                | 邀请码操作         |
-| setApiBaseUrl | (url)                                                  | 设置 API 基础地址  |
+| 模块          | 方法                                                   | 说明              |
+| ------------- | ------------------------------------------------------ | ----------------- |
+| apiOps        | queryAll, queryBy, getById, insert, update, delete     | 通用 CRUD         |
+| userApi       | getUserByPhone, getUserById, getUserByInviteCode, etc. | 用户操作          |
+| inviteApi     | getByCode, create, useCode, getByCreator               | 邀请码操作        |
+| setApiBaseUrl | (url)                                                  | 设置 API 基础地址 |
 
 ### 后端服务 (server/)
 
 Express 后端提供 RESTful API，数据库操作在服务端完成。
 
-| 模块                  | 文件                    | 说明               |
-| --------------------- | ---------------------- | ------------------ |
-| MySQL 连接            | server/config/db.js   | MySQL 连接池封装   |
-| CRUD 路由工厂         | server/routes/users.js | 通用 CRUD 路由生成 |
-| 数据库配置            | server/config/database.js | 数据库连接配置   |
+| 模块          | 文件                      | 说明               |
+| ------------- | ------------------------- | ------------------ |
+| MySQL 连接    | server/config/db.js       | MySQL 连接池封装   |
+| CRUD 路由工厂 | server/routes/users.js    | 通用 CRUD 路由生成 |
+| 数据库配置    | server/config/database.js | 数据库连接配置     |
 
 ### API 端点
 
-| 方法   | 端点                           | 说明         |
-| ------ | ----------------------------- | ------------ |
-| GET    | /api/:table                   | 查询所有记录 |
-| GET    | /api/:table/:id               | 根据 ID 查询 |
-| GET    | /api/:table/by/:field/:value  | 根据字段查询 |
-| POST   | /api/:table                   | 新增记录     |
-| PUT    | /api/:table/:id               | 更新记录     |
-| DELETE | /api/:table/:id               | 删除记录     |
+| 方法   | 端点                         | 说明         |
+| ------ | ---------------------------- | ------------ |
+| GET    | /api/:table                  | 查询所有记录 |
+| GET    | /api/:table/:id              | 根据 ID 查询 |
+| GET    | /api/:table/by/:field/:value | 根据字段查询 |
+| POST   | /api/:table                  | 新增记录     |
+| PUT    | /api/:table/:id              | 更新记录     |
+| DELETE | /api/:table/:id              | 删除记录     |
 
 ### 关键特性
 
@@ -447,18 +447,18 @@ Express 后端提供 RESTful API，数据库操作在服务端完成。
 
 ## 关键文件
 
-| 文件                              | 说明                    |
-| --------------------------------- | ----------------------- |
-| utils/api.js                      | HTTP API 调用封装       |
-| utils/db-mysql.js                 | MySQL 操作封装 (后端)   |
-| utils/calc.ts                     | 计算工具函数            |
-| store/user.ts                     | 用户状态管理            |
-| store/departure.ts                | 发车记录状态管理        |
-| pages/departure/form.vue          | 发车表单 (含成本计算)   |
-| config/database.js                | 数据库配置 (前后端共用) |
-| sql/schema-mysql.sql              | MySQL 建表语句          |
-| server/index.js                   | Express 后端服务入口    |
-| uniCloud-aliyun/database/\*.schema.json | 历史遗留 (旧 Schema) |
+| 文件                                    | 说明                    |
+| --------------------------------------- | ----------------------- |
+| utils/api.js                            | HTTP API 调用封装       |
+| utils/db-mysql.js                       | MySQL 操作封装 (后端)   |
+| utils/calc.ts                           | 计算工具函数            |
+| store/user.ts                           | 用户状态管理            |
+| store/departure.ts                      | 发车记录状态管理        |
+| pages/departure/form.vue                | 发车表单 (含成本计算)   |
+| config/database.js                      | 数据库配置 (前后端共用) |
+| sql/schema-mysql.sql                    | MySQL 建表语句          |
+| server/index.js                         | Express 后端服务入口    |
+| uniCloud-aliyun/database/\*.schema.json | 历史遗留 (旧 Schema)    |
 
 ---
 
@@ -514,6 +514,10 @@ return amount
 4. **会话管理**: 登录状态通过 localStorage 存储，7 天有效期
 5. **邀请码**: 6 位数字，唯一性由云端 MySQL 保证
 6. **后端服务**: 前端 API 请求发送至 `http://47.96.90.103:3000/api`
+
+7. **数据库变更总是兼容旧版本**
+8. **先部署新后端，再部署新前端**
+9. **保留旧列/旧表一段时间后再清理**
 
 ## 角色与数据相关逻辑
 

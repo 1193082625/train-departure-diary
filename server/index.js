@@ -6,6 +6,7 @@ import express from 'express'
 import corsMiddleware from './middleware/cors.js'
 import { testConnection, getPool } from './config/db.js'
 import { createCrudRouter } from './routes/users.js'
+import { authMiddleware, generateToken } from './middleware/auth.js'
 import bcrypt from 'bcryptjs'
 
 // 手机号正则校验
@@ -34,20 +35,74 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', time: new Date().toISOString() })
 })
 
-// 注册通用 CRUD 路由
+// ============================================
+// 公开接口（不需要认证）- 用于登录注册流程
+// ============================================
+
+// GET /api/version - 获取后端版本和特性（公开接口，用于前端版本检测）
+app.get('/api/version', (req, res) => {
+  res.json({
+    version: '1.1.0',      // 语义化版本
+    apiVersion: 1,         // API 版本号（方便前端判断）
+    authType: 'jwt',        // 'jwt' | 'userId'
+    supports: ['jwt']       // 支持的特性列表
+  })
+})
+
+// GET /api/users/by/phone/:phone - 根据手机号查询用户（公开，用于登录流程）
+app.get('/api/users/by/phone/:phone', async (req, res) => {
+  try {
+    const pool = getPool()
+    const [rows] = await pool.query(
+      'SELECT * FROM users WHERE phone = ? AND deletedAt IS NULL',
+      [req.params.phone]
+    )
+    const data = rows.map(row => {
+      const { password, ...userWithoutPassword } = row
+      // 返回 hasPassword 字段让前端判断用户是否有密码
+      return { ...userWithoutPassword, hasPassword: !!password }
+    })
+    res.json({ success: true, data })
+  } catch (err) {
+    console.error('查询用户失败:', err)
+    res.status(500).json({ success: false, error: err.message })
+  }
+})
+
+// GET /api/invitation_codes/by/code/:code - 根据邀请码查询（公开，用于注册流程）
+app.get('/api/invitation_codes/by/code/:code', async (req, res) => {
+  try {
+    const pool = getPool()
+    const [rows] = await pool.query(
+      'SELECT * FROM invitation_codes WHERE code = ? AND deletedAt IS NULL',
+      [req.params.code]
+    )
+    res.json({ success: true, data: rows })
+  } catch (err) {
+    console.error('查询邀请码失败:', err)
+    res.status(500).json({ success: false, error: err.message })
+  }
+})
+
+// ============================================
+// 受保护接口（需要认证）
+// ============================================
+
+// 注册通用 CRUD 路由（需要认证）
 const tables = ['users', 'merchants', 'workers', 'departures', 'transactions', 'settings', 'daily_quotes', 'invitation_codes']
 
 tables.forEach(table => {
   const router = createCrudRouter(table)
 
-  app.get(`/api/${table}`, router.getAll)
-  app.get(`/api/${table}/:id`, router.getById)
-  app.get(`/api/${table}/by/:field/:value`, router.getByField)
-  app.post(`/api/${table}`, router.create)
-  app.put(`/api/${table}/:id`, router.update)
-  app.put(`/api/${table}/by/:field/:value`, router.updateByField)
-  app.delete(`/api/${table}/:id`, router.delete)
-  app.delete(`/api/${table}`, router.deleteAll)
+  app.get(`/api/${table}`, authMiddleware, router.getAll)
+  app.get(`/api/${table}/:id`, authMiddleware, router.getById)
+  // 注意：/by/phone/:phone 和 /by/code/:code 已在上方定义为公开路由
+  app.get(`/api/${table}/by/:field/:value`, authMiddleware, router.getByField)
+  app.post(`/api/${table}`, authMiddleware, router.create)
+  app.put(`/api/${table}/:id`, authMiddleware, router.update)
+  app.put(`/api/${table}/by/:field/:value`, authMiddleware, router.updateByField)
+  app.delete(`/api/${table}/:id`, authMiddleware, router.delete)
+  app.delete(`/api/${table}`, authMiddleware, router.deleteAll)
 })
 
 // POST /api/users/login - 用户登录验证
@@ -78,9 +133,10 @@ app.post('/api/users/login', async (req, res) => {
       return res.status(401).json({ success: false, error: '密码错误' })
     }
 
-    // 登录成功，返回用户信息（不包含密码）
+    // 登录成功，返回用户信息和 JWT token
     const { password: _, ...userWithoutPassword } = user
-    res.json({ success: true, data: userWithoutPassword })
+    const token = generateToken(user)
+    res.json({ success: true, data: userWithoutPassword, token })
   } catch (err) {
     console.error('登录失败:', err)
     res.status(500).json({ success: false, error: err.message })

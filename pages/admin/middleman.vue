@@ -119,9 +119,9 @@ const deleteMiddleman = async (middleman) => {
   }
 }
 
-// 页面加载时刷新用户列表
+// 页面加载时确保用户列表已加载
 onMounted(async () => {
-  await userStore.loadUsers()
+  await userStore.ensureUsersLoaded()
 })
 </script>
 

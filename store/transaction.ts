@@ -187,7 +187,7 @@ export const useTransactionStore = defineStore('transaction', () => {
   }
 
   // 初始化加载
-  loadTransactions()
+  // loadTransactions() // 移除模块级别自动加载，改由页面按需调用
 
   return {
     transactions,
