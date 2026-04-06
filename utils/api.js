@@ -6,6 +6,7 @@
 
 import { ref } from 'vue'
 import { getApiBaseUrl } from '../config/env.js'
+import { showErrorToast } from './errorHandler.js'
 
 // API 基础 URL - 根据环境配置动态获取
 const BASE_URL = ref(getApiBaseUrl())
@@ -47,16 +48,13 @@ const detectBackendVersion = async () => {
       })
     })
     backendVersion = res
+    versionChecked = true
   } catch (e) {
-    // 默认为旧版本 1.0.0
-    backendVersion = {
-      version: '1.0.0',
-      apiVersion: 1,
-      authType: 'userId',
-      supports: []
-    }
+    // 网络错误时不标记为已检测，允许重试
+    console.error('版本检测失败:', e)
+    // 不设置 versionChecked，允许下次重试
+    throw e
   }
-  versionChecked = true
   return backendVersion
 }
 
@@ -169,6 +167,11 @@ const request = async (endpoint, options = {}) => {
             uni.removeStorageSync('currentUser')
             uni.reLaunch({ url: '/pages/login/login' })
             return reject(new Error('登录已过期，请重新登录'))
+          }
+          // 403 无权限
+          if (res.statusCode === 403) {
+            showErrorToast('无权限操作')
+            return reject(new Error('无权限操作'))
           }
           if (res.statusCode >= 200 && res.statusCode < 300) {
             resolve(res.data)

@@ -128,13 +128,19 @@ export const useTransactionStore = defineStore('transaction', () => {
   }
 
   const deleteTransaction = async (id) => {
+    // 保存原始数据用于回滚
+    const original = transactions.value.find(t => t.id === id)
+    // 乐观删除
     transactions.value = transactions.value.filter(t => t.id !== id)
     try {
       await apiOps.delete('transactions', id)
       publish('transaction:refresh', null)
     } catch (e) {
+      // 回滚本地状态
+      if (original) transactions.value.push(original)
       console.error('【Transaction】删除交易记录失败:', e)
       showErrorToast('删除交易记录失败')
+      throw e
     }
   }
 

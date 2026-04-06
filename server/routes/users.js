@@ -47,6 +47,19 @@ const getQueryFilter = (req) => {
   return { userId: null, noAccess: true }
 }
 
+// 通用权限检查函数 - 验证用户是否有权限访问/修改记录
+const checkOwnership = (record, user) => {
+  if (!record || !user) return false
+  // 管理员可以访问所有记录
+  if (user.role === 'admin') return true
+  // 中间商和装发车只能访问自己的数据
+  if (user.role === 'middleman' || user.role === 'loader') {
+    return record.userId === user.id
+  }
+  // 鸡场角色不允许访问业务数据
+  return false
+}
+
 // 手机号正则校验
 const PHONE_REGEX = /^1[3-9]\d{9}$/
 
@@ -194,7 +207,7 @@ export const createCrudRouter = (tableName) => {
         })
       } catch (err) {
         console.error(`查询 ${tableName} 失败:`, err)
-        res.status(500).json({ success: false, error: err.message })
+        res.status(500).json({ success: false, error: '服务器内部错误' })
       }
     },
 
@@ -209,10 +222,16 @@ export const createCrudRouter = (tableName) => {
         if (rows.length === 0) {
           return res.status(404).json({ success: false, error: '记录不存在' })
         }
+
+        // 权限检查：验证用户是否有权访问该记录
+        if (!checkOwnership(rows[0], req.user)) {
+          return res.status(403).json({ success: false, error: '无权限访问该记录' })
+        }
+
         res.json({ success: true, data: deserializeData(rows[0]) })
       } catch (err) {
         console.error(`查询 ${tableName} 失败:`, err)
-        res.status(500).json({ success: false, error: err.message })
+        res.status(500).json({ success: false, error: '服务器内部错误' })
       }
     },
 
@@ -230,17 +249,40 @@ export const createCrudRouter = (tableName) => {
           return res.status(400).json({ success: false, error: '无效的查询字段' })
         }
 
+        // 获取用户权限过滤
+        const filter = getQueryFilter(req)
+
+        // 鸡场角色无数据访问权限
+        if (filter.noAccess) {
+          return res.json({
+            success: true,
+            data: [],
+            pagination: { page, pageSize, total: 0, totalPages: 0 }
+          })
+        }
+
+        // 构建查询条件，添加 userId 过滤
+        let whereClause = `${field} = ? AND deletedAt IS NULL`
+        let queryParams = [value]
+
+        // 非管理员需要添加 userId 过滤
+        if (!filter.isAdmin && filter.userId) {
+          const userIdColumn = tableName === 'users' ? 'id' : 'userId'
+          whereClause += ` AND ${userIdColumn} = ?`
+          queryParams.push(filter.userId)
+        }
+
         // 查询总数
         const [countResult] = await pool.query(
-          `SELECT COUNT(*) as total FROM ${tableName} WHERE ${field} = ? AND deletedAt IS NULL`,
-          [value]
+          `SELECT COUNT(*) as total FROM ${tableName} WHERE ${whereClause}`,
+          queryParams
         )
         const total = countResult[0].total
 
         // 查询分页数据（使用 id 排序，因为不是所有表都有 createdAt）
         const [rows] = await pool.query(
-          `SELECT * FROM ${tableName} WHERE ${field} = ? AND deletedAt IS NULL ORDER BY id DESC LIMIT ? OFFSET ?`,
-          [value, pageSize, offset]
+          `SELECT * FROM ${tableName} WHERE ${whereClause} ORDER BY id DESC LIMIT ? OFFSET ?`,
+          [...queryParams, pageSize, offset]
         )
         const data = (rows || []).map(row => deserializeData(row))
 
@@ -251,7 +293,7 @@ export const createCrudRouter = (tableName) => {
         })
       } catch (err) {
         console.error(`查询 ${tableName} 失败:`, err)
-        res.status(500).json({ success: false, error: err.message })
+        res.status(500).json({ success: false, error: '服务器内部错误' })
       }
     },
 
@@ -286,7 +328,7 @@ export const createCrudRouter = (tableName) => {
         res.json({ success: true, data: req.body })
       } catch (err) {
         console.error(`新增 ${tableName} 失败:`, err)
-        res.status(500).json({ success: false, error: err.message })
+        res.status(500).json({ success: false, error: '服务器内部错误' })
       }
     },
 
@@ -308,6 +350,18 @@ export const createCrudRouter = (tableName) => {
           }
         }
 
+        // 权限检查：验证用户是否有权修改该记录
+        const [existing] = await pool.query(
+          `SELECT * FROM ${tableName} WHERE id = ? AND deletedAt IS NULL`,
+          [req.params.id]
+        )
+        if (existing.length === 0) {
+          return res.status(404).json({ success: false, error: '记录不存在' })
+        }
+        if (!checkOwnership(existing[0], req.user)) {
+          return res.status(403).json({ success: false, error: '无权限修改该记录' })
+        }
+
         const fields = Object.keys(data)
         const sets = fields.map(f => `${f} = ?`).join(', ')
         const values = fields.map(f => data[f])
@@ -323,7 +377,7 @@ export const createCrudRouter = (tableName) => {
         res.json({ success: true, data: req.body })
       } catch (err) {
         console.error(`更新 ${tableName} 失败:`, err)
-        res.status(500).json({ success: false, error: err.message })
+        res.status(500).json({ success: false, error: '服务器内部错误' })
       }
     },
 
@@ -331,6 +385,19 @@ export const createCrudRouter = (tableName) => {
     delete: async (req, res) => {
       try {
         const pool = getPool()
+
+        // 权限检查：验证用户是否有权删除该记录
+        const [existing] = await pool.query(
+          `SELECT * FROM ${tableName} WHERE id = ? AND deletedAt IS NULL`,
+          [req.params.id]
+        )
+        if (existing.length === 0) {
+          return res.status(404).json({ success: false, error: '记录不存在或已删除' })
+        }
+        if (!checkOwnership(existing[0], req.user)) {
+          return res.status(403).json({ success: false, error: '无权限删除该记录' })
+        }
+
         const deletedAt = new Date().toISOString()
         const [result] = await pool.query(
           `UPDATE ${tableName} SET deletedAt = ? WHERE id = ? AND deletedAt IS NULL`,
@@ -343,7 +410,7 @@ export const createCrudRouter = (tableName) => {
         res.json({ success: true })
       } catch (err) {
         console.error(`删除 ${tableName} 失败:`, err)
-        res.status(500).json({ success: false, error: err.message })
+        res.status(500).json({ success: false, error: '服务器内部错误' })
       }
     },
 
@@ -356,7 +423,7 @@ export const createCrudRouter = (tableName) => {
         res.json({ success: true })
       } catch (err) {
         console.error(`清空 ${tableName} 失败:`, err)
-        res.status(500).json({ success: false, error: err.message })
+        res.status(500).json({ success: false, error: '服务器内部错误' })
       }
     },
 
@@ -387,7 +454,7 @@ export const createCrudRouter = (tableName) => {
         res.json({ success: true, data: req.body })
       } catch (err) {
         console.error(`更新 ${tableName} 失败:`, err)
-        res.status(500).json({ success: false, error: err.message })
+        res.status(500).json({ success: false, error: '服务器内部错误' })
       }
     }
   }
