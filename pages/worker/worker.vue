@@ -91,9 +91,9 @@ let unsubscribe = null
 
 onShow(() => {
   // 页面显示时加载数据
-  workerStore.loadWorkers(true)
+  workerStore.refresh()
   unsubscribe = subscribe('worker:refresh', () => {
-    workerStore.loadWorkers(true)
+    workerStore.refresh()
   })
 })
 
@@ -199,7 +199,7 @@ const onTypeChange = (e) => {
 
 // 下拉刷新
 const onRefresh = async () => {
-  await workerStore.loadWorkers(true)
+  await workerStore.refresh()
 }
 
 // 上拉加载

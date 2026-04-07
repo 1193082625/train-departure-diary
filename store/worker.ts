@@ -45,12 +45,9 @@ export const useWorkerStore = defineStore('worker', () => {
     return []
   })
 
-  const loadWorkers = async (refresh = false) => {
-    if (loading.value && !refresh) return
-    if (refresh) {
-      pagination.value.page = 1
-      refreshing.value = true
-    }
+  // 加载员工列表（始终替换数据，用于列表页）
+  const loadWorkers = async () => {
+    if (loading.value) return
     loading.value = true
 
     try {
@@ -59,7 +56,7 @@ export const useWorkerStore = defineStore('worker', () => {
 
       // 构建查询参数
       const params = {
-        page: pagination.value.page,
+        page: 1,
         pageSize: pagination.value.pageSize
       }
 
@@ -80,13 +77,60 @@ export const useWorkerStore = defineStore('worker', () => {
 
       const res = await apiOps.queryAll('workers', params)
 
-      if (refresh) {
-        workers.value = res.data || []
-      } else {
-        workers.value = [...workers.value, ...(res.data || [])]
-      }
+      // 始终替换数据
+      workers.value = res.data || []
 
       // 更新分页信息
+      if (res.pagination) {
+        pagination.value = {
+          ...pagination.value,
+          ...res.pagination,
+          hasMore: 1 < res.pagination.totalPages
+        }
+      }
+    } catch (e) {
+      console.error('【Worker】加载员工列表失败:', e)
+      showErrorToast('加载员工列表失败')
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // 刷新（从第一页开始）
+  const refresh = async () => {
+    pagination.value.page = 1
+    refreshing.value = true
+    await loadWorkers()
+    refreshing.value = false
+  }
+
+  // 加载更多（追加数据）
+  const loadMore = async () => {
+    if (!pagination.value.hasMore || loading.value) return
+    loading.value = true
+
+    try {
+      const userStore = useUserStore()
+      const user = userStore.currentUser
+
+      const params = {
+        page: pagination.value.page + 1,
+        pageSize: pagination.value.pageSize
+      }
+
+      if (user.role === ROLES.ADMIN) {
+        if (userStore.currentMiddlemanId) {
+          params.userId = userStore.currentMiddlemanId
+        }
+      } else if (user.role === ROLES.MIDDLEMAN) {
+        params.userId = user.id
+      } else if (user.parentId) {
+        params.userId = user.parentId
+      }
+
+      const res = await apiOps.queryAll('workers', params)
+      workers.value = [...workers.value, ...(res.data || [])]
+
       if (res.pagination) {
         pagination.value = {
           ...pagination.value,
@@ -95,18 +139,11 @@ export const useWorkerStore = defineStore('worker', () => {
         }
       }
     } catch (e) {
-      console.error('【Worker】加载员工列表失败:', e)
-      showErrorToast('加载员工列表失败')
+      console.error('【Worker】加载更多失败:', e)
+      showErrorToast('加载更多失败')
     } finally {
       loading.value = false
-      refreshing.value = false
     }
-  }
-
-  const loadMore = () => {
-    if (!pagination.value.hasMore || loading.value) return
-    pagination.value.page++
-    loadWorkers()
   }
 
   const saveWorkers = async () => {
@@ -220,6 +257,7 @@ export const useWorkerStore = defineStore('worker', () => {
     deleteWorker,
     getWorkerById,
     loadWorkers,
-    loadMore
+    loadMore,
+    refresh
   }
 })

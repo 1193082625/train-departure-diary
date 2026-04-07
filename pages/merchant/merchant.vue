@@ -86,9 +86,9 @@ let unsubscribe = null
 
 onShow(() => {
   // 页面显示时加载数据
-  merchantStore.loadMerchants(true)
+  merchantStore.refresh()
   unsubscribe = subscribe('merchant:refresh', () => {
-    merchantStore.loadMerchants(true)
+    merchantStore.refresh()
   })
 })
 
@@ -189,7 +189,7 @@ const deleteMerchant = (id) => {
 
 // 下拉刷新
 const onRefresh = async () => {
-  await merchantStore.loadMerchants(true)
+  await merchantStore.refresh()
 }
 
 // 上拉加载

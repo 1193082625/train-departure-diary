@@ -291,6 +291,7 @@ import { useWorkerStore } from '@/store/worker'
 import { useSettingsStore } from '@/store/settings'
 import { useUserStore, ROLES } from '@/store/user'
 import { useDailyQuoteStore } from '@/store/dailyQuote'
+import { apiOps } from '@/utils/api'
 import { calculateMerchantCost } from '@/utils/calc'
 import { showErrorToast } from '@/utils/errorHandler'
 import MerchantSelector from './components/merchant-selector.vue'
@@ -301,6 +302,82 @@ const workerStore = useWorkerStore()
 const settingsStore = useSettingsStore()
 const userStore = useUserStore()
 const dailyQuoteStore = useDailyQuoteStore()
+
+// 表单页独立管理鸡场和员工数据（不依赖 store，避免数据累加）
+const formMerchants = ref([])
+const formWorkers = ref([])
+const formLoading = ref(false)
+
+// 加载表单数据（一次性加载全部）
+const loadFormData = async () => {
+  if (formLoading.value) return
+  formLoading.value = true
+
+  try {
+    const userStore = useUserStore()
+    const user = userStore.currentUser
+    const params = { page: 1, pageSize: 99999 }
+
+    // 根据角色设置 userId 过滤
+    if (user.role === ROLES.ADMIN) {
+      if (userStore.currentMiddlemanId) {
+        params.userId = userStore.currentMiddlemanId
+      }
+    } else if (user.role === ROLES.MIDDLEMAN) {
+      params.userId = user.id
+    } else if (user.parentId) {
+      params.userId = user.parentId
+    }
+
+    // 并行加载鸡场和员工数据
+    const [merchantRes, workerRes] = await Promise.all([
+      apiOps.queryAll('merchants', params),
+      apiOps.queryAll('workers', params)
+    ])
+
+    formMerchants.value = merchantRes.data || []
+    formWorkers.value = workerRes.data || []
+  } catch (e) {
+    console.error('加载表单数据失败:', e)
+    showErrorToast('加载数据失败')
+  } finally {
+    formLoading.value = false
+  }
+}
+
+// 表单页根据角色过滤员工
+const formFilteredWorkers = computed(() => {
+  const user = userStore.currentUser
+  if (!user) return []
+
+  if (user.role === ROLES.ADMIN) {
+    return formWorkers.value
+  }
+  if (user.role === ROLES.MIDDLEMAN) {
+    return formWorkers.value.filter(w => w.userId === user.id)
+  }
+  if (user.parentId) {
+    return formWorkers.value.filter(w => w.userId === user.parentId)
+  }
+  return []
+})
+
+// 表单页根据角色过滤鸡场
+const formFilteredMerchants = computed(() => {
+  const user = userStore.currentUser
+  if (!user) return []
+
+  if (user.role === ROLES.ADMIN) {
+    return formMerchants.value
+  }
+  if (user.role === ROLES.MIDDLEMAN) {
+    return formMerchants.value.filter(m => m.userId === user.id)
+  }
+  if (user.parentId) {
+    return formMerchants.value.filter(m => m.userId === user.parentId)
+  }
+  return []
+})
 
 // 当前用户
 const currentUser = computed(() => userStore.currentUser)
@@ -388,18 +465,18 @@ const showSaveButton = computed(() => {
 })
 
 // 鸡场选项（根据角色过滤）
-const merchantOptions = computed(() => merchantStore.filteredMerchants)
+const merchantOptions = computed(() => formFilteredMerchants.value)
 // 发车人员选项
-const departureWorkerOptions = computed(() => workerStore.departureWorkers)
+const departureWorkerOptions = computed(() => formFilteredWorkers.value.filter(w => w.type === 'departure' || w.type === 'both'))
 // 装车人员选项
-const loadingWorkerOptions = computed(() => workerStore.loadingWorkers.map(worker => ({
+const loadingWorkerOptions = computed(() => formFilteredWorkers.value.filter(w => w.type === 'loading' || w.type === 'both').map(worker => ({
   text: worker.name,
   value: worker.id
 })))
 
 // 选择的发车人员
 const selectedDepartureWorker = computed(() =>
-  workerStore.getWorkerById(form.departureWorkerId)
+  formFilteredWorkers.value.find(w => w.id === form.departureWorkerId)
 )
 
 // 从设置中加载默认值
@@ -627,9 +704,8 @@ const saveRecord = () => {
 }
 
 onMounted(async () => {
-  // 加载商户和员工数据
-  merchantStore.loadMerchants()
-  workerStore.loadWorkers()
+  // 加载表单数据（鸡场和员工）
+  loadFormData()
 
   // 加载默认设置
   loadDefaultSettings()
