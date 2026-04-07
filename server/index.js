@@ -8,6 +8,8 @@ import { testConnection, getPool } from './config/db.js'
 import { createCrudRouter } from './routes/users.js'
 import { authMiddleware, generateToken } from './middleware/auth.js'
 import bcrypt from 'bcryptjs'
+import syncRouter from './routes/sync.js'
+import { startAllSchedulers } from './services/scheduler.js'
 
 // 手机号正则校验
 const PHONE_REGEX = /^1[3-9]\d{9}$/
@@ -105,6 +107,9 @@ tables.forEach(table => {
   app.delete(`/api/${table}`, authMiddleware, router.deleteAll)
 })
 
+// 挂载同步管理路由
+app.use('/api/sync', syncRouter)
+
 // POST /api/users/login - 用户登录验证
 app.post('/api/users/login', async (req, res) => {
   try {
@@ -161,6 +166,16 @@ const startServer = async () => {
       console.log(`   PUT    /api/${table}/:id`)
       console.log(`   DELETE /api/${table}/:id`)
     })
+    console.log(`   POST   /api/sync/full`)
+    console.log(`   POST   /api/sync/incremental`)
+    console.log(`   GET    /api/sync/status`)
+    console.log(`   GET    /api/sync/files`)
+    console.log(`   POST   /api/sync/cleanup`)
+    console.log(`   POST   /api/sync/scheduler/start`)
+    console.log(`   POST   /api/sync/scheduler/stop`)
+
+    // 启动同步调度器
+    startAllSchedulers()
   })
 }
 

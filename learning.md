@@ -13,5 +13,5 @@
 
 页面路由 - `pages.json`
 
-- `tabBar` 定义底部 4 个 Tab 页 （最多5个）
+- `tabBar` 定义底部 4 个 Tab 页 （最多 5 个）
 - 非 `Tab` 页需用 `uni.navigateTo` 或 `uni.reLaunch` 跳转

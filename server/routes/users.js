@@ -54,7 +54,7 @@ const checkOwnership = (record, user) => {
   if (user.role === 'admin') return true
   // 中间商和装发车只能访问自己的数据
   if (user.role === 'middleman' || user.role === 'loader') {
-    return record.userId === user.id
+    return record.userId === user.userId
   }
   // 鸡场角色不允许访问业务数据
   return false
@@ -163,8 +163,28 @@ export const createCrudRouter = (tableName) => {
 
         // 如果是管理员且没有指定 userId，则不限制（查全部）
         // 如果是管理员指定了 userId，则按指定 userId 过滤
-        // 如果是中间商或装发车，则只能查自己的数据
-        if (filter.userId) {
+        // 如果是中间商，则查自己和装发车人员的数据
+        // 如果是装发车，则只能查自己的数据
+        if (filter.isMiddleman) {
+          // 中间商：先查询所有 parentId 为当前中间商的装发车用户ID
+          const [loaderRows] = await pool.query(
+            "SELECT id FROM users WHERE role = 'loader' AND parentId = ? AND deletedAt IS NULL",
+            [filter.userId]
+          )
+          const loaderIds = loaderRows.map(row => row.id)
+          const allUserIds = [filter.userId, ...loaderIds]
+
+          if (allUserIds.length === 1) {
+            // 只有中间商自己
+            whereClause += ` AND ${userIdColumn} = ?`
+            queryParams.push(filter.userId)
+          } else {
+            // 中间商 + 装发车人员
+            const placeholders = allUserIds.map(() => '?').join(', ')
+            whereClause += ` AND ${userIdColumn} IN (${placeholders})`
+            queryParams.push(...allUserIds)
+          }
+        } else if (filter.userId) {
           whereClause += ` AND ${userIdColumn} = ?`
           queryParams.push(filter.userId)
         } else if (!filter.isAdmin) {
@@ -265,8 +285,26 @@ export const createCrudRouter = (tableName) => {
         let whereClause = `${field} = ? AND deletedAt IS NULL`
         let queryParams = [value]
 
-        // 非管理员需要添加 userId 过滤
-        if (!filter.isAdmin && filter.userId) {
+        // 中间商需要添加自己和装发车人员的 userId 过滤
+        if (filter.isMiddleman) {
+          const [loaderRows] = await pool.query(
+            "SELECT id FROM users WHERE role = 'loader' AND parentId = ? AND deletedAt IS NULL",
+            [filter.userId]
+          )
+          const loaderIds = loaderRows.map(row => row.id)
+          const allUserIds = [filter.userId, ...loaderIds]
+          const userIdColumn = tableName === 'users' ? 'id' : 'userId'
+
+          if (allUserIds.length === 1) {
+            whereClause += ` AND ${userIdColumn} = ?`
+            queryParams.push(filter.userId)
+          } else {
+            const placeholders = allUserIds.map(() => '?').join(', ')
+            whereClause += ` AND ${userIdColumn} IN (${placeholders})`
+            queryParams.push(...allUserIds)
+          }
+        } else if (!filter.isAdmin && filter.userId) {
+          // 装发车等其他角色
           const userIdColumn = tableName === 'users' ? 'id' : 'userId'
           whereClause += ` AND ${userIdColumn} = ?`
           queryParams.push(filter.userId)
@@ -418,8 +456,33 @@ export const createCrudRouter = (tableName) => {
     deleteAll: async (req, res) => {
       try {
         const pool = getPool()
+        const filter = getQueryFilter(req)
+
+        // 鸡场角色不允许删除
+        if (filter.noAccess) {
+          return res.status(403).json({ success: false, error: '无权限删除该资源' })
+        }
+
+        // 构建 WHERE 条件
+        let whereClause = 'deletedAt IS NULL'
+        let queryParams = []
+
+        const userIdColumn = tableName === 'users' ? 'id' : 'userId'
+
+        // 非管理员需要按 userId 过滤（只能删除自己的数据）
+        if (!filter.isAdmin && filter.userId) {
+          whereClause += ` AND ${userIdColumn} = ?`
+          queryParams.push(filter.userId)
+        } else if (!filter.isAdmin) {
+          // 非管理员且无 userId（不应该出现）
+          return res.status(403).json({ success: false, error: '无权限删除该资源' })
+        }
+
         const deletedAt = new Date().toISOString()
-        await pool.query(`UPDATE ${tableName} SET deletedAt = ? WHERE deletedAt IS NULL`, [deletedAt])
+        await pool.query(
+          `UPDATE ${tableName} SET deletedAt = ? WHERE ${whereClause}`,
+          [deletedAt, ...queryParams]
+        )
         res.json({ success: true })
       } catch (err) {
         console.error(`清空 ${tableName} 失败:`, err)

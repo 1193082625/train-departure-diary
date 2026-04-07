@@ -398,6 +398,9 @@ Express 后端提供 RESTful API，数据库操作在服务端完成。
 | MySQL 连接    | server/config/db.js       | MySQL 连接池封装   |
 | CRUD 路由工厂 | server/routes/users.js    | 通用 CRUD 路由生成 |
 | 数据库配置    | server/config/database.js | 数据库连接配置     |
+| 同步服务      | server/services/syncService.js | 数据同步核心逻辑 |
+| 调度器        | server/services/scheduler.js | node-cron 定时任务 |
+| 同步路由      | server/routes/sync.js     | 同步管理 API       |
 
 ### API 端点
 
@@ -409,6 +412,18 @@ Express 后端提供 RESTful API，数据库操作在服务端完成。
 | POST   | /api/:table                  | 新增记录     |
 | PUT    | /api/:table/:id              | 更新记录     |
 | DELETE | /api/:table/:id              | 删除记录     |
+
+### 同步 API 端点 (需要管理员权限)
+
+| 方法   | 端点                              | 说明               |
+| ------ | --------------------------------- | ------------------ |
+| POST   | /api/sync/full                    | 手动触发全量同步   |
+| POST   | /api/sync/incremental             | 手动触发增量同步   |
+| GET    | /api/sync/status                  | 获取同步状态       |
+| GET    | /api/sync/files                   | 获取已备份的文件列表 |
+| POST   | /api/sync/cleanup                 | 清理过期备份       |
+| POST   | /api/sync/scheduler/start         | 启动调度器         |
+| POST   | /api/sync/scheduler/stop          | 停止调度器         |
 
 ### 关键特性
 
@@ -457,7 +472,12 @@ Express 后端提供 RESTful API，数据库操作在服务端完成。
 | pages/departure/form.vue                | 发车表单 (含成本计算)   |
 | config/database.js                      | 数据库配置 (前后端共用) |
 | sql/schema-mysql.sql                    | MySQL 建表语句          |
+| sql/add_updated_at.sql                  | 添加 updatedAt 字段     |
 | server/index.js                         | Express 后端服务入口    |
+| server/services/syncService.js          | 数据同步核心逻辑        |
+| server/services/scheduler.js            | node-cron 定时任务      |
+| server/routes/sync.js                   | 同步管理 API            |
+| server/config/sync.json                 | 同步配置                |
 | uniCloud-aliyun/database/\*.schema.json | 历史遗留 (旧 Schema)    |
 
 ---
@@ -518,6 +538,14 @@ return amount
 7. **数据库变更总是兼容旧版本**
 8. **先部署新后端，再部署新前端**
 9. **保留旧列/旧表一段时间后再清理**
+
+## 数据备份
+
+**强制约束：**
+**在做项目级修改或者数据库修改时，先备份已有数据，确保数据不丢失，可复原**
+
+1. 备份远程阿里云数据库中对应数据到本地文件夹
+2. 同步远程阿里云数据库中对应数据本地数据库 localhost 3306
 
 ## 角色与数据相关逻辑
 
