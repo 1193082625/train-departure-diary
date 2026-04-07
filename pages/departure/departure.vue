@@ -479,9 +479,7 @@ const calculateTotalWeight = (record) => {
   return totalWeight
 }
 
-onMounted(() => {
-  loadRecordsWithDateRange(true)
-})
+onMounted(() => {})
 
 // 下拉刷新
 const onRefresh = async () => {
