@@ -73,6 +73,9 @@ let unsubscribe = null
 onShow(() => {
   // 页面显示时加载数据
   transactionStore.loadTransactions(true)
+  // 加载商户和员工数据（修复选择对象为空的问题）
+  merchantStore.loadMerchants()
+  workerStore.loadWorkers()
   unsubscribe = subscribe('transaction:refresh', () => {
     transactionStore.loadTransactions(true)
   })

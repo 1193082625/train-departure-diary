@@ -627,6 +627,10 @@ const saveRecord = () => {
 }
 
 onMounted(async () => {
+  // 加载商户和员工数据
+  merchantStore.loadMerchants()
+  workerStore.loadWorkers()
+
   // 加载默认设置
   loadDefaultSettings()
 

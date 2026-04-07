@@ -192,6 +192,8 @@ let unsubscribe = null
 onShow(() => {
   // 页面显示时加载数据
   loadRecordsWithDateRange(true)
+  // 加载员工数据（用于显示员工名称）
+  workerStore.loadWorkers()
   unsubscribe = subscribe('departure:refresh', () => {
     loadRecordsWithDateRange(true)
   })
