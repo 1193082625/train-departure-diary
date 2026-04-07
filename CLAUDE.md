@@ -393,14 +393,14 @@ filteredRecords = computed(() => {
 
 Express 后端提供 RESTful API，数据库操作在服务端完成。
 
-| 模块          | 文件                      | 说明               |
-| ------------- | ------------------------- | ------------------ |
-| MySQL 连接    | server/config/db.js       | MySQL 连接池封装   |
-| CRUD 路由工厂 | server/routes/users.js    | 通用 CRUD 路由生成 |
-| 数据库配置    | server/config/database.js | 数据库连接配置     |
-| 同步服务      | server/services/syncService.js | 数据同步核心逻辑 |
-| 调度器        | server/services/scheduler.js | node-cron 定时任务 |
-| 同步路由      | server/routes/sync.js     | 同步管理 API       |
+| 模块          | 文件                           | 说明               |
+| ------------- | ------------------------------ | ------------------ |
+| MySQL 连接    | server/config/db.js            | MySQL 连接池封装   |
+| CRUD 路由工厂 | server/routes/users.js         | 通用 CRUD 路由生成 |
+| 数据库配置    | server/config/database.js      | 数据库连接配置     |
+| 同步服务      | server/services/syncService.js | 数据同步核心逻辑   |
+| 调度器        | server/services/scheduler.js   | node-cron 定时任务 |
+| 同步路由      | server/routes/sync.js          | 同步管理 API       |
 
 ### API 端点
 
@@ -415,15 +415,15 @@ Express 后端提供 RESTful API，数据库操作在服务端完成。
 
 ### 同步 API 端点 (需要管理员权限)
 
-| 方法   | 端点                              | 说明               |
-| ------ | --------------------------------- | ------------------ |
-| POST   | /api/sync/full                    | 手动触发全量同步   |
-| POST   | /api/sync/incremental             | 手动触发增量同步   |
-| GET    | /api/sync/status                  | 获取同步状态       |
-| GET    | /api/sync/files                   | 获取已备份的文件列表 |
-| POST   | /api/sync/cleanup                 | 清理过期备份       |
-| POST   | /api/sync/scheduler/start         | 启动调度器         |
-| POST   | /api/sync/scheduler/stop          | 停止调度器         |
+| 方法 | 端点                      | 说明                 |
+| ---- | ------------------------- | -------------------- |
+| POST | /api/sync/full            | 手动触发全量同步     |
+| POST | /api/sync/incremental     | 手动触发增量同步     |
+| GET  | /api/sync/status          | 获取同步状态         |
+| GET  | /api/sync/files           | 获取已备份的文件列表 |
+| POST | /api/sync/cleanup         | 清理过期备份         |
+| POST | /api/sync/scheduler/start | 启动调度器           |
+| POST | /api/sync/scheduler/stop  | 停止调度器           |
 
 ### 关键特性
 
@@ -608,3 +608,7 @@ return amount
 1. 在首页日历中填写报价 120
 1. 在发车记录中新增一条记录使用今日报价 120
 1. 改日历中今日报价为 130，不影响已创建记录的报价，编辑今日发车记录时，报价还是之前填写的 120，而不应该是 130
+
+## 注意事项：
+
+鸡场列表的获取与展示影响 发车记录的填写、单次结账的选择、结账的选择

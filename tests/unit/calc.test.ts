@@ -1,18 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { calculateMerchantItem, calculateMerchantCost } from '@/utils/calc'
 
-// Mock the stores
-vi.mock('@/store/merchant', () => ({
-  useMerchantStore: () => ({
-    getMerchantById: vi.fn((id) => {
-      const merchants: Record<string, any> = {
-        'merchant-1': { id: 'merchant-1', name: '鸡场A', margin: 1 },
-        'merchant-2': { id: 'merchant-2', name: '鸡场B', margin: 1.5 }
-      }
-      return merchants[id]
-    })
-  })
-}))
 
 vi.mock('@/store/settings', () => ({
   useSettingsStore: () => ({

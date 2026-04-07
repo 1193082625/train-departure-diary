@@ -178,22 +178,59 @@
 import { ref, computed, onMounted } from 'vue'
 import { onShow, onHide } from '@dcloudio/uni-app'
 import { useDepartureStore } from '@/store/departure'
-import { useWorkerStore } from '@/store/worker'
-import { useUserStore } from '@/store/user'
+import { useUserStore, ROLES } from '@/store/user'
 import { subscribe } from '@/utils/eventBus'
 import MiddlemanSelector from '@/components/middleman-selector.vue'
+import { apiOps } from '@/utils/api'
 
 const departureStore = useDepartureStore()
-const workerStore = useWorkerStore()
 const userStore = useUserStore()
 
 let unsubscribe = null
 
+// 页面级员工数据
+const pageWorkers = ref([])
+const pageLoading = ref(false)
+
+const loadPageWorkers = async () => {
+  if (pageLoading.value) return
+  pageLoading.value = true
+
+  try {
+    const userStore = useUserStore()
+    const user = userStore.currentUser
+    const params = { page: 1, pageSize: 99999 }
+
+    if (user.role === ROLES.ADMIN) {
+      if (userStore.currentMiddlemanId) {
+        params.userId = userStore.currentMiddlemanId
+      }
+    } else if (user.role === ROLES.MIDDLEMAN) {
+      params.userId = user.id
+    } else if (user.parentId) {
+      params.userId = user.parentId
+    }
+
+    const res = await apiOps.queryAll('workers', params)
+    
+    pageWorkers.value = res.data || []
+  } catch (e) {
+    console.error('加载员工数据失败:', e)
+  } finally {
+    pageLoading.value = false
+  }
+}
+
+// 根据ID获取员工名称
+const getWorkerName = (id) => {
+  const worker = pageWorkers.value.find(w => w.id === id)
+  return worker ? worker.name : '未知'
+}
+
 onShow(() => {
+  loadPageWorkers()  // 加载员工数据
   // 页面显示时加载数据
   loadRecordsWithDateRange(true)
-  // 加载员工数据（用于显示员工名称）
-  workerStore.loadWorkers()
   unsubscribe = subscribe('departure:refresh', () => {
     loadRecordsWithDateRange(true)
   })
@@ -425,11 +462,6 @@ const goToForm = () => {
 
 const editRecord = (record) => {
   uni.navigateTo({ url: `/pages/departure/form?id=${record.id}` })
-}
-
-const getWorkerName = (id) => {
-  const worker = workerStore.getWorkerById(id)
-  return worker ? worker.name : '未知'
 }
 
 const calculateTotalBigBoxes = (record) => {

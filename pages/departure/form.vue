@@ -286,7 +286,6 @@
 <script setup>
 import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useDepartureStore } from '@/store/departure'
-import { useMerchantStore } from '@/store/merchant'
 import { useWorkerStore } from '@/store/worker'
 import { useSettingsStore } from '@/store/settings'
 import { useUserStore, ROLES } from '@/store/user'
@@ -297,7 +296,6 @@ import { showErrorToast } from '@/utils/errorHandler'
 import MerchantSelector from './components/merchant-selector.vue'
 
 const departureStore = useDepartureStore()
-const merchantStore = useMerchantStore()
 const workerStore = useWorkerStore()
 const settingsStore = useSettingsStore()
 const userStore = useUserStore()

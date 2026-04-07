@@ -159,7 +159,6 @@ const handlePhoneInput = async () => {
   if (validatePhone(phone.value)) {
     // checkPhoneExists 内部会确保数据库就绪
     const exists = await userStore.checkPhoneExists(phone.value)
-    console.log(55, exists);
     
     phoneChecked.value = true
     if (exists) {

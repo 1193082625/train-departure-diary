@@ -1,5 +1,4 @@
 import { MerchantDetail } from "../types/departureRecord"
-import { useMerchantStore } from "../store/merchant"
 import { useSettingsStore } from "../store/settings"
 import { MerchantAmount } from "../types/departureRecord"
 
@@ -40,7 +39,6 @@ export const calculateMerchantCost = ({
   truckCartonBoxesBig: number,
   truckCartonBoxesSmall: number,
 }) => {
-    const merchantStore = useMerchantStore()
     const settingsStore = useSettingsStore()
     // 本趟合计收货价
     let totalReceivePrice = 0
@@ -49,8 +47,8 @@ export const calculateMerchantCost = ({
     // 鸡场金额明细
     let merchantAmount: MerchantAmount[] = []
     merchantDetails.forEach(detail => {
-        const merchant = merchantStore.getMerchantById(detail.merchantId)
-        if (merchant && dailyQuote) {
+        const {margin, merchantName} = detail
+        if (dailyQuote) {
           // 大框
           const bigBoxes = Number(detail.bigBoxes) || 0
           // 小框
@@ -62,24 +60,11 @@ export const calculateMerchantCost = ({
               smallBoxWeight: smallWeight
             },
             merchantDetail: {
-              margin: merchant.margin,
+              margin,
               ...detail
             }
           })
-          // 收货每斤价格
-          // const price = (dailyQuote - merchantMargin) / Number(settingsStore.receiptBigBoxWeight)
-          // // 大框收货 = 大框斤数 × 本次共拉大框数量 
-          // const receiveBigNumber = Number(settingsStore.deliveryBigBoxWeight) * bigBoxes
-          // const receiveBigMoney = receiveBigNumber * price
           
-          // // 小框收货 = 小框斤数 × 本次共拉小框数量 
-          // const receiveSmallNumber = Number(smallWeight) * smallBoxes
-          // const receiveSmallMoney = receiveSmallNumber * price
-          // // 斤数收货
-          // const receiveOfWeight = Number(Number(weight).toFixed(2))
-          // const receiveOfWeightMoney = receiveOfWeight * price
-          // // 本趟合计收货价
-          // const receivePrice = Number((receiveBigMoney + receiveSmallMoney + receiveOfWeightMoney).toFixed(2))
           totalReceivePrice += Number(receivePrice) 
           // 交货价 = (当日报价 - 1) × 本次共拉大框数量 + (当日报价 - 鸡场margin) / 交货大框斤数 × 小框斤数 × 本次共拉小框数量
           // 大框交货
@@ -99,7 +84,7 @@ export const calculateMerchantCost = ({
           totalDeliveryPrice += deliveryPrice
       
           merchantAmount.push({
-              name: merchant.name,
+              name: merchantName,
               amount: receivePrice,
               receivePrice: receivePrice,
               deliveryPrice: deliveryPrice

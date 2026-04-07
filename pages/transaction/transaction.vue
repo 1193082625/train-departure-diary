@@ -59,14 +59,12 @@
 <script setup>
 import { ref, computed, reactive } from 'vue'
 import { onShow, onHide } from '@dcloudio/uni-app'
-import { useMerchantStore } from '@/store/merchant'
 import { useWorkerStore } from '@/store/worker'
 import { useTransactionStore } from '@/store/transaction'
 import { useUserStore, ROLES } from '@/store/user'
 import { apiOps } from '@/utils/api'
 import { subscribe } from '@/utils/eventBus'
 
-const merchantStore = useMerchantStore()
 const workerStore = useWorkerStore()
 const transactionStore = useTransactionStore()
 const userStore = useUserStore()
@@ -148,10 +146,10 @@ const formFilteredWorkers = computed(() => {
 })
 
 onShow(() => {
-  // 页面显示时加载数据
-  transactionStore.loadTransactions(true)
   // 加载商户和员工数据（页面级别独立加载，不依赖 store 缓存）
   loadFormData()
+  // 页面显示时加载数据
+  transactionStore.loadTransactions(true)
   unsubscribe = subscribe('transaction:refresh', () => {
     transactionStore.loadTransactions(true)
   })
@@ -186,8 +184,8 @@ const recentTransactions = computed(() =>
   transactionStore.transactions.slice().reverse().slice(0, 20).map(t => ({
     ...t,
     targetName: t.type === 'payment_to_merchant'
-      ? merchantStore.getMerchantById(t.targetId)?.name
-      : workerStore.getWorkerById(t.targetId)?.name
+      ? formFilteredMerchants.find(m => m.id === t.targetId)?.name
+      : formFilteredWorkers.find(w => w.id === t.targetId)?.name
   }))
 )
 

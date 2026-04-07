@@ -30,7 +30,6 @@
 import { ref, reactive } from 'vue'
 import { onShow, onHide } from '@dcloudio/uni-app'
 import { useWorkerStore } from '@/store/worker'
-import { useMerchantStore } from '@/store/merchant'
 import { useDepartureStore } from '@/store/departure'
 import { useTransactionStore } from '@/store/transaction'
 import { subscribe } from '@/utils/eventBus'
@@ -39,7 +38,6 @@ import WorkerStatistics from './WorkerStatistics.vue'
 import MerchantStatistics from './MerchantStatistics.vue'
 
 const workerStore = useWorkerStore()
-const merchantStore = useMerchantStore()
 const departureStore = useDepartureStore()
 const transactionStore = useTransactionStore()
 
@@ -52,9 +50,7 @@ onShow(() => {
   unsubscribers.push(subscribe('worker:refresh', () => {
     workerStore.loadWorkers()
   }))
-  unsubscribers.push(subscribe('merchant:refresh', () => {
-    merchantStore.loadMerchants()
-  }))
+  // merchant:refresh 事件不再需要处理，MerchantStatistics 组件有自己的数据加载机制
   unsubscribers.push(subscribe('transaction:refresh', () => {
     transactionStore.loadTransactions()
   }))

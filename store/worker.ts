@@ -231,8 +231,6 @@ export const useWorkerStore = defineStore('worker', () => {
     }
   }
 
-  const getWorkerById = (id) => workers.value.find(w => w.id === id)
-
   const departureWorkers = computed(() =>
     filteredWorkers.value.filter(w => w.type === 'departure' || w.type === 'both')
   )
@@ -255,7 +253,6 @@ export const useWorkerStore = defineStore('worker', () => {
     addWorker,
     updateWorker,
     deleteWorker,
-    getWorkerById,
     loadWorkers,
     loadMore,
     refresh

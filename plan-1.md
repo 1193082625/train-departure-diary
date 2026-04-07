@@ -201,29 +201,19 @@ TabBar 页面（5 个）
 
 ### Store 设计
 
-1. worker.ts
-
-- 状态：workers[]
-- Actions: addWorker, updateWorker, deleteWorker, getWorkerById
-
-2. merchant.ts
-
-- 状态：merchants[]
-- Actions: addMerchant, updateMerchant, deleteMerchant, getMerchantById
-
-3. departure.ts
+1. departure.ts
 
 - 状态：records[]
 - Getters: getRecordsByDate, getRecordsByDateRange, getTodayRecords
 - Actions: addRecord, updateRecord, deleteRecord
 
-4. transaction.ts
+2. transaction.ts
 
 - 状态：transactions[]
 - Getters: getTransactionsByTarget, getTransactionsByDateRange
 - Actions: addTransaction, deleteTransaction
 
-5. settings.ts (扩展)
+3. settings.ts (扩展)
 
 - 新增：bigBoxWeight(大框斤数), smallBoxWeight(小框斤数)
 

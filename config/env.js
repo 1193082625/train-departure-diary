@@ -25,7 +25,6 @@ const getEnvMode = () => {
    * 在微信开发者工具的 Console 中直接执行： uni.setStorageSync('ENV_MODE', 'production') 
    */
   const storedMode = uni.getStorageSync('ENV_MODE')
-  console.log(223, storedMode);
   
   if (storedMode && ENV_CONFIG[storedMode]) {
     return storedMode

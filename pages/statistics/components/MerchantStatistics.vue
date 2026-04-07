@@ -67,7 +67,6 @@
 
 <script setup>
 import { ref, computed, watch, nextTick, onMounted } from 'vue'
-import { useMerchantStore } from '@/store/merchant'
 import { useDepartureStore } from '@/store/departure'
 import { useTransactionStore } from '@/store/transaction'
 import { useUserStore, ROLES } from '@/store/user'
@@ -83,7 +82,6 @@ const props = defineProps({
 
 const emit = defineEmits(['update:dateRange'])
 
-const merchantStore = useMerchantStore()
 const departureStore = useDepartureStore()
 const transactionStore = useTransactionStore()
 const userStore = useUserStore()

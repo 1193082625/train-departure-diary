@@ -8,6 +8,7 @@ export interface MerchantDetail {
 	bigBoxes: number // 大框数  
 	smallBoxes: number // 小框数  
 	weight: number // 斤数
+	margin: string | number
 }
 	   
 export interface TruckRow {  
