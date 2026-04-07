@@ -61,10 +61,12 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, nextTick } from 'vue'
+import { ref, computed, watch, nextTick, onMounted } from 'vue'
 import { useWorkerStore } from '@/store/worker'
 import { useDepartureStore } from '@/store/departure'
 import { useSettingsStore } from '@/store/settings'
+import { useUserStore, ROLES } from '@/store/user'
+import { apiOps } from '@/utils/api'
 
 const props = defineProps({
   dateRange: {
@@ -78,14 +80,70 @@ const emit = defineEmits(['update:dateRange'])
 const workerStore = useWorkerStore()
 const departureStore = useDepartureStore()
 const settingsStore = useSettingsStore()
+const userStore = useUserStore()
 
 const selectedWorkerId = ref('')
 const personRecord = ref([])
 const openPersonRecordList = ref(true)
 const personRecordList = ref([])
 
-const workerOptions = computed(() => workerStore.filteredWorkers)
-const selectedWorker = computed(() => workerStore.getWorkerById(selectedWorkerId.value))
+// 页面级别独立数据管理
+const localWorkers = ref([])
+const localLoading = ref(false)
+
+// 加载员工数据
+const loadWorkersData = async () => {
+  if (localLoading.value) return
+  localLoading.value = true
+
+  try {
+    const user = userStore.currentUser
+    const params = { page: 1, pageSize: 99999 }
+
+    // 根据角色设置 userId 过滤
+    if (user.role === ROLES.ADMIN) {
+      if (userStore.currentMiddlemanId) {
+        params.userId = userStore.currentMiddlemanId
+      }
+    } else if (user.role === ROLES.MIDDLEMAN) {
+      params.userId = user.id
+    } else if (user.parentId) {
+      params.userId = user.parentId
+    }
+
+    const workerRes = await apiOps.queryAll('workers', params)
+    localWorkers.value = workerRes.data || []
+  } catch (e) {
+    console.error('加载员工数据失败:', e)
+  } finally {
+    localLoading.value = false
+  }
+}
+
+// 页面级根据角色过滤员工
+const localFilteredWorkers = computed(() => {
+  const user = userStore.currentUser
+  if (!user) return []
+
+  if (user.role === ROLES.ADMIN) {
+    return localWorkers.value
+  }
+  if (user.role === ROLES.MIDDLEMAN) {
+    return localWorkers.value.filter(w => w.userId === user.id)
+  }
+  if (user.parentId) {
+    return localWorkers.value.filter(w => w.userId === user.parentId)
+  }
+  return []
+})
+
+// 组件挂载时加载数据
+onMounted(() => {
+  loadWorkersData()
+})
+
+const workerOptions = computed(() => localFilteredWorkers.value)
+const selectedWorker = computed(() => localFilteredWorkers.value.find(w => w.id === selectedWorkerId.value))
 
 const onWorkerChange = (e) => {
   selectedWorkerId.value = workerOptions.value[e.detail.value]?.id || ''

@@ -66,10 +66,12 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, nextTick } from 'vue'
+import { ref, computed, watch, nextTick, onMounted } from 'vue'
 import { useMerchantStore } from '@/store/merchant'
 import { useDepartureStore } from '@/store/departure'
 import { useTransactionStore } from '@/store/transaction'
+import { useUserStore, ROLES } from '@/store/user'
+import { apiOps } from '@/utils/api'
 import { calculateMerchantItem } from '@/utils/calc'
 
 const props = defineProps({
@@ -84,6 +86,7 @@ const emit = defineEmits(['update:dateRange'])
 const merchantStore = useMerchantStore()
 const departureStore = useDepartureStore()
 const transactionStore = useTransactionStore()
+const userStore = useUserStore()
 
 const selectedMerchantId = ref('')
 const merchantRecord = ref([])
@@ -91,8 +94,63 @@ const openMerchantRecordList = ref(true)
 const merchantRecordList = ref([])
 const merchantStats = ref({ totalBigBoxes: 0, totalSmallBoxes: 0, totalWeight: 0, receivable: 0, paid: 0, unpaid: 0 })
 
-const merchantOptions = computed(() => merchantStore.filteredMerchants)
-const selectedMerchant = computed(() => merchantStore.getMerchantById(selectedMerchantId.value))
+// 页面级别独立数据管理
+const localMerchants = ref([])
+const localLoading = ref(false)
+
+// 加载鸡场数据
+const loadMerchantsData = async () => {
+  if (localLoading.value) return
+  localLoading.value = true
+
+  try {
+    const user = userStore.currentUser
+    const params = { page: 1, pageSize: 99999 }
+
+    // 根据角色设置 userId 过滤
+    if (user.role === ROLES.ADMIN) {
+      if (userStore.currentMiddlemanId) {
+        params.userId = userStore.currentMiddlemanId
+      }
+    } else if (user.role === ROLES.MIDDLEMAN) {
+      params.userId = user.id
+    } else if (user.parentId) {
+      params.userId = user.parentId
+    }
+
+    const merchantRes = await apiOps.queryAll('merchants', params)
+    localMerchants.value = merchantRes.data || []
+  } catch (e) {
+    console.error('加载鸡场数据失败:', e)
+  } finally {
+    localLoading.value = false
+  }
+}
+
+// 页面级根据角色过滤鸡场
+const localFilteredMerchants = computed(() => {
+  const user = userStore.currentUser
+  if (!user) return []
+
+  if (user.role === ROLES.ADMIN) {
+    return localMerchants.value
+  }
+  if (user.role === ROLES.MIDDLEMAN) {
+    return localMerchants.value.filter(m => m.userId === user.id)
+  }
+  if (user.parentId) {
+    return localMerchants.value.filter(m => m.userId === user.parentId)
+  }
+  return []
+})
+
+// 组件挂载时加载数据
+onMounted(() => {
+  loadMerchantsData()
+})
+
+const merchantOptions = computed(() => localFilteredMerchants.value)
+const selectedMerchant = computed(() => localFilteredMerchants.value.find(m => m.id === selectedMerchantId.value))
 
 const onMerchantChange = (e) => {
   selectedMerchantId.value = merchantOptions.value[e.detail.value]?.id || ''
@@ -128,7 +186,7 @@ const updateMerchantStats = () => {
   let recordList = []
 
   merchantRecords.forEach(r => {
-    const merchant = merchantStore.getMerchantById(selectedMerchantId.value)
+    const merchant = selectedMerchant.value
     if (merchant) {
       const detail = r.merchantDetails.find(m => m.merchantId === selectedMerchantId.value)
       const bigBoxes = detail?.bigBoxes || 0

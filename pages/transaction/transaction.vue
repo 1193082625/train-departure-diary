@@ -62,20 +62,96 @@ import { onShow, onHide } from '@dcloudio/uni-app'
 import { useMerchantStore } from '@/store/merchant'
 import { useWorkerStore } from '@/store/worker'
 import { useTransactionStore } from '@/store/transaction'
+import { useUserStore, ROLES } from '@/store/user'
+import { apiOps } from '@/utils/api'
 import { subscribe } from '@/utils/eventBus'
 
 const merchantStore = useMerchantStore()
 const workerStore = useWorkerStore()
 const transactionStore = useTransactionStore()
+const userStore = useUserStore()
 
 let unsubscribe = null
+
+// 页面级别独立数据管理（参考 form.vue）
+const formMerchants = ref([])
+const formWorkers = ref([])
+const formLoading = ref(false)
+
+// 一次性加载全部数据
+const loadFormData = async () => {
+  if (formLoading.value) return
+  formLoading.value = true
+
+  try {
+    const user = userStore.currentUser
+    const params = { page: 1, pageSize: 99999 }
+
+    // 根据角色设置 userId 过滤
+    if (user.role === ROLES.ADMIN) {
+      if (userStore.currentMiddlemanId) {
+        params.userId = userStore.currentMiddlemanId
+      }
+    } else if (user.role === ROLES.MIDDLEMAN) {
+      params.userId = user.id
+    } else if (user.parentId) {
+      params.userId = user.parentId
+    }
+
+    // 并行加载鸡场和员工数据
+    const [merchantRes, workerRes] = await Promise.all([
+      apiOps.queryAll('merchants', params),
+      apiOps.queryAll('workers', params)
+    ])
+
+    formMerchants.value = merchantRes.data || []
+    formWorkers.value = workerRes.data || []
+  } catch (e) {
+    console.error('加载表单数据失败:', e)
+  } finally {
+    formLoading.value = false
+  }
+}
+
+// 页面级根据角色过滤鸡场
+const formFilteredMerchants = computed(() => {
+  const user = userStore.currentUser
+  if (!user) return []
+
+  if (user.role === ROLES.ADMIN) {
+    return formMerchants.value
+  }
+  if (user.role === ROLES.MIDDLEMAN) {
+    return formMerchants.value.filter(m => m.userId === user.id)
+  }
+  if (user.parentId) {
+    return formMerchants.value.filter(m => m.userId === user.parentId)
+  }
+  return []
+})
+
+// 页面级根据角色过滤员工
+const formFilteredWorkers = computed(() => {
+  const user = userStore.currentUser
+  if (!user) return []
+
+  if (user.role === ROLES.ADMIN) {
+    return formWorkers.value
+  }
+  if (user.role === ROLES.MIDDLEMAN) {
+    return formWorkers.value.filter(w => w.userId === user.id)
+  }
+  if (user.parentId) {
+    return formWorkers.value.filter(w => w.userId === user.parentId)
+  }
+  return []
+})
 
 onShow(() => {
   // 页面显示时加载数据
   transactionStore.loadTransactions(true)
-  // 加载商户和员工数据（修复选择对象为空的问题）
-  merchantStore.loadMerchants()
-  workerStore.loadWorkers()
+  // 加载商户和员工数据（页面级别独立加载，不依赖 store 缓存）
+  loadFormData()
   unsubscribe = subscribe('transaction:refresh', () => {
     transactionStore.loadTransactions(true)
   })
@@ -95,15 +171,15 @@ const form = reactive({
 
 const targetOptions = computed(() =>
   form.type === 'payment_to_merchant'
-    ? merchantStore.filteredMerchants
-    : workerStore.filteredWorkers
+    ? formFilteredMerchants.value
+    : formFilteredWorkers.value
 )
 
 const selectedTarget = computed(() => {
   if (form.type === 'payment_to_merchant') {
-    return merchantStore.getMerchantById(form.targetId)
+    return formFilteredMerchants.value.find(m => m.id === form.targetId)
   }
-  return workerStore.getWorkerById(form.targetId)
+  return formFilteredWorkers.value.find(w => w.id === form.targetId)
 })
 
 const recentTransactions = computed(() =>
