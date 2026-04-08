@@ -57,28 +57,21 @@
 ├── utils/               # 工具函数
 │   ├── calc.ts          # 业务计算逻辑
 │   ├── api.js           # HTTP API 调用封装
-│   ├── db-mysql.js      # MySQL 操作封装 (后端使用)
+│   ├── db-mysql.js      # MySQL 操作封装 (已废弃)
 │   ├── db.js            # 数据库操作封装 (已迁移到 api.js)
 │   ├── validate.js      # 表单验证
 │   └── eventBus.js      # 事件总线
 ├── components/          # 公共组件
 ├── static/              # 静态资源
 ├── config/              # 配置文件
-│   └── database.js      # 数据库配置 (前后端共用)
-├── server/              # Express 后端服务
-│   ├── index.js         # 服务入口
-│   ├── config/          # 后端配置
-│   │   ├── database.js  # 数据库连接配置
-│   │   └── db.js        # MySQL 连接封装
-│   ├── middleware/       # 中间件
-│   │   └── cors.js      # CORS 配置
-│   └── routes/          # 路由
-│       └── users.js     # CRUD 路由工厂
+│   └── database.js      # 数据库配置
 ├── sql/                 # SQL 脚本
 │   └── schema-mysql.sql # MySQL 建表语句
 └── uniCloud-aliyun/     # 历史遗留 (uniCloud 时期)
     └── database/        # 旧数据表 Schema
 ```
+
+> **注意**: Express 后端已独立为单独项目 [train-departure-diary-server](https://github.com/your-repo/train-departure-diary-server)
 
 ---
 
@@ -389,15 +382,18 @@ filteredRecords = computed(() => {
 | inviteApi   | getByCode, create, useCode, getByCreator                | 邀请码操作         |
 | setApiBaseUrl | (url)                                                  | 设置 API 基础地址  |
 
-### 后端服务 (server/)
+### 后端服务 (独立项目 train-departure-diary-server)
 
-Express 后端提供 RESTful API，数据库操作在服务端完成。
+Express 后端已独立为单独项目，提供 RESTful API，数据库操作在服务端完成。
 
-| 模块                  | 文件                    | 说明               |
-| --------------------- | ---------------------- | ------------------ |
-| MySQL 连接            | server/config/db.js   | MySQL 连接池封装   |
-| CRUD 路由工厂         | server/routes/users.js | 通用 CRUD 路由生成 |
-| 数据库配置            | server/config/database.js | 数据库连接配置   |
+| 模块                  | 文件                          | 说明               |
+| --------------------- | ---------------------------- | ------------------ |
+| MySQL 连接            | train-departure-diary-server/config/db.js   | MySQL 连接池封装   |
+| CRUD 路由工厂         | train-departure-diary-server/routes/users.js | 通用 CRUD 路由生成 |
+| 数据库配置            | train-departure-diary-server/config/database.js | 数据库连接配置   |
+
+**本地启动后端**: `cd ~/Desktop/train-departure-diary/train-departure-diary-server && node index.js`
+**远程服务器**: `root@47.96.90.103:/root/train-departure-diary-server/`
 
 ### API 端点
 
@@ -449,14 +445,14 @@ Express 后端提供 RESTful API，数据库操作在服务端完成。
 | 文件                              | 说明                    |
 | --------------------------------- | ----------------------- |
 | utils/api.js                      | HTTP API 调用封装       |
-| utils/db-mysql.js                 | MySQL 操作封装 (后端)   |
+| utils/db-mysql.js                 | MySQL 操作封装 (已废弃) |
 | utils/calc.ts                     | 计算工具函数            |
 | store/user.ts                     | 用户状态管理            |
 | store/departure.ts                | 发车记录状态管理        |
 | pages/departure/form.vue          | 发车表单 (含成本计算)   |
-| config/database.js                | 数据库配置 (前后端共用) |
+| config/database.js                | 数据库配置              |
 | sql/schema-mysql.sql              | MySQL 建表语句          |
-| server/index.js                   | Express 后端服务入口    |
+| train-departure-diary-server/index.js | Express 后端服务入口 |
 | uniCloud-aliyun/database/\*.schema.json | 历史遗留 (旧 Schema) |
 
 ---
@@ -512,7 +508,7 @@ return amount
 3. **JSON 字段**: merchantDetails, truckRows, merchantAmount 等为 JSON 字符串
 4. **会话管理**: 登录状态通过 localStorage 存储，7 天有效期
 5. **邀请码**: 6 位数字，唯一性由云端 MySQL 保证
-6. **后端服务**: 前端 API 请求发送至 `http://47.96.90.103:8080/api`
+6. **后端服务**: 前端 API 请求发送至 `http://47.96.90.103:3000/api`（独立部署）
 
 ## 角色与数据相关逻辑
 
