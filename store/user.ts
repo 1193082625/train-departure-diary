@@ -498,7 +498,7 @@ export const useUserStore = defineStore('user', () => {
       let hasPassword = false
       if(existingUsers.length > 0) {
         const user = existingUsers[0]
-        hasPassword = !!user.password
+        hasPassword = !!user.password || user.hasPassword
       }
       return existingUsers && existingUsers.length > 0 && hasPassword
     } catch (e) {
