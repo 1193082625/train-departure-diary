@@ -5,6 +5,7 @@
 
 import { getPool } from '../config/db.js'
 import bcrypt from 'bcryptjs'
+import { AUTH_CONFIG } from '../config/auth.js'
 
 // JSON 字段列表
 const JSON_FIELDS = ['merchantDetails', 'truckRows', 'loadingWorkerIds', 'merchantAmount']
@@ -19,43 +20,72 @@ const ALLOWED_QUERY_FIELDS = [
 /**
  * 根据 JWT token 中的用户信息获取查询过滤器
  * 用于数据隔离
+ *
+ * 支持三种模式：
+ * 1. JWT 鉴权：通过 JWT 中的 userId/role 进行过滤
+ * 2. userId 参数查询：通过 req.query.userId 进行过滤（allowUserIdQuery=true 时生效）
+ * 3. 无鉴权：返回 null 表示不限制（仅管理员场景）
  */
 const getQueryFilter = (req) => {
-  const { userId, role } = req.user || {}
+  // 优先从 JWT 获取
+  let { userId, role } = req.user || {}
 
-  // 如果没有用户信息（可选认证场景），返回 null 表示不限制
+  // 兼容旧版：如果没有 JWT，尝试从 query.userId 获取
+  if (!userId && AUTH_CONFIG.allowUserIdQuery && req.query.userId) {
+    userId = req.query.userId
+    // 标记为通过 userId 参数查询，role 设为特殊值
+    role = 'query_userId'
+  }
+
   if (!userId || !role) {
     return { userId: null, isAdmin: false }
   }
 
-  // 管理员：可指定 userId 查询某个中间商的数据，不指定则查全部
+  // 管理员
   if (role === 'admin') {
     return { userId: req.query.userId || null, isAdmin: true }
   }
 
-  // 中间商：查自己的数据
+  // 通过 userId 参数指定的查询（视为中间商权限）
+  if (role === 'query_userId') {
+    return { userId, role: 'middleman', isMiddleman: true, isQueryUserId: true }
+  }
+
+  // 中间商
   if (role === 'middleman') {
     return { userId, role, isMiddleman: true }
   }
 
-  // 装发车：只能查自己的
+  // 装发车
   if (role === 'loader') {
     return { userId }
   }
 
-  // 鸡场：无发车记录权限（后续路由可以根据 table 拒绝访问）
   return { userId: null, noAccess: true }
 }
 
 // 通用权限检查函数 - 验证用户是否有权限访问/修改记录
-const checkOwnership = (record, user) => {
-  if (!record || !user) return false
+const checkOwnership = (record, user, req) => {
+  if (!record) return false
+
+  // 如果 user 为空（通过 userId 参数查询场景）
+  if (!user) {
+    // 从 query.userId 获取 userId 进行校验
+    const queryUserId = req.query.userId
+    if (queryUserId) {
+      return record.userId === queryUserId
+    }
+    return false
+  }
+
   // 管理员可以访问所有记录
   if (user.role === 'admin') return true
+
   // 中间商和装发车只能访问自己的数据
   if (user.role === 'middleman' || user.role === 'loader') {
     return record.userId === user.userId
   }
+
   // 鸡场角色不允许访问业务数据
   return false
 }
@@ -248,7 +278,7 @@ export const createCrudRouter = (tableName) => {
         }
 
         // 权限检查：验证用户是否有权访问该记录
-        if (!checkOwnership(rows[0], req.user)) {
+        if (!checkOwnership(rows[0], req.user, req)) {
           return res.status(403).json({ success: false, error: '无权限访问该记录' })
         }
 
@@ -405,7 +435,7 @@ export const createCrudRouter = (tableName) => {
         if (existing.length === 0) {
           return res.status(404).json({ success: false, error: '记录不存在' })
         }
-        if (!checkOwnership(existing[0], req.user)) {
+        if (!checkOwnership(existing[0], req.user, req)) {
           return res.status(403).json({ success: false, error: '无权限修改该记录' })
         }
 
@@ -443,7 +473,7 @@ export const createCrudRouter = (tableName) => {
         if (existing.length === 0) {
           return res.status(404).json({ success: false, error: '记录不存在或已删除' })
         }
-        if (!checkOwnership(existing[0], req.user)) {
+        if (!checkOwnership(existing[0], req.user, req)) {
           return res.status(403).json({ success: false, error: '无权限删除该记录' })
         }
 

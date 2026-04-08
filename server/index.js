@@ -6,7 +6,7 @@ import express from 'express'
 import corsMiddleware from './middleware/cors.js'
 import { testConnection, getPool } from './config/db.js'
 import { createCrudRouter } from './routes/users.js'
-import { authMiddleware, generateToken } from './middleware/auth.js'
+import { optionalAuthMiddleware, generateToken } from './middleware/auth.js'
 import bcrypt from 'bcryptjs'
 import syncRouter from './routes/sync.js'
 import { startAllSchedulers } from './services/scheduler.js'
@@ -96,15 +96,15 @@ const tables = ['users', 'merchants', 'workers', 'departures', 'transactions', '
 tables.forEach(table => {
   const router = createCrudRouter(table)
 
-  app.get(`/api/${table}`, authMiddleware, router.getAll)
-  app.get(`/api/${table}/:id`, authMiddleware, router.getById)
+  app.get(`/api/${table}`, optionalAuthMiddleware, router.getAll)
+  app.get(`/api/${table}/:id`, optionalAuthMiddleware, router.getById)
   // 注意：/by/phone/:phone 和 /by/code/:code 已在上方定义为公开路由
-  app.get(`/api/${table}/by/:field/:value`, authMiddleware, router.getByField)
-  app.post(`/api/${table}`, authMiddleware, router.create)
-  app.put(`/api/${table}/:id`, authMiddleware, router.update)
-  app.put(`/api/${table}/by/:field/:value`, authMiddleware, router.updateByField)
-  app.delete(`/api/${table}/:id`, authMiddleware, router.delete)
-  app.delete(`/api/${table}`, authMiddleware, router.deleteAll)
+  app.get(`/api/${table}/by/:field/:value`, optionalAuthMiddleware, router.getByField)
+  app.post(`/api/${table}`, optionalAuthMiddleware, router.create)
+  app.put(`/api/${table}/:id`, optionalAuthMiddleware, router.update)
+  app.put(`/api/${table}/by/:field/:value`, optionalAuthMiddleware, router.updateByField)
+  app.delete(`/api/${table}/:id`, optionalAuthMiddleware, router.delete)
+  app.delete(`/api/${table}`, optionalAuthMiddleware, router.deleteAll)
 })
 
 // 挂载同步管理路由
