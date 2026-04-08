@@ -6,6 +6,7 @@ import { useWorkerStore } from './worker'
 import { ROLES } from '@/enums/roles'
 import { showErrorToast } from '@/utils/errorHandler'
 import { publish } from '@/utils/eventBus'
+import { generateUUID } from '@/utils/uuid'
 
 // 发车记录查询参数
 interface DepartureQueryParams {
@@ -164,50 +165,37 @@ export const useDepartureStore = defineStore('departure', () => {
     loadRecords()
   }
 
-  const saveRecords = async () => {
-    try {
-      // 保存到数据库
-      for (const record of records.value) {
-        const dbRecord = {
-          ...record,
-          merchantDetails: JSON.stringify(record.merchantDetails || []),
-          loadingWorkerIds: JSON.stringify(record.loadingWorkerIds || []),
-          truckRows: JSON.stringify(record.truckRows || []),
-          merchantAmount: JSON.stringify(record.merchantAmount || [])
-        }
-        const existRes = await apiOps.queryBy('departures', 'id', record.id)
-        const existing = existRes.data || []
-        if (existing && existing.length > 0) {
-          await apiOps.update('departures', record.id, dbRecord)
-        } else {
-          // 插入后保存云端返回的 _id
-          const inserted = await apiOps.insert('departures', dbRecord)
-          if (inserted._id) {
-            // 更新本地记录的云端 _id
-            const index = records.value.findIndex(r => r.id === record.id)
-            if (index !== -1) {
-              records.value[index]._id = inserted._id
-            }
-          }
-        }
-      }
-    } catch (e) {
-      console.error('【Departure】保存发车记录失败:', e)
-      showErrorToast('保存发车记录失败')
-    }
-  }
-
   const addRecord = async (record) => {
     try {
       const userStore = useUserStore()
       const newRecord = {
         ...record,
-        id: Date.now().toString(),
+        id: generateUUID(),
         userId: userStore.currentUser?.id || null,
         createdAt: new Date().toISOString()
       }
       records.value.push(newRecord)
-      await saveRecords()
+      // 构建数据库记录（JSON 字段序列化）
+      const dbRecord = {
+        ...newRecord,
+        merchantDetails: JSON.stringify(newRecord.merchantDetails || []),
+        loadingWorkerIds: JSON.stringify(newRecord.loadingWorkerIds || []),
+        truckRows: JSON.stringify(newRecord.truckRows || []),
+        merchantAmount: JSON.stringify(newRecord.merchantAmount || [])
+      }
+ 
+      // 只插入这一条记录到云端
+      const inserted = await apiOps.insert('departures', dbRecord)
+ 
+      console.log('保存新发车记录', inserted);
+      
+      // 更新本地记录的云端 _id（如果有）
+      if (inserted.id) {
+        newRecord.id = inserted.id
+      }
+ 
+      // 更新本地状态
+      records.value.push(newRecord)
       publish('departure:refresh', newRecord)
       return newRecord
     } catch (e) {
@@ -221,9 +209,23 @@ export const useDepartureStore = defineStore('departure', () => {
     try {
       const index = records.value.findIndex(r => r.id === id)
       if (index !== -1) {
-        records.value[index] = { ...records.value[index], ...updates }
-        await saveRecords()
-        publish('departure:refresh', records.value[index])
+        const updatedRecord = { ...records.value[index], ...updates }
+ 
+        // 构建数据库记录（JSON 字段序列化）
+        const dbRecord = {
+          ...updatedRecord,
+          merchantDetails: JSON.stringify(updatedRecord.merchantDetails || []),
+          loadingWorkerIds: JSON.stringify(updatedRecord.loadingWorkerIds || []),
+          truckRows: JSON.stringify(updatedRecord.truckRows || []),
+          merchantAmount: JSON.stringify(updatedRecord.merchantAmount || [])
+        }
+ 
+        // 只更新这一条记录到云端
+        await apiOps.update('departures', id, dbRecord)
+ 
+        // 更新本地状态
+        records.value[index] = updatedRecord
+        publish('departure:refresh', updatedRecord)
       }
     } catch (e) {
       console.error('【Departure】更新发车记录失败:', e)

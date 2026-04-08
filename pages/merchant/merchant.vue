@@ -80,6 +80,7 @@ import { apiOps } from '@/utils/api'
 import { subscribe, publish } from '@/utils/eventBus'
 import { ROLES } from '@/enums/roles'
 import { showErrorToast } from '@/utils/errorHandler'
+import { generateUUID } from '@/utils/uuid'
 
 const userStore = useUserStore()
 
@@ -233,7 +234,7 @@ const addMerchant = async (merchant) => {
   try {
     const newMerchant = {
       ...merchant,
-      id: Date.now().toString(),
+      id: generateUUID(),
       userId: userStore.currentUser?.id || null,
       createdAt: new Date().toISOString()
     }

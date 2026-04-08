@@ -33,3 +33,5 @@ server/config/.env.local
 db_backup/*
 
 learning.md
+
+.history/*

@@ -42,6 +42,11 @@ const serializeData = (data) => {
   // 移除 _id 字段（云端自动生成，不需要）
   delete result._id
 
+  // 删除不应由前端控制的字段
+  delete result.updatedAt
+  delete result.deletedAt
+  delete result.createdAt  // 创建时间也应由后端管理
+
   return result
 }
 
@@ -268,6 +273,11 @@ export const userDbOps = {
 
     try {
       const data = serializeData(userData)
+      // 设置创建时间
+      const now = new Date().toISOString()
+      data.createdAt = now
+      data.updatedAt = now
+
       const fields = Object.keys(data)
       const placeholders = fields.map(() => '?').join(', ')
       const values = fields.map(f => data[f])
@@ -293,11 +303,13 @@ export const userDbOps = {
 
     try {
       const updateData = serializeData(data)
+      // 自动设置 updatedAt
+      const updatedAt = new Date().toISOString()
       const { clause, values } = buildUpdateClause(updateData)
 
       await db.query(
-        `UPDATE users ${clause} WHERE id = ?`,
-        [...values, id]
+        `UPDATE users ${clause}, updatedAt = ? WHERE id = ?`,
+        [...values, updatedAt, id]
       )
       return data
     } catch (err) {
@@ -358,6 +370,11 @@ export const inviteDbOps = {
 
     try {
       const insertData = serializeData(data)
+      // 设置创建时间
+      const now = new Date().toISOString()
+      insertData.createdAt = now
+      insertData.updatedAt = now
+
       const fields = Object.keys(insertData)
       const placeholders = fields.map(() => '?').join(', ')
       const values = fields.map(f => insertData[f])
@@ -465,6 +482,11 @@ export const dbOps = {
 
     try {
       const insertData = serializeData(data)
+      // 设置创建时间
+      const now = new Date().toISOString()
+      insertData.createdAt = now
+      insertData.updatedAt = now
+
       const fields = Object.keys(insertData)
       const placeholders = fields.map(() => '?').join(', ')
       const values = fields.map(f => insertData[f])
@@ -490,6 +512,8 @@ export const dbOps = {
 
     try {
       const updateData = serializeData(data)
+      // 自动设置 updatedAt
+      const updatedAt = new Date().toISOString()
       const { clause, values } = buildUpdateClause(updateData)
 
       if (!clause) {
@@ -498,8 +522,8 @@ export const dbOps = {
       }
 
       const [result] = await db.query(
-        `UPDATE ${table} ${clause} WHERE id = ?`,
-        [...values, id]
+        `UPDATE ${table} ${clause}, updatedAt = ? WHERE id = ?`,
+        [...values, updatedAt, id]
       )
 
       // 如果没有找到记录，尝试插入

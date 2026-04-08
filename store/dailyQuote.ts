@@ -5,6 +5,7 @@ import { useUserStore } from './user'
 import { ROLES } from '@/enums/roles'
 import { showErrorToast } from '@/utils/errorHandler'
 import { publish } from '@/utils/eventBus'
+import { generateUUID } from '@/utils/uuid'
 
 export const useDailyQuoteStore = defineStore('dailyQuote', () => {
   const quotes = ref([]) // 日报价列表
@@ -139,7 +140,7 @@ export const useDailyQuoteStore = defineStore('dailyQuote', () => {
       } else {
         // 创建新报价
         const newQuote = {
-          id: Date.now().toString(),
+          id: generateUUID(),
           date,
           quote: Number(quote),
           userId: middlemanId,

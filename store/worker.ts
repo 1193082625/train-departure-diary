@@ -5,6 +5,7 @@ import { useUserStore } from './user'
 import { ROLES } from '@/enums/roles'
 import { showErrorToast } from '@/utils/errorHandler'
 import { publish } from '@/utils/eventBus'
+import { generateUUID } from '@/utils/uuid'
 
 export const useWorkerStore = defineStore('worker', () => {
   const workers = ref([])
@@ -184,7 +185,7 @@ export const useWorkerStore = defineStore('worker', () => {
 
       const newWorker = {
         ...worker,
-        id: Date.now().toString(),
+        id: generateUUID(),
         userId: userStore.currentUser?.id || null,
         createdAt: new Date().toISOString()
       }

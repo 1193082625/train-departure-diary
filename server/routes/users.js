@@ -103,7 +103,11 @@ const serializeData = (data) => {
     }
   }
 
-  delete result._id
+   // 删除不应由前端控制的字段
+   delete result._id
+   delete result.updatedAt
+   delete result.deletedAt
+   delete result.createdAt  // 创建时间也应由后端管理
   return result
 }
 
@@ -354,6 +358,11 @@ export const createCrudRouter = (tableName) => {
           }
         }
 
+        // 设置创建时间
+        const now = new Date().toISOString()
+        data.createdAt = now
+        data.updatedAt = now
+
         console.log(`[DEBUG] serializeData result, fields:`, Object.keys(data))
         const fields = Object.keys(data)
         const placeholders = fields.map(() => '?').join(', ')
@@ -400,13 +409,15 @@ export const createCrudRouter = (tableName) => {
           return res.status(403).json({ success: false, error: '无权限修改该记录' })
         }
 
+        // 自动设置 updatedAt
+        const updatedAt = new Date().toISOString()
         const fields = Object.keys(data)
         const sets = fields.map(f => `${f} = ?`).join(', ')
         const values = fields.map(f => data[f])
 
         const [result] = await pool.query(
-          `UPDATE ${tableName} SET ${sets} WHERE id = ?`,
-          [...values, req.params.id]
+          `UPDATE ${tableName} SET ${sets}, updatedAt = ? WHERE id = ?`,
+          [...values, updatedAt, req.params.id]
         )
 
         if (result.affectedRows === 0) {
@@ -506,9 +517,12 @@ export const createCrudRouter = (tableName) => {
         const sets = fields.map(f => `${f} = ?`).join(', ')
         const values = fields.map(f => data[f])
 
+        // 自动设置 updatedAt
+        const updatedAt = new Date().toISOString()
+
         const [result] = await pool.query(
-          `UPDATE ${tableName} SET ${sets} WHERE ${field} = ? AND deletedAt IS NULL`,
-          [...values, value]
+          `UPDATE ${tableName} SET ${sets}, updatedAt = ? WHERE ${field} = ? AND deletedAt IS NULL`,
+          [...values, updatedAt, value]
         )
 
         if (result.affectedRows === 0) {
