@@ -66,9 +66,12 @@ const request = async (endpoint, options = {}) => {
 // API 操作封装 - 与原有 dbOps 接口一致
 
 export const apiOps = {
-  // 查询所有记录
+  // 查询所有记录（自动携带当前用户的 userId）
   queryAll: (table, limit = 500) => {
-    return request(`/${table}`)
+    const userData = uni.getStorageSync('currentUser')
+    const userId = userData ? JSON.parse(userData).id : null
+    const endpoint = userId ? `/${table}?userId=${userId}` : `/${table}`
+    return request(endpoint)
   },
 
   // 根据字段查询
@@ -81,17 +84,23 @@ export const apiOps = {
     return request(`/${table}/${id}`)
   },
 
-  // 新增记录
+  // 新增记录（自动携带当前用户的 userId）
   insert: (table, data) => {
-    return request(`/${table}`, {
+    const userData = uni.getStorageSync('currentUser')
+    const userId = userData ? JSON.parse(userData).id : null
+    const endpoint = userId ? `/${table}?userId=${userId}` : `/${table}`
+    return request(endpoint, {
       method: 'POST',
       data: JSON.stringify(data)
     })
   },
 
-  // 更新记录
+  // 更新记录（自动携带当前用户的 userId）
   update: (table, id, data) => {
-    return request(`/${table}/${id}`, {
+    const userData = uni.getStorageSync('currentUser')
+    const userId = userData ? JSON.parse(userData).id : null
+    const endpoint = userId ? `/${table}/${id}?userId=${userId}` : `/${table}/${id}`
+    return request(endpoint, {
       method: 'PUT',
       data: JSON.stringify(data)
     })
