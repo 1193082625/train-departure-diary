@@ -2,8 +2,8 @@
     "name" : "发车日记",
     "appid" : "__UNI__AF0FFB9",
     "description" : "货车物流管理系统",
-    "versionName" : "1.0.0",
-    "versionCode" : "100",
+    "versionName" : "1.1.0",
+    "versionCode" : "110",
     "transformPx" : false,
     "uniCloud" : {
         "spaceId" : "mp-daea79cb-8a06-4165-8fea-f5286b4e57e4",
