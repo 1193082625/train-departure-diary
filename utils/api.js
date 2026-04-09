@@ -8,6 +8,11 @@
 import { ref } from 'vue'
 
 // API 基础 URL - 自建阿里云 MySQL 后端
+// const BASE_URL = ref('http://47.96.90.103:3000/api')
+// const BASE_URL = ref('http://localhost:3000/api')
+// const BASE_URL = ref('http://47.96.90.103:3000/api')
+// const BASE_URL = ref('http://localhost:3000/api')
+
 const BASE_URL = ref('http://47.96.90.103:3000/api')
 
 /**
@@ -70,13 +75,13 @@ export const apiOps = {
   queryAll: (table, limit = 500) => {
     const userData = uni.getStorageSync('currentUser')
     const userId = userData ? JSON.parse(userData).id : null
-    const endpoint = userId ? `/${table}?userId=${userId}` : `/${table}`
+    const endpoint = userId ? `/${table}?userId=${userId}&pageSize=9999` : `/${table}?pageSize=9999`
     return request(endpoint)
   },
 
   // 根据字段查询
   queryBy: (table, field, value) => {
-    return request(`/${table}/by/${field}/${value}`)
+    return request(`/${table}/by/${field}/${value}?pageSize=9999`)
   },
 
   // 根据 ID 查询
