@@ -171,11 +171,7 @@ export const inviteApi = {
     })
   },
   getByCreator: (creatorId) => {
-    // 后端不支持按 creatorId 查询，改为获取所有后在前端过滤
-    return apiOps.queryAll('invitation_codes').then(res => ({
-      ...res,
-      data: (res.data || []).filter(code => code.creatorId === creatorId)
-    }))
+    return apiOps.queryBy('invitation_codes', 'creatorId', creatorId)
   },
   getAll: () => apiOps.queryAll('invitation_codes')
 }
