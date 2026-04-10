@@ -198,16 +198,6 @@ export const useUserStore = defineStore('user', () => {
       const phoneRes = await userApi.getUserByPhone(phone)
       const existingUsers = phoneRes.data || []
 
-      // 检查是否为预设管理员
-      if (phone === ADMIN_PHONE && code === ADMIN_CODE) {
-        // 已有管理员账号，直接登录
-        currentUser.value = existingUsers[0]
-        isLoggedIn.value = true
-        uni.setStorageSync('currentUser', JSON.stringify(currentUser.value))
-        uni.setStorageSync('loginTime', Date.now())
-        return { success: true, user: currentUser.value }
-      }
-
       // 如果用户已存在且设置了密码，必须使用密码登录
       if (existingUsers && existingUsers.length > 0) {
         const user = existingUsers[0]
@@ -220,10 +210,14 @@ export const useUserStore = defineStore('user', () => {
           try {
             const loginRes = await userApi.login(phone, code)
             if (loginRes.success) {
-              currentUser.value = loginRes.data
+              currentUser.value = loginRes.data.user || loginRes.data
               isLoggedIn.value = true
               uni.setStorageSync('currentUser', JSON.stringify(currentUser.value))
               uni.setStorageSync('loginTime', Date.now())
+              // 存储 token
+              if (loginRes.data?.token) {
+                uni.setStorageSync('token', loginRes.data.token)
+              }
               return { success: true, user: currentUser.value }
             } else {
               return { success: false, message: loginRes.error || '密码错误' }
@@ -408,6 +402,7 @@ export const useUserStore = defineStore('user', () => {
     isLoggedIn.value = false
     uni.removeStorageSync('currentUser')
     uni.removeStorageSync('loginTime')
+    uni.removeStorageSync('token')
   }
 
   // 生成邀请码

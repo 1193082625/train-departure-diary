@@ -12,6 +12,19 @@ import { ref } from 'vue'
 const BASE_URL = ref('http://localhost:3000/api')
 
 /**
+ * 获取存储的 token
+ */
+const getToken = () => uni.getStorageSync('token')
+
+/**
+ * 跳转登录页（401 时调用）
+ */
+const redirectToLogin = () => {
+  uni.removeStorageSync('token')
+  uni.reLaunch({ url: '/pages/login/login' })
+}
+
+/**
  * 设置 API 基础地址
  */
 export const setApiBaseUrl = (url) => {
@@ -39,12 +52,28 @@ const request = async (endpoint, options = {}) => {
     }
   }
 
+  const token = getToken()
+  console.log('🔍 [API] token:', token ? token.substring(0, 20) + '...' : 'empty', '| url:', endpoint)
+
   try {
     const response = await new Promise((resolve, reject) => {
+      const finalHeaders = {
+        ...mergedOptions.headers,
+        'Authorization': `Bearer ${token || ''}`
+      }
+      console.log('🔍 [API] final Authorization header:', finalHeaders['Authorization'])
       uni.request({
         url,
-        ...mergedOptions,
+        method: mergedOptions.method,
+        data: mergedOptions.data,
+        header: finalHeaders,
         success: (res) => {
+          if (res.statusCode === 401) {
+            console.log('🔍 [API] Got 401, token was:', getToken() ? 'present' : 'empty')
+            redirectToLogin()
+            reject(new Error('登录已过期，请重新登录'))
+            return
+          }
           if (res.statusCode >= 200 && res.statusCode < 300) {
             resolve(res.data)
           } else {
@@ -67,12 +96,9 @@ const request = async (endpoint, options = {}) => {
 // API 操作封装 - 与原有 dbOps 接口一致
 
 export const apiOps = {
-  // 查询所有记录（自动携带当前用户的 userId）
+  // 查询所有记录
   queryAll: (table, limit = 500) => {
-    const userData = uni.getStorageSync('currentUser')
-    const userId = userData ? JSON.parse(userData).id : null
-    const endpoint = userId ? `/${table}?userId=${userId}` : `/${table}`
-    return request(endpoint)
+    return request(`/${table}`)
   },
 
   // 根据字段查询
@@ -85,23 +111,17 @@ export const apiOps = {
     return request(`/${table}/${id}`)
   },
 
-  // 新增记录（自动携带当前用户的 userId）
+  // 新增记录
   insert: (table, data) => {
-    const userData = uni.getStorageSync('currentUser')
-    const userId = userData ? JSON.parse(userData).id : null
-    const endpoint = userId ? `/${table}?userId=${userId}` : `/${table}`
-    return request(endpoint, {
+    return request(`/${table}`, {
       method: 'POST',
       data: JSON.stringify(data)
     })
   },
 
-  // 更新记录（自动携带当前用户的 userId）
+  // 更新记录
   update: (table, id, data) => {
-    const userData = uni.getStorageSync('currentUser')
-    const userId = userData ? JSON.parse(userData).id : null
-    const endpoint = userId ? `/${table}/${id}?userId=${userId}` : `/${table}/${id}`
-    return request(endpoint, {
+    return request(`/${table}/${id}`, {
       method: 'PUT',
       data: JSON.stringify(data)
     })
