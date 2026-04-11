@@ -83,8 +83,7 @@ export const useDailyQuoteStore = defineStore('dailyQuote', () => {
         const newQuote = {
           date,
           quote: Number(quote),
-          userId: middlemanId,
-          createdAt: new Date().toISOString()
+          userId: middlemanId
         }
         await apiOps.insert('daily_quotes', newQuote)
         // 更新或添加到本地列表

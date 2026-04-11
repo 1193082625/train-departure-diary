@@ -83,8 +83,7 @@ export const useMerchantStore = defineStore('merchant', () => {
 
       const newMerchant = {
         ...merchant,
-        userId: userStore.currentUser?.id || null,
-        createdAt: new Date().toISOString()
+        userId: userStore.currentUser?.id || null
       }
       merchants.value.push(newMerchant)
       await saveMerchants()

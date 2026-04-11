@@ -66,8 +66,7 @@ const initTestData = async () => {
           role: testUser.role,
           inviteCode: testUser.inviteCode,
           invitedBy: null,
-          parentId: testUser.parentId || null,
-          createdAt: new Date().toISOString()
+          parentId: testUser.parentId || null
         }
         await userApi.createUser(newUser)
       }
@@ -94,8 +93,7 @@ const initTestData = async () => {
           type: testCode.type,
           creatorId: creatorId,
           usedBy: null,
-          usedAt: null,
-          createdAt: new Date().toISOString()
+          usedAt: null
         }
         await inviteApi.create(codeData)
       }
@@ -292,8 +290,7 @@ export const useUserStore = defineStore('user', () => {
         role: role,
         inviteCode: generateInviteCode(),
         invitedBy: null,
-        parentId: null,
-        createdAt: new Date().toISOString()
+        parentId: null
       }
       try {
         await userApi.createUser(newUser)
@@ -362,7 +359,6 @@ export const useUserStore = defineStore('user', () => {
         creatorId: currentUser.value.id,
         usedBy: null,
         usedAt: null,
-        createdAt: new Date().toISOString(),
         // 员工信息（装发车角色时）
         workerId: workerInfo ? workerInfo.id : null,
         workerPhone: workerInfo ? workerInfo.phone : null,

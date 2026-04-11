@@ -43,8 +43,7 @@ export const useTransactionStore = defineStore('transaction', () => {
       const userStore = useUserStore()
       const newTransaction = {
         ...transaction,
-        userId: userStore.currentUser?.id || null,
-        createdAt: new Date().toISOString()
+        userId: userStore.currentUser?.id || null
       }
       transactions.value.push(newTransaction)
       await saveTransactions()

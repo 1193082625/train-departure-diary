@@ -83,8 +83,7 @@ export const useWorkerStore = defineStore('worker', () => {
 
       const newWorker = {
         ...worker,
-        userId: userStore.currentUser?.id || null,
-        createdAt: new Date().toISOString()
+        userId: userStore.currentUser?.id || null
       }
       workers.value.push(newWorker)
       await saveWorkers()
