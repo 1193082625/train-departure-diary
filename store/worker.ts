@@ -83,7 +83,6 @@ export const useWorkerStore = defineStore('worker', () => {
 
       const newWorker = {
         ...worker,
-        id: Date.now().toString(),
         userId: userStore.currentUser?.id || null,
         createdAt: new Date().toISOString()
       }

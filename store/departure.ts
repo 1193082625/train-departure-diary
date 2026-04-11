@@ -126,7 +126,6 @@ export const useDepartureStore = defineStore('departure', () => {
       const userStore = useUserStore()
       const newRecord = {
         ...record,
-        id: Date.now().toString(),
         userId: userStore.currentUser?.id || null,
         createdAt: new Date().toISOString()
       }

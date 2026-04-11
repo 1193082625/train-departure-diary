@@ -3,15 +3,6 @@ import { ref, computed } from 'vue'
 import { apiOps, userApi, inviteApi } from '@/utils/api'
 import toast from '@/utils/toast'
 
-// 生成UUID
-const generateUUID = () => {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-    const r = Math.random() * 16 | 0
-    const v = c === 'x' ? r : (r & 0x3 | 0x8)
-    return v.toString(16)
-  })
-}
-
 // 生成邀请码
 const generateInviteCode = () => {
   return Math.floor(100000 + Math.random() * 900000).toString()
@@ -69,7 +60,6 @@ const initTestData = async () => {
       const existingUsers = res.data || []
       if (!existingUsers || existingUsers.length === 0) {
         const newUser = {
-          id: generateUUID(),
           phone: testUser.phone,
           nickname: testUser.nickname,
           password: testUser.password || null,
@@ -100,7 +90,6 @@ const initTestData = async () => {
         }
 
         const codeData = {
-          id: generateUUID(),
           code: testCode.code,
           type: testCode.type,
           creatorId: creatorId,
@@ -298,7 +287,6 @@ export const useUserStore = defineStore('user', () => {
   const selectRole = async (phone, role) => {
     try {
       const newUser = {
-        id: generateUUID(),
         phone: phone,
         nickname: '',
         role: role,
@@ -369,7 +357,6 @@ export const useUserStore = defineStore('user', () => {
     try {
       const code = generateRandomCode()
       const codeData = {
-        id: generateUUID(),
         code: code,
         type: type, // loader/farm/middleman
         creatorId: currentUser.value.id,

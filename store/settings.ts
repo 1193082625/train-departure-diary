@@ -5,15 +5,6 @@ import { useUserStore } from './user'
 import { ROLES } from './user'
 import toast from '@/utils/toast'
 
-// 生成UUID
-const generateUUID = () => {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-    const r = Math.random() * 16 | 0
-    const v = c === 'x' ? r : (r & 0x3 | 0x8)
-    return v.toString(16)
-  })
-}
-
 export const useSettingsStore = defineStore('settings', () => {
   const receiptBigBoxWeight = ref<number>(45)  // 收货大框斤数
   const deliveryBigBoxWeight = ref<number>(44)  // 交货大框斤数
@@ -54,7 +45,6 @@ export const useSettingsStore = defineStore('settings', () => {
         // 创建默认settings
         const defaultSettings = getDefaultSettings()
         const newSettings = {
-          id: generateUUID(),
           userId: userId,
           ...defaultSettings
         }
@@ -168,7 +158,6 @@ export const useSettingsStore = defineStore('settings', () => {
       } else {
         // 不存在则插入
         const newSettings = {
-          id: generateUUID(),
           userId: middlemanId,
           ...settingsData
         }

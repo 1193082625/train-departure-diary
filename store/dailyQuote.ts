@@ -81,7 +81,6 @@ export const useDailyQuoteStore = defineStore('dailyQuote', () => {
       } else {
         // 创建新报价
         const newQuote = {
-          id: Date.now().toString(),
           date,
           quote: Number(quote),
           userId: middlemanId,

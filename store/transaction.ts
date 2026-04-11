@@ -43,7 +43,6 @@ export const useTransactionStore = defineStore('transaction', () => {
       const userStore = useUserStore()
       const newTransaction = {
         ...transaction,
-        id: Date.now().toString(),
         userId: userStore.currentUser?.id || null,
         createdAt: new Date().toISOString()
       }

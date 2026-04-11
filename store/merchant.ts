@@ -83,7 +83,6 @@ export const useMerchantStore = defineStore('merchant', () => {
 
       const newMerchant = {
         ...merchant,
-        id: Date.now().toString(),
         userId: userStore.currentUser?.id || null,
         createdAt: new Date().toISOString()
       }
