@@ -352,10 +352,13 @@ export const inviteApi = {
   getAll: () => apiOps.queryAll('invitation_codes')
 }
 
+export { request }
+
 export default {
   setApiBaseUrl,
   apiOps,
   userApi,
   inviteApi,
-  cacheOps
+  cacheOps,
+  request
 }

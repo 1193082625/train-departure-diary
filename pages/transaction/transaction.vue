@@ -53,17 +53,18 @@
 </template>
 
 <script setup>
-import { ref, computed, reactive } from 'vue'
+import { ref, computed, reactive, onMounted } from 'vue'
 import { onShow, onHide } from '@dcloudio/uni-app'
 import { useMerchantStore } from '@/store/merchant'
-import { useWorkerStore } from '@/store/worker'
 import { useTransactionStore } from '@/store/transaction'
+import { useUserStore, ROLES } from '@/store/user'
+import { apiOps } from '@/utils/api'
 import { subscribe } from '@/utils/eventBus'
 import toast from '@/utils/toast'
 
 const merchantStore = useMerchantStore()
-const workerStore = useWorkerStore()
 const transactionStore = useTransactionStore()
+const userStore = useUserStore()
 
 let unsubscribe = null
 
@@ -71,11 +72,47 @@ onShow(() => {
   unsubscribe = subscribe('transaction:refresh', () => {
     transactionStore.loadTransactions()
   })
+  loadWorkers()
 })
 
 onHide(() => {
   if (unsubscribe) { unsubscribe(); unsubscribe = null }
 })
+
+// 员工数据（本地管理）
+const allWorkers = ref([])
+
+const loadWorkers = async () => {
+  try {
+    const res = await apiOps.queryAll('workers')
+    allWorkers.value = res.data || []
+  } catch (e) {
+    console.error('加载员工列表失败:', e)
+    allWorkers.value = []
+  }
+}
+
+// 根据用户角色过滤员工
+const filteredWorkers = computed(() => {
+  const user = userStore.currentUser
+  if (!user) return []
+
+  if (user.role === ROLES.ADMIN) {
+    return allWorkers.value
+  }
+
+  if (user.role === ROLES.MIDDLEMAN) {
+    return allWorkers.value.filter(w => w.userId === user.id)
+  }
+
+  if (user.parentId) {
+    return allWorkers.value.filter(w => w.userId === user.parentId)
+  }
+
+  return []
+})
+
+const getWorkerById = (id) => allWorkers.value.find(w => w.id === id)
 
 const form = reactive({
   type: 'payment_to_merchant',
@@ -88,14 +125,14 @@ const form = reactive({
 const targetOptions = computed(() =>
   form.type === 'payment_to_merchant'
     ? merchantStore.filteredMerchants
-    : workerStore.filteredWorkers
+    : filteredWorkers.value
 )
 
 const selectedTarget = computed(() => {
   if (form.type === 'payment_to_merchant') {
     return merchantStore.getMerchantById(form.targetId)
   }
-  return workerStore.getWorkerById(form.targetId)
+  return getWorkerById(form.targetId)
 })
 
 const recentTransactions = computed(() =>
@@ -103,7 +140,7 @@ const recentTransactions = computed(() =>
     ...t,
     targetName: t.type === 'payment_to_merchant'
       ? merchantStore.getMerchantById(t.targetId)?.name
-      : workerStore.getWorkerById(t.targetId)?.name
+      : getWorkerById(t.targetId)?.name
   }))
 )
 

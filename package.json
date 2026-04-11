@@ -3,7 +3,10 @@
   "version": "1.1.0",
   "main": "main.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
   },
   "keywords": [],
   "author": "",
@@ -26,8 +29,14 @@
   "devDependencies": {
     "@dcloudio/vue-cli-plugin-uni": "^2.0.2-4080720251210002",
     "@dcloudio/webpack-uni-mp-loader": "^2.0.2-4080720251210002",
+    "@playwright/test": "^1.40.0",
+    "@vitest/coverage-v8": "^1.6.1",
     "@vue/cli-plugin-babel": "^5.0.9",
     "@vue/cli-plugin-typescript": "^5.0.9",
-    "@vue/cli-service": "^5.0.9"
+    "@vue/cli-service": "^5.0.9",
+    "@vue/test-utils": "^2.4.1",
+    "jsdom": "^22.1.0",
+    "playwright": "^1.40.0",
+    "vitest": "^1.0.0"
   }
 }

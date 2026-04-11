@@ -29,7 +29,6 @@
 <script setup>
 import { ref, reactive } from 'vue'
 import { onShow, onHide } from '@dcloudio/uni-app'
-import { useWorkerStore } from '@/store/worker'
 import { useMerchantStore } from '@/store/merchant'
 import { useDepartureStore } from '@/store/departure'
 import { useTransactionStore } from '@/store/transaction'
@@ -38,7 +37,6 @@ import MiddlemanSelector from '@/components/middleman-selector.vue'
 import WorkerStatistics from './WorkerStatistics.vue'
 import MerchantStatistics from './MerchantStatistics.vue'
 
-const workerStore = useWorkerStore()
 const merchantStore = useMerchantStore()
 const departureStore = useDepartureStore()
 const transactionStore = useTransactionStore()
@@ -48,9 +46,6 @@ let unsubscribers = []
 onShow(() => {
   unsubscribers.push(subscribe('departure:refresh', () => {
     departureStore.loadRecords()
-  }))
-  unsubscribers.push(subscribe('worker:refresh', () => {
-    workerStore.loadWorkers()
   }))
   unsubscribers.push(subscribe('merchant:refresh', () => {
     merchantStore.loadMerchants()

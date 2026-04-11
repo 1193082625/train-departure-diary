@@ -55,14 +55,46 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useUserStore, ROLE_NAMES, ROLES } from '@/store/user'
-import { useWorkerStore } from '@/store/worker'
+import { apiOps } from '@/utils/api'
 import toast from '@/utils/toast'
 
-const workerStore = useWorkerStore()
 const userStore = useUserStore()
 const selectedRole = ref(ROLES.LOADER)
 const codeList = ref([])
 const message = ref('')
+
+// 员工数据（本地管理）
+const allWorkers = ref([])
+
+const loadWorkers = async () => {
+  try {
+    const res = await apiOps.queryAll('workers')
+    allWorkers.value = res.data || []
+  } catch (e) {
+    console.error('加载员工列表失败:', e)
+    allWorkers.value = []
+  }
+}
+
+// 根据用户角色过滤员工
+const filteredWorkers = computed(() => {
+  const user = userStore.currentUser
+  if (!user) return []
+
+  if (user.role === ROLES.ADMIN) {
+    return allWorkers.value
+  }
+
+  if (user.role === ROLES.MIDDLEMAN) {
+    return allWorkers.value.filter(w => w.userId === user.id)
+  }
+
+  if (user.parentId) {
+    return allWorkers.value.filter(w => w.userId === user.parentId)
+  }
+
+  return []
+})
 
 const roles = [
   { value: ROLES.LOADER, label: '装发车' },
@@ -71,7 +103,7 @@ const roles = [
 ]
 
 const selectedDepartureWorker = ref(null)
-const departureWorkerOptions = computed(() => workerStore.departureWorkers.filter(worker => worker.phone !== userStore.currentUser.phone))
+const departureWorkerOptions = computed(() => filteredWorkers.value.filter(worker => worker.phone !== userStore.currentUser.phone))
 const onDepartureWorkerChange = (worker) => {
   selectedDepartureWorker.value = worker
 }
@@ -122,7 +154,7 @@ const handleGenerate = async () => {
 }
 
 onMounted(() => {
-  workerStore.loadWorkers()
+  loadWorkers()
   loadCodes()
 })
 </script>

@@ -173,17 +173,31 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, reactive } from 'vue'
 import { onShow, onHide } from '@dcloudio/uni-app'
 import { useDepartureStore } from '@/store/departure'
-import { useWorkerStore } from '@/store/worker'
-import { useUserStore } from '@/store/user'
+import { useUserStore, ROLES } from '@/store/user'
+import { apiOps } from '@/utils/api'
 import { subscribe } from '@/utils/eventBus'
 import MiddlemanSelector from '@/components/middleman-selector.vue'
 
 const departureStore = useDepartureStore()
-const workerStore = useWorkerStore()
 const userStore = useUserStore()
+
+// 员工数据（本地管理）
+const allWorkers = ref([])
+
+const loadWorkers = async () => {
+  try {
+    const res = await apiOps.queryAll('workers')
+    allWorkers.value = res.data || []
+  } catch (e) {
+    console.error('加载员工列表失败:', e)
+    allWorkers.value = []
+  }
+}
+
+const getWorkerById = (id) => allWorkers.value.find(w => w.id === id)
 
 let unsubscribe = null
 
@@ -370,7 +384,7 @@ const editRecord = (record) => {
 }
 
 const getWorkerName = (id) => {
-  const worker = workerStore.getWorkerById(id)
+  const worker = getWorkerById(id)
   return worker ? worker.name : '未知'
 }
 
@@ -391,6 +405,7 @@ const calculateTotalWeight = (record) => {
 
 onMounted(() => {
   departureStore.loadRecords()
+  loadWorkers()
 })
 </script>
 

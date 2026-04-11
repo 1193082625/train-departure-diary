@@ -61,10 +61,11 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, nextTick } from 'vue'
-import { useWorkerStore } from '@/store/worker'
+import { ref, computed, watch, nextTick, onMounted } from 'vue'
 import { useDepartureStore } from '@/store/departure'
 import { useSettingsStore } from '@/store/settings'
+import { useUserStore, ROLES } from '@/store/user'
+import { apiOps } from '@/utils/api'
 
 const props = defineProps({
   dateRange: {
@@ -75,17 +76,52 @@ const props = defineProps({
 
 const emit = defineEmits(['update:dateRange'])
 
-const workerStore = useWorkerStore()
 const departureStore = useDepartureStore()
 const settingsStore = useSettingsStore()
+const userStore = useUserStore()
 
+const allWorkers = ref([])
 const selectedWorkerId = ref('')
 const personRecord = ref([])
 const openPersonRecordList = ref(true)
 const personRecordList = ref([])
 
-const workerOptions = computed(() => workerStore.filteredWorkers)
-const selectedWorker = computed(() => workerStore.getWorkerById(selectedWorkerId.value))
+const loadWorkers = async () => {
+  try {
+    const res = await apiOps.queryAll('workers')
+    allWorkers.value = res.data || []
+  } catch (e) {
+    console.error('加载员工列表失败:', e)
+    allWorkers.value = []
+  }
+}
+
+// 根据用户角色过滤员工
+const filteredWorkers = computed(() => {
+  const user = userStore.currentUser
+  if (!user) return []
+
+  if (user.role === ROLES.ADMIN) {
+    return allWorkers.value
+  }
+
+  if (user.role === ROLES.MIDDLEMAN) {
+    return allWorkers.value.filter(w => w.userId === user.id)
+  }
+
+  if (user.parentId) {
+    return allWorkers.value.filter(w => w.userId === user.parentId)
+  }
+
+  return []
+})
+
+const workerOptions = computed(() => filteredWorkers.value)
+const selectedWorker = computed(() => allWorkers.value.find(w => w.id === selectedWorkerId.value))
+
+onMounted(() => {
+  loadWorkers()
+})
 
 const onWorkerChange = (e) => {
   selectedWorkerId.value = workerOptions.value[e.detail.value]?.id || ''

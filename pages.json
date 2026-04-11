@@ -42,7 +42,8 @@
 	{
 		"path": "pages/worker/worker",
 		"style": {
-			"navigationBarTitleText": "人员"
+			"navigationBarTitleText": "人员",
+			"enablePullDownRefresh": true
 		}
 	},
 	{

@@ -287,20 +287,62 @@
 import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useDepartureStore } from '@/store/departure'
 import { useMerchantStore } from '@/store/merchant'
-import { useWorkerStore } from '@/store/worker'
 import { useSettingsStore } from '@/store/settings'
 import { useUserStore, ROLES } from '@/store/user'
 import { useDailyQuoteStore } from '@/store/dailyQuote'
+import { apiOps } from '@/utils/api'
 import { calculateMerchantCost } from '@/utils/calc'
 import toast from '@/utils/toast'
 import MerchantSelector from './components/merchant-selector.vue'
 
 const departureStore = useDepartureStore()
 const merchantStore = useMerchantStore()
-const workerStore = useWorkerStore()
 const settingsStore = useSettingsStore()
 const userStore = useUserStore()
 const dailyQuoteStore = useDailyQuoteStore()
+
+// 员工数据（本地管理）
+const allWorkers = ref([])
+
+const loadWorkers = async () => {
+  try {
+    const res = await apiOps.queryAll('workers')
+    allWorkers.value = res.data || []
+  } catch (e) {
+    console.error('加载员工列表失败:', e)
+    allWorkers.value = []
+  }
+}
+
+// 根据用户角色过滤员工
+const filteredWorkers = computed(() => {
+  const user = userStore.currentUser
+  if (!user) return []
+
+  if (user.role === ROLES.ADMIN) {
+    return allWorkers.value
+  }
+
+  if (user.role === ROLES.MIDDLEMAN) {
+    return allWorkers.value.filter(w => w.userId === user.id)
+  }
+
+  if (user.parentId) {
+    return allWorkers.value.filter(w => w.userId === user.parentId)
+  }
+
+  return []
+})
+
+const departureWorkers = computed(() =>
+  filteredWorkers.value.filter(w => w.type === 'departure' || w.type === 'both')
+)
+
+const loadingWorkers = computed(() =>
+  filteredWorkers.value.filter(w => w.type === 'loading' || w.type === 'both')
+)
+
+const getWorkerById = (id) => allWorkers.value.find(w => w.id === id)
 
 // 当前用户
 const currentUser = computed(() => userStore.currentUser)
@@ -390,16 +432,16 @@ const showSaveButton = computed(() => {
 // 鸡场选项（根据角色过滤）
 const merchantOptions = computed(() => merchantStore.filteredMerchants)
 // 发车人员选项
-const departureWorkerOptions = computed(() => workerStore.departureWorkers)
+const departureWorkerOptions = computed(() => departureWorkers.value)
 // 装车人员选项
-const loadingWorkerOptions = computed(() => workerStore.loadingWorkers.map(worker => ({
+const loadingWorkerOptions = computed(() => loadingWorkers.value.map(worker => ({
   text: worker.name,
   value: worker.id
 })))
 
 // 选择的发车人员
 const selectedDepartureWorker = computed(() =>
-  workerStore.getWorkerById(form.departureWorkerId)
+  getWorkerById(form.departureWorkerId)
 )
 
 // 从设置中加载默认值
@@ -629,6 +671,8 @@ const saveRecord = () => {
 onMounted(async () => {
   // 加载默认设置
   loadDefaultSettings()
+  // 加载员工数据
+  await loadWorkers()
 
   // 检查是否有编辑ID
   const pages = getCurrentPages()
