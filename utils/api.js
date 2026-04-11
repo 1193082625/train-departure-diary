@@ -11,6 +11,66 @@ import { ref } from 'vue'
 // const BASE_URL = ref('http://47.96.90.103:3000/api')
 const BASE_URL = ref('http://localhost:3000/api')
 
+// ==================== 缓存基础设施 ====================
+
+// 缓存 TTL 配置（毫秒）
+const CACHE_TTL = {
+  workers: 5 * 60 * 1000,       // 5 分钟
+  merchants: 5 * 60 * 1000,     // 5 分钟
+  departures: 1 * 60 * 1000,    // 1 分钟
+  users: 2 * 60 * 1000,        // 2 分钟
+  daily_quotes: 1 * 60 * 1000, // 1 分钟
+  invitation_codes: 5 * 60 * 1000, // 5 分钟
+  transactions: 1 * 60 * 1000   // 1 分钟
+}
+
+const DEFAULT_TTL = 1 * 60 * 1000  // 默认 1 分钟
+
+// 请求缓存 Map
+// 缓存项结构: { data: any, expireAt: number, pending: Promise | null }
+const requestCache = new Map()
+
+/**
+ * 获取缓存键
+ */
+const getCacheKey = (table, params = {}) => {
+  return `${table}:${JSON.stringify(params)}`
+}
+
+/**
+ * 清除指定表的所有缓存
+ */
+const invalidateCache = (table) => {
+  for (const key of requestCache.keys()) {
+    if (key.startsWith(`${table}:`)) {
+      requestCache.delete(key)
+    }
+  }
+  console.log(`[Cache] Invalidated all entries for table: ${table}`)
+}
+
+/**
+ * 缓存管理操作（调试用）
+ */
+export const cacheOps = {
+  clear: (table) => invalidateCache(table),
+  clearAll: () => {
+    requestCache.clear()
+    console.log('[Cache] All entries cleared')
+  },
+  getStats: () => ({
+    size: requestCache.size,
+    keys: Array.from(requestCache.keys()).map(key => {
+      const entry = requestCache.get(key)
+      return {
+        key,
+        expired: entry.expireAt <= Date.now(),
+        hasPending: !!entry.pending
+      }
+    })
+  })
+}
+
 /**
  * 获取存储的 token
  */
@@ -102,49 +162,152 @@ const request = async (endpoint, options = {}) => {
 // API 操作封装 - 与原有 dbOps 接口一致
 
 export const apiOps = {
-  // 查询所有记录
+  // 查询所有记录（带缓存）
   queryAll: (table, limit = 500) => {
-    return request(`/${table}`)
+    const cacheKey = getCacheKey(table, { limit })
+    const cached = requestCache.get(cacheKey)
+
+    // 缓存命中且未过期
+    if (cached && cached.expireAt > Date.now()) {
+      console.log(`[Cache Hit] ${cacheKey}`)
+      return Promise.resolve(cached.data)
+    }
+
+    // 缓存过期但有进行中的请求
+    if (cached?.pending) {
+      console.log(`[Cache Wait] ${cacheKey} - waiting for pending request`)
+      return cached.pending
+    }
+
+    // 发起新请求
+    const url = `/${table}${limit ? `?limit=${limit}` : ''}`
+    console.log(`[Cache Miss] ${cacheKey} - fetching from API`)
+
+    const requestPromise = request(url)
+      .then(data => {
+        requestCache.set(cacheKey, {
+          data,
+          expireAt: Date.now() + (CACHE_TTL[table] || DEFAULT_TTL),
+          pending: null
+        })
+        console.log(`[Cache Set] ${cacheKey}, TTL: ${(CACHE_TTL[table] || DEFAULT_TTL) / 1000}s`)
+        return data
+      })
+      .catch(err => {
+        const cached = requestCache.get(cacheKey)
+        if (cached) {
+          cached.pending = null
+        }
+        throw err
+      })
+
+    // 存储进行中的请求
+    if (cached) {
+      cached.pending = requestPromise
+    } else {
+      requestCache.set(cacheKey, {
+        data: null,
+        expireAt: 0,
+        pending: requestPromise
+      })
+    }
+
+    return requestPromise
   },
 
-  // 根据字段查询
+  // 根据字段查询（带缓存）
   queryBy: (table, field, value) => {
-    return request(`/${table}/by/${field}/${value}`)
+    const cacheKey = getCacheKey(table, { field, value })
+    const cached = requestCache.get(cacheKey)
+
+    // 缓存命中且未过期
+    if (cached && cached.expireAt > Date.now()) {
+      console.log(`[Cache Hit] ${cacheKey}`)
+      return Promise.resolve(cached.data)
+    }
+
+    // 缓存过期但有进行中的请求
+    if (cached?.pending) {
+      console.log(`[Cache Wait] ${cacheKey} - waiting for pending request`)
+      return cached.pending
+    }
+
+    // 发起新请求
+    console.log(`[Cache Miss] ${cacheKey} - fetching from API`)
+
+    const requestPromise = request(`/${table}/by/${field}/${value}`)
+      .then(data => {
+        requestCache.set(cacheKey, {
+          data,
+          expireAt: Date.now() + (CACHE_TTL[table] || DEFAULT_TTL),
+          pending: null
+        })
+        console.log(`[Cache Set] ${cacheKey}, TTL: ${(CACHE_TTL[table] || DEFAULT_TTL) / 1000}s`)
+        return data
+      })
+      .catch(err => {
+        const cached = requestCache.get(cacheKey)
+        if (cached) {
+          cached.pending = null
+        }
+        throw err
+      })
+
+    // 存储进行中的请求
+    if (cached) {
+      cached.pending = requestPromise
+    } else {
+      requestCache.set(cacheKey, {
+        data: null,
+        expireAt: 0,
+        pending: requestPromise
+      })
+    }
+
+    return requestPromise
   },
 
-  // 根据 ID 查询
+  // 根据 ID 查询（不做缓存，因为是单条数据）
   getById: (table, id) => {
     return request(`/${table}/${id}`)
   },
 
   // 新增记录
   insert: (table, data) => {
-    return request(`/${table}`, {
+    const result = request(`/${table}`, {
       method: 'POST',
       data: JSON.stringify(data)
     })
+    invalidateCache(table)  // 清除该表缓存
+    return result
   },
 
   // 更新记录
   update: (table, id, data) => {
-    return request(`/${table}/${id}`, {
+    const result = request(`/${table}/${id}`, {
       method: 'PUT',
       data: JSON.stringify(data)
     })
+    invalidateCache(table)  // 清除该表缓存
+    return result
   },
 
   // 删除记录
   delete: (table, id) => {
-    return request(`/${table}/${id}`, {
+    const result = request(`/${table}/${id}`, {
       method: 'DELETE'
     })
+    invalidateCache(table)  // 清除该表缓存
+    return result
   },
 
   // 清空表
   deleteAll: (table) => {
-    return request(`/${table}`, {
+    const result = request(`/${table}`, {
       method: 'DELETE'
     })
+    invalidateCache(table)  // 清除该表缓存
+    return result
   }
 }
 
@@ -193,5 +356,6 @@ export default {
   setApiBaseUrl,
   apiOps,
   userApi,
-  inviteApi
+  inviteApi,
+  cacheOps
 }
