@@ -57,18 +57,16 @@
 ├── utils/               # 工具函数
 │   ├── calc.ts          # 业务计算逻辑
 │   ├── api.js           # HTTP API 调用封装
-│   ├── db-mysql.js      # MySQL 操作封装 (已废弃)
-│   ├── db.js            # 数据库操作封装 (已迁移到 api.js)
+│   ├── toast.js         # Toast 提示封装
 │   ├── validate.js      # 表单验证
 │   └── eventBus.js      # 事件总线
 ├── components/          # 公共组件
 ├── static/              # 静态资源
-├── config/              # 配置文件
-│   └── database.js      # 数据库配置
 ├── sql/                 # SQL 脚本
 │   └── schema-mysql.sql # MySQL 建表语句
+├── types/               # TypeScript 类型定义
+├── uni_modules/         # uni-ui 插件
 └── uniCloud-aliyun/     # 历史遗留 (uniCloud 时期)
-    └── database/        # 旧数据表 Schema
 ```
 
 > **注意**: Express 后端已独立为单独项目 [train-departure-diary-server](https://github.com/your-repo/train-departure-diary-server)
@@ -328,6 +326,7 @@ calculateMerchantCost() -> 计算鸡场成本
 | departureStore   | store/departure.ts   | 发车记录 CRUD              |
 | transactionStore | store/transaction.ts | 交易记录 CRUD              |
 | settingsStore    | store/settings.ts    | 系统参数配置               |
+| dailyQuoteStore  | store/dailyQuote.ts  | 日报价管理                 |
 
 ### userStore 主要功能
 
@@ -433,10 +432,11 @@ Express 后端已独立为单独项目，提供 RESTful API，数据库操作在
 | 全屏图表   | pages/home/chart-fullscreen   | 图表全屏展示      |
 | 发车列表   | pages/departure/departure     | 发车记录列表      |
 | 发车表单   | pages/departure/form          | 新增/编辑发车记录 |
-| 鸡场管理   | pages/merchant/merchant       | 鸡场 CRUD         |
+| 鸡场管理   | pages/merchant/merchant      | 鸡场 CRUD         |
 | 人员管理   | pages/worker/worker           | 员工 CRUD         |
 | 交易记录   | pages/transaction/transaction | 交易流水          |
 | 邀请码管理 | pages/profile/invitation      | 邀请码管理        |
+| 中间商管理 | pages/admin/middleman         | 超管查看中间商列表 |
 
 ---
 
@@ -445,12 +445,12 @@ Express 后端已独立为单独项目，提供 RESTful API，数据库操作在
 | 文件                              | 说明                    |
 | --------------------------------- | ----------------------- |
 | utils/api.js                      | HTTP API 调用封装       |
-| utils/db-mysql.js                 | MySQL 操作封装 (已废弃) |
+| utils/toast.js                    | Toast 提示封装          |
 | utils/calc.ts                     | 计算工具函数            |
 | store/user.ts                     | 用户状态管理            |
 | store/departure.ts                | 发车记录状态管理        |
+| store/dailyQuote.ts               | 日报价状态管理          |
 | pages/departure/form.vue          | 发车表单 (含成本计算)   |
-| config/database.js                | 数据库配置              |
 | sql/schema-mysql.sql              | MySQL 建表语句          |
 | train-departure-diary-server/index.js | Express 后端服务入口 |
 | uniCloud-aliyun/database/\*.schema.json | 历史遗留 (旧 Schema) |
