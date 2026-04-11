@@ -157,6 +157,13 @@ export const userApi = {
       method: 'POST',
       data: JSON.stringify({ phone, password })
     })
+  },
+  // 事务性注册/登录（邀请码）
+  register: (phone, inviteCode) => {
+    return request('/users/register', {
+      method: 'POST',
+      data: JSON.stringify({ phone, inviteCode })
+    })
   }
 }
 

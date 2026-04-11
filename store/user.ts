@@ -240,71 +240,17 @@ export const useUserStore = defineStore('user', () => {
         return { success: false, message: '请输入邀请码' }
       }
 
-      // 验证邀请码
-      const invRes = await inviteApi.getByCode(code)
-      const invCodes = invRes.data || []
-      if (!invCodes || invCodes.length === 0) {
-        return { success: false, message: '邀请码无效' }
+      // 调用事务性注册/登录接口
+      const regResult = await userApi.register(phone, code)
+      if (!regResult.success) {
+        return { success: false, message: regResult.error || '注册失败' }
       }
 
-      const inv = invCodes[0]
-      // 邀请码已被使用
-      if (inv.usedBy) {
-        return { success: false, message: '邀请码已被使用' }
-      }
-
-      // 校验手机号一致性：如果邀请码关联了员工手机号，必须使用同一个手机号
-      if (inv.workerPhone && inv.workerPhone !== phone) {
-        return { success: false, message: '请使用生成邀请码时的手机号登录' }
-      }
-
-      // 如果用户已存在但用不同的邀请码，拒绝
-      if (existingUsers && existingUsers.length > 0) {
-        const user = existingUsers[0]
-        if (user.invitedBy !== code) {
-          return { success: false, message: '该手机号已注册' }
-        }
-        // 用户已存在且邀请码正确，应该有密码了（前面已处理），这里不应该到达
-        return { success: false, message: '账号异常，请联系管理员' }
-      }
-
-      // 新用户注册
-      const newUser = {
-        id: generateUUID(),
-        phone: phone,
-        nickname: inv.workerName || '', // 继承员工姓名
-        password: null, // 未设置密码，需要设置密码
-        role: inv.type, // 根据邀请码类型决定角色
-        inviteCode: generateInviteCode(),
-        invitedBy: code,
-        parentId: inv.creatorId, // 上级中间商ID
-        createdAt: new Date().toISOString(),
-        // 继承员工信息
-        workerId: inv.workerId || null,
-        workerType: inv.workerType || null
-      }
-
-      // 即使云端创建失败，也允许用户本地登录
-      let userCreated = false
-      try {
-        await userApi.createUser(newUser)
-        userCreated = true
-      } catch (e) {
-        console.error('【User】创建用户到云端失败，将使用本地存储:', e)
-      }
-
-      // 标记邀请码已使用（即使创建用户失败也要标记，避免邀请码被重复使用）
-      try {
-        await inviteApi.useCode(code, newUser.id)
-      } catch (e) {
-        console.error('【User】标记邀请码失败:', e)
-      }
-
-      // 首次登录需要设置密码
-      currentUser.value = newUser
+      // 注册/登录成功，返回 needSetPassword: true
+      currentUser.value = regResult.data
       // 不设置 isLoggedIn = true，等待设置密码后再登录
       uni.setStorageSync('currentUser', JSON.stringify(currentUser.value))
-      return { success: true, needSetPassword: true, user: newUser }
+      return { success: true, needSetPassword: true, user: regResult.data }
     } catch (e) {
       console.error('【User】登录失败:', e)
       toast.error('登录失败')
