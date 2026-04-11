@@ -74,6 +74,12 @@ const request = async (endpoint, options = {}) => {
             reject(new Error('登录已过期，请重新登录'))
             return
           }
+          
+          if (res.statusCode === 403) {
+            reject(new Error('无权限操作'))
+            return
+          }
+
           if (res.statusCode >= 200 && res.statusCode < 300) {
             resolve(res.data)
           } else {
