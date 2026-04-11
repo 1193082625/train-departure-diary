@@ -66,6 +66,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useUserStore, ROLE_NAMES, ROLES } from '@/store/user'
+import toast from '@/utils/toast'
 
 const userStore = useUserStore()
 const message = ref('')
@@ -102,26 +103,6 @@ const goToMiddleman = () => {
   })
 }
 
-const showMyCode = () => {
-  if (currentUser.value?.inviteCode) {
-    uni.showModal({
-      title: '我的邀请码',
-      content: currentUser.value.inviteCode,
-      showCancel: false,
-      success: () => {
-        // 复制到剪贴板
-        uni.setClipboardData({
-          data: currentUser.value.inviteCode,
-          success: () => {
-            uni.showToast({ title: '已复制' })
-          }
-        })
-      }
-    })
-  } else {
-    showMessage('暂无邀请码')
-  }
-}
 
 const editProfile = () => {
   uni.showModal({

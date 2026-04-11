@@ -3,7 +3,7 @@ import { ref, computed } from 'vue'
 import { apiOps } from '@/utils/api'
 import { useUserStore } from './user'
 import { ROLES } from './user'
-import { showErrorToast } from '@/utils/errorHandler'
+import toast from '@/utils/toast'
 import { publish } from '@/utils/eventBus'
 
 export const useWorkerStore = defineStore('worker', () => {
@@ -40,7 +40,7 @@ export const useWorkerStore = defineStore('worker', () => {
       workers.value = res.data || []
     } catch (e) {
       console.error('【Worker】加载员工列表失败:', e)
-      showErrorToast('加载员工列表失败')
+      toast.error('加载员工列表失败')
       workers.value = []
     }
   }
@@ -59,7 +59,7 @@ export const useWorkerStore = defineStore('worker', () => {
       }
     } catch (e) {
       console.error('【Worker】保存员工失败:', e)
-      showErrorToast('保存员工失败')
+      toast.error('保存员工失败')
       throw e
     }
   }
@@ -93,7 +93,7 @@ export const useWorkerStore = defineStore('worker', () => {
       return newWorker
     } catch (e) {
       console.error('【Worker】添加员工失败:', e)
-      showErrorToast('添加员工失败')
+      toast.error('添加员工失败')
       throw e
     }
   }
@@ -108,7 +108,7 @@ export const useWorkerStore = defineStore('worker', () => {
       }
     } catch (e) {
       console.error('【Worker】更新员工失败:', e)
-      showErrorToast('更新员工失败')
+      toast.error('更新员工失败')
       throw e
     }
   }
@@ -125,7 +125,7 @@ export const useWorkerStore = defineStore('worker', () => {
         workers.value.push(deletedWorker)
       }
       console.error('【Worker】删除员工失败:', e)
-      showErrorToast('删除员工失败')
+      toast.error('删除员工失败')
       throw e
     }
   }

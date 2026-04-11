@@ -96,6 +96,7 @@
 import { ref, reactive } from 'vue'
 import { useUserStore } from '@/store/user'
 import { useSettingsStore } from '@/store/settings'
+import toast from '@/utils/toast'
 
 const userStore = useUserStore()
 const settingsStore = useSettingsStore()
@@ -156,10 +157,7 @@ const saveSettings = () => {
     entryFee: settingsForm.entryFee,
     oilFee: settingsForm.oilFee
   })
-  uni.showToast({
-    title: '设置已保存',
-    icon: 'success'
-  })
+  toast.success('设置已更新')
   settingsPopup.value.close()
 }
 </script>

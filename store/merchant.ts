@@ -3,7 +3,7 @@ import { ref, computed } from 'vue'
 import { apiOps } from '@/utils/api'
 import { useUserStore } from './user'
 import { ROLES } from './user'
-import { showErrorToast } from '@/utils/errorHandler'
+import toast from '@/utils/toast'
 import { publish } from '@/utils/eventBus'
 
 export const useMerchantStore = defineStore('merchant', () => {
@@ -40,7 +40,7 @@ export const useMerchantStore = defineStore('merchant', () => {
       merchants.value = res.data || []
     } catch (e) {
       console.error('【Merchant】加载商户列表失败:', e)
-      showErrorToast('加载商户列表失败')
+      toast.error('加载商户列表失败')
       merchants.value = []
     }
   }
@@ -59,7 +59,7 @@ export const useMerchantStore = defineStore('merchant', () => {
       }
     } catch (e) {
       console.error('【Merchant】保存商户失败:', e)
-      showErrorToast('保存商户失败')
+      toast.error('保存商户失败')
       throw e
     }
   }
@@ -93,7 +93,7 @@ export const useMerchantStore = defineStore('merchant', () => {
       return newMerchant
     } catch (e) {
       console.error('【Merchant】添加商户失败:', e)
-      showErrorToast('添加商户失败')
+      toast.error('添加商户失败')
       throw e
     }
   }
@@ -108,7 +108,7 @@ export const useMerchantStore = defineStore('merchant', () => {
       }
     }  catch (e) {
       console.error('【Merchant】更新商户失败:', e)
-      showErrorToast('更新商户失败')
+      toast.error('更新商户失败')
       throw e
     }
   }
@@ -125,7 +125,7 @@ export const useMerchantStore = defineStore('merchant', () => {
         merchants.value.push(deletedMerchant)
       }
       console.error('【Merchant】删除商户失败:', e)
-      showErrorToast('删除商户失败')
+      toast.error('删除商户失败')
       throw e
     }
   }

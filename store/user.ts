@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { apiOps, userApi, inviteApi } from '@/utils/api'
-import { showErrorToast } from '@/utils/errorHandler'
+import toast from '@/utils/toast'
 
 // 生成UUID
 const generateUUID = () => {
@@ -114,7 +114,7 @@ const initTestData = async () => {
 
   } catch (e) {
     console.error('【User】初始化测试数据失败:', e)
-    showErrorToast('初始化测试数据失败')
+    toast.error('初始化测试数据失败')
   }
 }
 
@@ -155,7 +155,7 @@ export const useUserStore = defineStore('user', () => {
       users.value = res.data || []
     } catch (e) {
       console.error('【User】加载用户列表失败:', e)
-      showErrorToast('加载用户列表失败')
+      toast.error('加载用户列表失败')
       users.value = []
     }
   }
@@ -187,7 +187,7 @@ export const useUserStore = defineStore('user', () => {
       }
     } catch (e) {
       console.error('【User】初始化失败:', e)
-      showErrorToast('初始化失败')
+      toast.error('初始化失败')
     }
   }
 
@@ -307,7 +307,7 @@ export const useUserStore = defineStore('user', () => {
       return { success: true, needSetPassword: true, user: newUser }
     } catch (e) {
       console.error('【User】登录失败:', e)
-      showErrorToast('登录失败')
+      toast.error('登录失败')
       return { success: false, message: '登录失败' }
     }
   }
@@ -325,7 +325,7 @@ export const useUserStore = defineStore('user', () => {
       return { success: true }
     } catch (e) {
       console.error('【User】设置密码失败:', e)
-      showErrorToast('设置密码失败')
+      toast.error('设置密码失败')
       return { success: false, message: '设置密码失败' }
     }
   }
@@ -343,7 +343,7 @@ export const useUserStore = defineStore('user', () => {
       return { success: true }
     } catch (e) {
       console.error('【User】修改密码失败:', e)
-      showErrorToast('修改密码失败')
+      toast.error('修改密码失败')
       return { success: false, message: '修改密码失败' }
     }
   }
@@ -373,7 +373,7 @@ export const useUserStore = defineStore('user', () => {
       return { success: true, user: newUser }
     } catch (e) {
       console.error('【User】创建用户失败:', e)
-      showErrorToast('创建用户失败')
+      toast.error('创建用户失败')
       return { success: false, message: '创建用户失败' }
     }
   }
@@ -388,7 +388,7 @@ export const useUserStore = defineStore('user', () => {
       return { success: true }
     } catch (e) {
       console.error('【User】更新用户失败:', e)
-      showErrorToast('更新用户信息失败')
+      toast.error('更新用户信息失败')
       // 云端更新失败时，仅更新本地内存状态
       currentUser.value = { ...currentUser.value, ...updates }
       uni.setStorageSync('currentUser', JSON.stringify(currentUser.value))
@@ -440,7 +440,7 @@ export const useUserStore = defineStore('user', () => {
       return code
     } catch (e) {
       console.error('【User】生成邀请码失败:', e)
-      showErrorToast('生成邀请码失败')
+      toast.error('生成邀请码失败')
       return null
     }
   }
@@ -453,7 +453,7 @@ export const useUserStore = defineStore('user', () => {
       return res.data || []
     } catch (e) {
       console.error('【User】获取邀请码列表失败:', e)
-      showErrorToast('获取邀请码列表失败')
+      toast.error('获取邀请码列表失败')
       return []
     }
   }
@@ -469,7 +469,7 @@ export const useUserStore = defineStore('user', () => {
       return users.value.filter(u => u.parentId === currentUser.value.id)
     } catch (e) {
       console.error('【User】获取下级用户失败:', e)
-      showErrorToast('获取下级用户失败')
+      toast.error('获取下级用户失败')
       return []
     }
   }
@@ -498,7 +498,7 @@ export const useUserStore = defineStore('user', () => {
       return existingUsers && existingUsers.length > 0 && hasPassword
     } catch (e) {
       console.error('【User】检查手机号失败:', e)
-      showErrorToast('检查手机号失败')
+      toast.error('检查手机号失败')
       return false
     }
   }
@@ -544,7 +544,7 @@ export const useUserStore = defineStore('user', () => {
       return []
     } catch (e) {
       console.error('【User】获取商户ID列表失败:', e)
-      showErrorToast('获取商户列表失败')
+      toast.error('获取商户列表失败')
       return []
     }
   }
@@ -576,7 +576,7 @@ export const useUserStore = defineStore('user', () => {
       return []
     } catch (e) {
       console.error('【User】获取员工ID列表失败:', e)
-      showErrorToast('获取员工列表失败')
+      toast.error('获取员工列表失败')
       return []
     }
   }
@@ -667,7 +667,7 @@ export const useUserStore = defineStore('user', () => {
       // return { success: true }
     } catch (e) {
       console.error('【User】删除中间商失败:', e)
-      showErrorToast('删除中间商失败')
+      toast.error('删除中间商失败')
       throw e
     }
   }

@@ -4,7 +4,7 @@ import { apiOps } from '@/utils/api'
 import { useUserStore } from './user'
 import { useWorkerStore } from './worker'
 import { ROLES } from './user'
-import { showErrorToast } from '@/utils/errorHandler'
+import toast from '@/utils/toast'
 import { publish } from '@/utils/eventBus'
 
 // 解析 JSON 字段，兼容字符串和对象
@@ -83,7 +83,7 @@ export const useDepartureStore = defineStore('departure', () => {
       }
     } catch (e) {
       console.error('【Departure】加载发车记录失败:', e)
-      showErrorToast('加载发车记录失败')
+      toast.error('加载发车记录失败')
       records.value = []
     }
   }
@@ -117,7 +117,7 @@ export const useDepartureStore = defineStore('departure', () => {
       }
     } catch (e) {
       console.error('【Departure】保存发车记录失败:', e)
-      showErrorToast('保存发车记录失败')
+      toast.error('保存发车记录失败')
     }
   }
 
@@ -136,7 +136,7 @@ export const useDepartureStore = defineStore('departure', () => {
       return newRecord
     } catch (e) {
       console.error('【Departure】添加发车记录失败:', e)
-      showErrorToast('保存发车记录失败')
+      toast.error('保存发车记录失败')
       throw e
     }
   }
@@ -151,7 +151,7 @@ export const useDepartureStore = defineStore('departure', () => {
       }
     } catch (e) {
       console.error('【Departure】更新发车记录失败:', e)
-      showErrorToast('更新发车记录失败')
+      toast.error('更新发车记录失败')
       throw e
     }
   }
@@ -168,7 +168,7 @@ export const useDepartureStore = defineStore('departure', () => {
         records.value.push(deletedRecord)
       }
       console.error('【Departure】删除发车记录失败:', e)
-      showErrorToast('删除发车记录失败')
+      toast.error('删除发车记录失败')
       throw e
     }
   }

@@ -74,6 +74,7 @@ import { onShow, onHide } from '@dcloudio/uni-app'
 import { useMerchantStore } from '@/store/merchant'
 import { useUserStore } from '@/store/user'
 import { subscribe } from '@/utils/eventBus'
+import toast from '@/utils/toast'
 
 const merchantStore = useMerchantStore()
 const userStore = useUserStore()
@@ -141,18 +142,12 @@ const closeModal = () => {
 const saveMerchant = () => {
   // 校验手机号格式
   if (!form.phone || !form.phone.match(/^1[3-9]\d{9}$/)) {
-    uni.showToast({
-      title: '请输入正确的手机号',
-      icon: 'none'
-    })
+    toast.error('请输入正确的手机号')
     return
   }
   // 校验差额必填
   if (!form.margin) {
-    uni.showToast({
-      title: '差额不能为空',
-      icon: 'none'
-    })
+    toast.error('差额不能为空')
     return
   }
   const data = {

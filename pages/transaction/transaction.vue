@@ -59,6 +59,7 @@ import { useMerchantStore } from '@/store/merchant'
 import { useWorkerStore } from '@/store/worker'
 import { useTransactionStore } from '@/store/transaction'
 import { subscribe } from '@/utils/eventBus'
+import toast from '@/utils/toast'
 
 const merchantStore = useMerchantStore()
 const workerStore = useWorkerStore()
@@ -114,7 +115,7 @@ const onDateChange = (e) => { form.date = e.detail.value }
 
 const addTransaction = () => {
   if (!form.targetId || !form.amount) {
-    uni.showToast({ title: '请完善信息', icon: 'none' })
+    toast.error('请完善信息')
     return
   }
 
@@ -126,7 +127,7 @@ const addTransaction = () => {
     note: form.note
   })
 
-  uni.showToast({ title: '结账成功', icon: 'success' })
+  toast.success('结账成功')
   form.amount = null
   form.note = ''
 }

@@ -3,7 +3,7 @@ import { ref, computed } from 'vue'
 import { apiOps } from '@/utils/api'
 import { useUserStore } from './user'
 import { ROLES } from './user'
-import { showErrorToast } from '@/utils/errorHandler'
+import toast from '@/utils/toast'
 import { publish } from '@/utils/eventBus'
 
 export const useDailyQuoteStore = defineStore('dailyQuote', () => {
@@ -43,7 +43,7 @@ export const useDailyQuoteStore = defineStore('dailyQuote', () => {
       }
     } catch (e) {
       console.error('【DailyQuote】加载日报价失败:', e)
-      showErrorToast('加载日报价失败')
+      toast.error('加载日报价失败')
       quotes.value = []
     }
   }
@@ -98,7 +98,7 @@ export const useDailyQuoteStore = defineStore('dailyQuote', () => {
       publish('dailyQuote:refresh', { date, quote })
     } catch (e) {
       console.error('【DailyQuote】保存日报价失败:', e)
-      showErrorToast('保存日报价失败')
+      toast.error('保存日报价失败')
       throw e
     }
   }

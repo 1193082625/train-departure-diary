@@ -52,7 +52,7 @@ uniCloud-aliyun/database/  - 历史遗留 (旧 uniCloud Schema)
 **必须检查项：**
 
 - 所有 async 数据库操作必须有 try-catch
-- catch 块必须调用 `showErrorToast()` 显示用户提示
+- catch 块必须调用 `toast.error()` 显示用户提示
 - catch 块必须 `console.error()` 记录详细错误
 - 错误信息前缀使用 `【StoreName】` 格式
 
@@ -66,7 +66,7 @@ const addRecord = async (record) => {
     await saveRecords();
   } catch (e) {
     console.error("【Departure】保存发车记录失败:", e);
-    showErrorToast("保存发车记录失败");
+    toast.error("保存发车记录失败");
     throw e;
   }
 };
@@ -87,7 +87,7 @@ const addRecord = async (record) => {
   try {
     ...
   } catch (e) {
-    console.error('保存失败', e)  // 没有 showErrorToast
+    console.error('保存失败', e)  // 没有 toast.error
   }
 }
 
@@ -274,7 +274,7 @@ inviteApi; // 邀请码: getByCode, create, useCode, getByCreator
 对每个变更的文件执行：
 
 - [ ] 所有 async 函数有 try-catch
-- [ ] catch 中调用 showErrorToast()
+- [ ] catch 中调用 toast.error()
 - [ ] console.error 包含上下文前缀
 - [ ] 失败时有 fail-safe 默认值
 - [ ] 角色过滤逻辑正确

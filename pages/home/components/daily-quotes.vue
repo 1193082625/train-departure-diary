@@ -77,6 +77,7 @@ import { ref, computed, watch, nextTick } from 'vue'
 import { useDepartureStore } from '@/store/departure'
 import { useUserStore } from '@/store/user'
 import { useDailyQuoteStore } from '@/store/dailyQuote'
+import toast from '@/utils/toast'
 
 const departureStore = useDepartureStore()
 const userStore = useUserStore()
@@ -180,13 +181,13 @@ const onCalendarChange = (e) => {
 // 保存报价
 const saveQuote = async () => {
   if (!quoteInput.value || quoteInput.value <= 0) {
-    uni.showToast({ title: '请输入有效报价', icon: 'none' })
+    toast.error('请输入有效报价')
     return
   }
 
   try {
     await dailyQuoteStore.saveQuote(popupDate.value, quoteInput.value)
-    uni.showToast({ title: '报价已保存', icon: 'success' })
+    toast.success('报价保存成功')
     quotePopup.value.close()
 
     // 更新日历显示

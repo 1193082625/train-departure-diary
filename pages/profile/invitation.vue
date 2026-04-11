@@ -56,6 +56,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useUserStore, ROLE_NAMES, ROLES } from '@/store/user'
 import { useWorkerStore } from '@/store/worker'
+import toast from '@/utils/toast'
 
 const workerStore = useWorkerStore()
 const userStore = useUserStore()
@@ -109,7 +110,7 @@ const handleGenerate = async () => {
         uni.setClipboardData({
           data: code,
           success: () => {
-            uni.showToast({ title: '已复制' })
+            toast.success('已复制')
           }
         })
       }

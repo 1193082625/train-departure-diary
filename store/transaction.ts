@@ -3,7 +3,7 @@ import { ref } from 'vue'
 import { apiOps } from '@/utils/api'
 import { useUserStore } from './user'
 import { ROLES } from './user'
-import { showErrorToast } from '@/utils/errorHandler'
+import toast from '@/utils/toast'
 import { publish } from '@/utils/eventBus'
 
 export const useTransactionStore = defineStore('transaction', () => {
@@ -15,7 +15,7 @@ export const useTransactionStore = defineStore('transaction', () => {
       transactions.value = res.data || []
     } catch (e) {
       console.error('【Transaction】加载交易记录失败:', e)
-      showErrorToast('加载交易记录失败')
+      toast.error('加载交易记录失败')
       transactions.value = []
     }
   }
@@ -34,7 +34,7 @@ export const useTransactionStore = defineStore('transaction', () => {
       }
     } catch (e) {
       console.error('【Transaction】保存交易记录失败:', e)
-      showErrorToast('保存交易记录失败')
+      toast.error('保存交易记录失败')
     }
   }
 
@@ -53,7 +53,7 @@ export const useTransactionStore = defineStore('transaction', () => {
       return newTransaction
     } catch (e) {
       console.error('【Transaction】添加交易记录失败:', e)
-      showErrorToast('保存交易记录失败')
+      toast.error('保存交易记录失败')
       throw e
     }
   }
@@ -65,7 +65,7 @@ export const useTransactionStore = defineStore('transaction', () => {
       publish('transaction:refresh', null)
     } catch (e) {
       console.error('【Transaction】删除交易记录失败:', e)
-      showErrorToast('删除交易记录失败')
+      toast.error('删除交易记录失败')
     }
   }
 
@@ -112,7 +112,7 @@ export const useTransactionStore = defineStore('transaction', () => {
       return []
     } catch (e) {
       console.error('【Transaction】获取交易记录失败:', e)
-      showErrorToast('获取交易记录失败')
+      toast.error('获取交易记录失败')
       return []
     }
   }

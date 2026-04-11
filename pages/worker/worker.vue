@@ -79,6 +79,7 @@ import { onShow, onHide } from '@dcloudio/uni-app'
 import { useWorkerStore } from '@/store/worker'
 import { useUserStore } from '@/store/user'
 import { subscribe } from '@/utils/eventBus'
+import toast from '@/utils/toast'
 
 const workerStore = useWorkerStore()
 const userStore = useUserStore()
@@ -148,17 +149,11 @@ const closeModal = () => {
 
 const saveWorker = () => {
   if (!form.name) {
-    uni.showToast({
-      title: '请输入姓名',
-      icon: 'none'
-    })
+    toast.error('请输入姓名')
     return
   }
   if (!form.phone || !form.phone.match(/^1[3-9]\d{9}$/)) {
-    uni.showToast({
-      title: '请输入正确的手机号',
-      icon: 'none'
-    })
+    toast.error('请输入正确的手机号')
     return
   }
   const data = {

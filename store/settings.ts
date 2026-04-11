@@ -3,7 +3,7 @@ import { ref, watch } from 'vue'
 import { apiOps } from '@/utils/api'
 import { useUserStore } from './user'
 import { ROLES } from './user'
-import { showErrorToast } from '@/utils/errorHandler'
+import toast from '@/utils/toast'
 
 // 生成UUID
 const generateUUID = () => {
@@ -63,7 +63,7 @@ export const useSettingsStore = defineStore('settings', () => {
       }
     } catch (e) {
       console.error(`【Settings】初始化用户settings失败:`, e)
-      showErrorToast('初始化设置失败')
+      toast.error('初始化设置失败')
     }
   }
 
@@ -106,7 +106,7 @@ export const useSettingsStore = defineStore('settings', () => {
       }
     } catch (e) {
       console.error('【Settings】加载设置失败:', e)
-      showErrorToast('加载设置失败')
+      toast.error('加载设置失败')
       resetToDefaults()
     }
   }
@@ -176,7 +176,7 @@ export const useSettingsStore = defineStore('settings', () => {
       }
     } catch (e) {
       console.error('【Settings】保存设置失败:', e)
-      showErrorToast('保存设置失败')
+      toast.error('保存设置失败')
     }
   }
 
@@ -253,7 +253,7 @@ export const useSettingsStore = defineStore('settings', () => {
       await saveSettings()
     } catch (e) {
       console.error('【Settings】批量更新设置失败:', e)
-      showErrorToast('保存设置失败')
+      toast.error('保存设置失败')
       throw e
     }
   }

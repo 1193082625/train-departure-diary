@@ -292,6 +292,7 @@ import { useSettingsStore } from '@/store/settings'
 import { useUserStore, ROLES } from '@/store/user'
 import { useDailyQuoteStore } from '@/store/dailyQuote'
 import { calculateMerchantCost } from '@/utils/calc'
+import toast from '@/utils/toast'
 import MerchantSelector from './components/merchant-selector.vue'
 
 const departureStore = useDepartureStore()
@@ -545,56 +546,35 @@ const removeTruckRow = (index) => { form.truckRows.splice(index, 1) }
 const saveRecord = () => {
   // 添加校验
   if (!form.dailyQuote) {
-    uni.showToast({
-      title: '请填写当日报价',
-      icon: 'none'
-    })
+    toast.error('请填写当日报价')
     return
   }
-  
+
   if (form.dailyQuote <= 0) {
-    uni.showToast({
-      title: '当日报价不能低于0元',
-      icon: 'none'
-    })
+    toast.error('当日报价不能低于0元')
     return
   }
   if (form.merchantDetails.length === 0) {
-    uni.showToast({
-      title: '请添加鸡场',
-      icon: 'none'
-    })
+    toast.error('请添加鸡场')
     return
   }
   if (form.truckRows.length === 0) {
-    uni.showToast({
-      title: '请添加货车排数',
-      icon: 'none'
-    })
+    toast.error('请添加货车排数')
     return
   }
   // 发车人不能为空
   if (!form.departureWorkerId) {
-    uni.showToast({
-      title: '请选择发车人员',
-      icon: 'none'
-    })
+    toast.error('请选择发车人员')
     return
   }
   // 装车人不能为空
   if (form.loadingWorkerIds.length === 0) {
-    uni.showToast({
-      title: '请选择装车人员',
-      icon: 'none'
-    })
+    toast.error('请选择装车人员')
     return
   }
   // 留货数量为负数时禁止提交
   if (calculated.value.reservedBigBoxesTotal < 0 || calculated.value.reservedSmallBoxesTotal < 0) {
-    uni.showToast({
-      title: '留货数量为负数，请检查信息是否正确',
-      icon: 'none'
-    })
+    toast.error('留货数量为负数，请检查信息是否正确')
     return
   }
 
