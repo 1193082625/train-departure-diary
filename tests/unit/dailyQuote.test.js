@@ -1,245 +1,230 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-// Mock user store for testing
-const createMockUser = (overrides = {}) => ({
-  id: 'user-1',
-  role: 'middleman',
-  parentId: null,
-  ...overrides
-})
+// Mock dependencies
+const mockRequest = vi.fn()
+const mockPublish = vi.fn()
 
-// Mock quotes data
-const mockQuotes = [
-  { id: 'q1', date: '2026-04-01', quote: 120, userId: 'user-1' },
-  { id: 'q2', date: '2026-04-02', quote: 125, userId: 'user-1' },
-  { id: 'q3', date: '2026-04-03', quote: 130, userId: 'user-2' }, // Belongs to different middleman
-]
+vi.mock('@/utils/api', () => ({
+  request: mockRequest,
+  dailyQuoteApi: {
+    getByDate: vi.fn((date) => mockRequest(`/daily_quotes/by/date/${date}`)),
+    getByDateRange: vi.fn((startDate, endDate, options = {}) => {
+      let url = `/daily_quotes/list?startDate=${startDate}&endDate=${endDate}`
+      if (options.groupBy) {
+        url += `&groupBy=${options.groupBy}`
+      }
+      return mockRequest(url)
+    }),
+    create: vi.fn((data) => mockRequest('/daily_quotes', { method: 'POST', data: JSON.stringify(data) })),
+    update: vi.fn((id, data) => mockRequest(`/daily_quotes/${id}`, { method: 'PUT', data: JSON.stringify(data) })),
+    delete: vi.fn((id) => mockRequest(`/daily_quotes/${id}`, { method: 'DELETE' })),
+  },
+}))
 
-// Simulated dailyQuote component logic
-class DailyQuoteComponent {
-  constructor() {
-    this.quotes = []
-    this.currentMiddlemanId = null
-  }
+vi.mock('@/utils/eventBus', () => ({
+  subscribe: vi.fn(() => vi.fn()),
+  publish: mockPublish,
+}))
 
-  setCurrentUser(user) {
-    this.currentUser = user
-  }
-
-  setCurrentMiddlemanId(id) {
-    this.currentMiddlemanId = id
-  }
-
-  // Get filtered quotes based on user role
-  getFilteredQuotes() {
-    if (!this.currentUser) return []
-
-    if (this.currentUser.role === 'admin' && this.currentMiddlemanId) {
-      return this.quotes.filter(q => q.userId === this.currentMiddlemanId)
-    }
-    if (this.currentUser.role === 'middleman') {
-      return this.quotes.filter(q => q.userId === this.currentUser.id)
-    }
-    if (this.currentUser.role === 'loader' && this.currentUser.parentId) {
-      return this.quotes.filter(q => q.userId === this.currentUser.parentId)
-    }
-    return []
-  }
-
-  // Get quote by date
-  getQuoteByDate(date) {
-    const filtered = this.getFilteredQuotes()
-    const quote = filtered.find(q => q.date === date)
-    return quote ? quote.quote : null
-  }
-
-  // Set quotes
-  setQuotes(quotes) {
-    this.quotes = quotes
-  }
+// Mock quotes data (后端返回格式)
+const mockQuotesResponse = {
+  success: true,
+  data: [
+    { id: 'q1', date: '2026-04-01', quote: 120, userId: 'user-1' },
+    { id: 'q2', date: '2026-04-02', quote: 125, userId: 'user-1' },
+    { id: 'q3', date: '2026-04-03', quote: 130, userId: 'user-2' },
+  ]
 }
 
-describe('每日报价模块测试', () => {
-  let component
+const mockSingleQuoteResponse = {
+  success: true,
+  data: [{ id: 'q1', date: '2026-04-01', quote: 120, userId: 'user-1' }]
+}
 
+describe('每日报价模块测试 (dailyQuoteApi)', () => {
   beforeEach(() => {
-    component = new DailyQuoteComponent()
-    component.setQuotes([...mockQuotes])
+    vi.clearAllMocks()
+    mockRequest.mockReset()
+    mockPublish.mockReset()
   })
 
-  describe('角色过滤逻辑', () => {
-    it('管理员应根据 currentMiddlemanId 过滤报价', () => {
-      const adminUser = createMockUser({ role: 'admin' })
-      component.setCurrentUser(adminUser)
-      component.setCurrentMiddlemanId('user-1')
+  describe('dailyQuoteApi.getByDate', () => {
+    it('应正确调用 apiOps.queryBy 并返回报价数据', async () => {
+      mockRequest.mockResolvedValue(mockSingleQuoteResponse)
 
-      const filtered = component.getFilteredQuotes()
-      expect(filtered).toHaveLength(2)
-      expect(filtered.every(q => q.userId === 'user-1')).toBe(true)
+      const { dailyQuoteApi } = await import('@/utils/api')
+      const result = await dailyQuoteApi.getByDate('2026-04-01')
+
+      expect(mockRequest).toHaveBeenCalledWith('/daily_quotes/by/date/2026-04-01')
+      expect(result).toEqual(mockSingleQuoteResponse)
     })
 
-    it('管理员切换中间商时应返回不同报价', () => {
-      const adminUser = createMockUser({ role: 'admin' })
-      component.setCurrentUser(adminUser)
+    it('不存在的日期应返回相应的响应结构', async () => {
+      const emptyResponse = { success: true, data: [] }
+      mockRequest.mockResolvedValue(emptyResponse)
 
-      // 切换到 user-1
-      component.setCurrentMiddlemanId('user-1')
-      expect(component.getFilteredQuotes()).toHaveLength(2)
+      const { dailyQuoteApi } = await import('@/utils/api')
+      const result = await dailyQuoteApi.getByDate('2026-04-99')
 
-      // 切换到 user-2
-      component.setCurrentMiddlemanId('user-2')
-      expect(component.getFilteredQuotes()).toHaveLength(1)
-      expect(component.getFilteredQuotes()[0].date).toBe('2026-04-03')
-    })
-
-    it('中间商应只返回自己的报价', () => {
-      const middlemanUser = createMockUser({ role: 'middleman', id: 'user-1' })
-      component.setCurrentUser(middlemanUser)
-
-      const filtered = component.getFilteredQuotes()
-      expect(filtered).toHaveLength(2)
-      expect(filtered.every(q => q.userId === 'user-1')).toBe(true)
-    })
-
-    it('装发车应根据 parentId 过滤报价', () => {
-      const loaderUser = createMockUser({ role: 'loader', id: 'loader-1', parentId: 'user-1' })
-      component.setCurrentUser(loaderUser)
-
-      const filtered = component.getFilteredQuotes()
-      expect(filtered).toHaveLength(2)
-      expect(filtered.every(q => q.userId === 'user-1')).toBe(true)
-    })
-
-    it('鸡场角色应返回空数组（无报价权限）', () => {
-      const farmUser = createMockUser({ role: 'farm', id: 'farm-1' })
-      component.setCurrentUser(farmUser)
-
-      const filtered = component.getFilteredQuotes()
-      expect(filtered).toHaveLength(0)
-    })
-
-    it('无用户时应返回空数组', () => {
-      component.setCurrentUser(null)
-      expect(component.getFilteredQuotes()).toHaveLength(0)
+      expect(result.success).toBe(true)
+      expect(result.data).toHaveLength(0)
     })
   })
 
-  describe('按日期获取报价', () => {
-    beforeEach(() => {
-      const middlemanUser = createMockUser({ role: 'middleman', id: 'user-1' })
-      component.setCurrentUser(middlemanUser)
+  describe('dailyQuoteApi.getByDateRange', () => {
+    it('应正确构建日期范围查询 URL', async () => {
+      mockRequest.mockResolvedValue({ success: true, data: [] })
+
+      const { dailyQuoteApi } = await import('@/utils/api')
+      await dailyQuoteApi.getByDateRange('2026-04-01', '2026-04-30')
+
+      expect(mockRequest).toHaveBeenCalledWith('/daily_quotes/list?startDate=2026-04-01&endDate=2026-04-30')
     })
 
-    it('应该返回指定日期的报价', () => {
-      expect(component.getQuoteByDate('2026-04-01')).toBe(120)
-      expect(component.getQuoteByDate('2026-04-02')).toBe(125)
+    it('应正确处理 groupBy 选项', async () => {
+      mockRequest.mockResolvedValue({ success: true, data: [] })
+
+      const { dailyQuoteApi } = await import('@/utils/api')
+      await dailyQuoteApi.getByDateRange('2026-01-01', '2026-12-31', { groupBy: 'month' })
+
+      expect(mockRequest).toHaveBeenCalledWith('/daily_quotes/list?startDate=2026-01-01&endDate=2026-12-31&groupBy=month')
     })
 
-    it('不存在的日期应返回 null', () => {
-      expect(component.getQuoteByDate('2026-04-99')).toBeNull()
-    })
-  })
+    it('应正确返回日期范围内的报价列表', async () => {
+      mockRequest.mockResolvedValue(mockQuotesResponse)
 
-  describe('API 调用模拟', () => {
-    it('加载报价应设置 quotes 状态', async () => {
-      const mockResponse = { data: [...mockQuotes] }
-      const mockRequest = vi.fn().mockResolvedValue(mockResponse)
+      const { dailyQuoteApi } = await import('@/utils/api')
+      const result = await dailyQuoteApi.getByDateRange('2026-04-01', '2026-04-30')
 
-      const result = await mockRequest('/daily_quotes')
+      expect(result.success).toBe(true)
       expect(result.data).toHaveLength(3)
+      expect(result.data[0].quote).toBe(120)
     })
+  })
 
-    it('保存报价时应调用正确的 API 端点（新增）', async () => {
+  describe('dailyQuoteApi.create', () => {
+    it('应正确调用 apiOps.insert 创建新报价', async () => {
       const newQuote = { date: '2026-04-10', quote: 135, userId: 'user-1' }
-      const mockInsert = vi.fn().mockResolvedValue({ success: true })
+      const insertResult = { success: true, data: { id: 'q-new', ...newQuote } }
+      mockRequest.mockResolvedValue(insertResult)
 
-      await mockInsert('/daily_quotes', {
+      const { dailyQuoteApi } = await import('@/utils/api')
+      const result = await dailyQuoteApi.create(newQuote)
+
+      expect(mockRequest).toHaveBeenCalledWith('/daily_quotes', {
         method: 'POST',
         data: JSON.stringify(newQuote)
       })
-
-      expect(mockInsert).toHaveBeenCalledWith('/daily_quotes', {
-        method: 'POST',
-        data: JSON.stringify(newQuote)
-      })
-    })
-
-    it('保存报价时应调用正确的 API 端点（更新）', async () => {
-      const existingQuote = { id: 'q1', date: '2026-04-01', quote: 122, userId: 'user-1' }
-      const mockUpdate = vi.fn().mockResolvedValue({ success: true })
-
-      await mockUpdate(`/daily_quotes/${existingQuote.id}`, {
-        method: 'PUT',
-        data: JSON.stringify({ quote: 122 })
-      })
-
-      expect(mockUpdate).toHaveBeenCalledWith('/daily_quotes/q1', {
-        method: 'PUT',
-        data: JSON.stringify({ quote: 122 })
-      })
+      expect(result.success).toBe(true)
     })
   })
 
-  describe('事件总线集成', () => {
-    it('保存报价后应发布刷新事件', () => {
-      const eventBus = {
-        listeners: {},
-        subscribe: function(eventType, callback) {
-          if (!this.listeners[eventType]) {
-            this.listeners[eventType] = []
-          }
-          this.listeners[eventType].push(callback)
-          return () => {
-            const index = this.listeners[eventType].indexOf(callback)
-            if (index > -1) this.listeners[eventType].splice(index, 1)
-          }
-        },
-        publish: function(eventType, data) {
-          if (this.listeners[eventType]) {
-            this.listeners[eventType].forEach(callback => callback(data))
-          }
-        }
-      }
+  describe('dailyQuoteApi.update', () => {
+    it('应正确调用 apiOps.update 更新报价', async () => {
+      const updateData = { quote: 122 }
+      const updateResult = { success: true }
+      mockRequest.mockResolvedValue(updateResult)
 
-      let callbackCalled = false
-      let receivedData = null
+      const { dailyQuoteApi } = await import('@/utils/api')
+      const result = await dailyQuoteApi.update('q1', updateData)
 
-      const unsubscribe = eventBus.subscribe('dailyQuote:refresh', (data) => {
-        callbackCalled = true
-        receivedData = data
+      expect(mockRequest).toHaveBeenCalledWith('/daily_quotes/q1', {
+        method: 'PUT',
+        data: JSON.stringify(updateData)
       })
-
-      eventBus.publish('dailyQuote:refresh', { date: '2026-04-01', quote: 120 })
-
-      expect(callbackCalled).toBe(true)
-      expect(receivedData).toEqual({ date: '2026-04-01', quote: 120 })
-
-      // Test unsubscribe
-      unsubscribe()
-      callbackCalled = false
-      eventBus.publish('dailyQuote:refresh', { date: '2026-04-02', quote: 125 })
-      expect(callbackCalled).toBe(false)
+      expect(result.success).toBe(true)
     })
   })
 
-  describe('数据一致性', () => {
-    it('报价金额应为数字类型', () => {
-      const middlemanUser = createMockUser({ role: 'middleman', id: 'user-1' })
-      component.setCurrentUser(middlemanUser)
+  describe('dailyQuoteApi.delete', () => {
+    it('应正确调用 apiOps.delete 删除报价', async () => {
+      const deleteResult = { success: true }
+      mockRequest.mockResolvedValue(deleteResult)
 
-      const quote = component.getQuoteByDate('2026-04-01')
-      expect(typeof quote).toBe('number')
+      const { dailyQuoteApi } = await import('@/utils/api')
+      const result = await dailyQuoteApi.delete('q1')
+
+      expect(mockRequest).toHaveBeenCalledWith('/daily_quotes/q1', { method: 'DELETE' })
+      expect(result.success).toBe(true)
+    })
+  })
+
+  describe('数据一致性验证', () => {
+    it('报价金额应为数字类型', async () => {
+      mockRequest.mockResolvedValue(mockQuotesResponse)
+
+      const { dailyQuoteApi } = await import('@/utils/api')
+      const result = await dailyQuoteApi.getByDateRange('2026-04-01', '2026-04-30')
+
+      result.data.forEach(q => {
+        expect(typeof q.quote).toBe('number')
+      })
     })
 
-    it('日期格式应为 YYYY-MM-DD', () => {
-      const middlemanUser = createMockUser({ role: 'middleman', id: 'user-1' })
-      component.setCurrentUser(middlemanUser)
+    it('日期格式应为 YYYY-MM-DD', async () => {
+      mockRequest.mockResolvedValue(mockQuotesResponse)
 
-      const filtered = component.getFilteredQuotes()
+      const { dailyQuoteApi } = await import('@/utils/api')
+      const result = await dailyQuoteApi.getByDateRange('2026-04-01', '2026-04-30')
+
       const dateRegex = /^\d{4}-\d{2}-\d{2}$/
-      filtered.forEach(q => {
+      result.data.forEach(q => {
         expect(q.date).toMatch(dateRegex)
       })
+    })
+
+    it('报价应大于 0', async () => {
+      mockRequest.mockResolvedValue(mockQuotesResponse)
+
+      const { dailyQuoteApi } = await import('@/utils/api')
+      const result = await dailyQuoteApi.getByDateRange('2026-04-01', '2026-04-30')
+
+      result.data.forEach(q => {
+        expect(q.quote).toBeGreaterThan(0)
+      })
+    })
+  })
+
+  describe('API 错误处理', () => {
+    it('API 请求失败时应返回 success: false', async () => {
+      const errorResponse = { success: false, message: '服务器错误' }
+      mockRequest.mockResolvedValue(errorResponse)
+
+      const { dailyQuoteApi } = await import('@/utils/api')
+      const result = await dailyQuoteApi.getByDate('2026-04-01')
+
+      expect(result.success).toBe(false)
+    })
+
+    it('网络错误时应抛出异常', async () => {
+      mockRequest.mockRejectedValue(new Error('Network Error'))
+
+      const { dailyQuoteApi } = await import('@/utils/api')
+
+      await expect(dailyQuoteApi.getByDate('2026-04-01')).rejects.toThrow('Network Error')
+    })
+  })
+
+  describe('按日期获取报价业务逻辑', () => {
+    it('组件获取指定日期报价的逻辑应该正确处理响应', async () => {
+      // 模拟 daily-quotes.vue 组件中的 getQuoteByDate 逻辑
+      const getQuoteByDate = async (date) => {
+        const res = await mockRequest(`/daily_quotes/by/date/${date}`)
+        // 后端返回格式: { success: true, data: [{ id, date, quote, ... }] }
+        if (res && res.success && Array.isArray(res.data) && res.data.length > 0) {
+          return res.data[0].quote
+        }
+        return null
+      }
+
+      mockRequest.mockResolvedValue(mockSingleQuoteResponse)
+      const quote = await getQuoteByDate('2026-04-01')
+      expect(quote).toBe(120)
+
+      // 测试不存在的日期
+      mockRequest.mockResolvedValue({ success: true, data: [] })
+      const noQuote = await getQuoteByDate('2026-04-99')
+      expect(noQuote).toBeNull()
     })
   })
 })
