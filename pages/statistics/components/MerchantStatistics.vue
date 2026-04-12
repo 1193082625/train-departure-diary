@@ -12,58 +12,63 @@
       <view class="picker">结束: {{ dateRange.end }}</view>
     </picker>
 
-    <!-- 明细列表 -->
-    <uni-collapse class="mt-section detail-list-collapse" v-if="merchantRecordList.length > 0">
-      <uni-collapse-item title="明细列表" :open="openMerchantRecordList">
-        <view class="detail-list">
-          <view class="detail-header">
-            <text>日期</text>
-            <text>报价</text>
-            <text>大框</text>
-            <text>小框</text>
-            <text>斤数</text>
-            <text>应结</text>
-          </view>
-          <scroll-view scroll-y class="detail-scroll" :style="{ height: scrollHeight }">
-            <view class="detail-item" v-for="(item, index) in merchantRecordList" :key="`${item.date}-${index}`">
-              <text>{{ item.date }}</text>
-              <text>{{ item.dailyQuote }}</text>
-              <text>{{ item.bigBoxes }}</text>
-              <text>{{ item.smallBoxes }}</text>
-              <text>{{ item.weight }}</text>
-              <text>{{ item.receivable }}</text>
-            </view>
-          </scroll-view>
-        </view>
-      </uni-collapse-item>
-    </uni-collapse>
-
-    <view class="stats-result">
-      <view class="stat-item">
-        <text>共拉大框</text>
-        <text class="value">{{ merchantStats.totalBigBoxes }}</text>
-      </view>
-      <view class="stat-item">
-        <text>共拉小框</text>
-        <text class="value">{{ merchantStats.totalSmallBoxes }}</text>
-      </view>
-      <view class="stat-item">
-        <text>共拉斤数</text>
-        <text class="value">{{ merchantStats.totalWeight }}</text>
-      </view>
-      <view class="stat-item">
-        <text>应结金额</text>
-        <text class="value">¥{{ merchantStats.receivable }}</text>
-      </view>
-      <view class="stat-item">
-        <text>已结金额</text>
-        <text class="value">¥{{ merchantStats.paid }}</text>
-      </view>
-      <view class="stat-item">
-        <text>待结金额</text>
-        <text class="value unpaid">¥{{ merchantStats.unpaid }}</text>
-      </view>
+    <view class="empty-content" v-if="!selectedMerchant">
+      <text class="tips">选择人员后查看数据</text>
     </view>
+    <template v-else>
+      <!-- 明细列表 -->
+      <uni-collapse class="mt-section detail-list-collapse" v-if="merchantRecordList.length > 0">
+        <uni-collapse-item title="明细列表" :open="openMerchantRecordList">
+          <view class="detail-list">
+            <view class="detail-header">
+              <text>日期</text>
+              <text>报价</text>
+              <text>大框</text>
+              <text>小框</text>
+              <text>斤数</text>
+              <text>应结</text>
+            </view>
+            <scroll-view scroll-y class="detail-scroll" :style="{ height: scrollHeight }">
+              <view class="detail-item" v-for="(item, index) in merchantRecordList" :key="`${item.date}-${index}`">
+                <text>{{ item.date }}</text>
+                <text>{{ item.dailyQuote }}</text>
+                <text>{{ item.bigBoxes }}</text>
+                <text>{{ item.smallBoxes }}</text>
+                <text>{{ item.weight }}</text>
+                <text>{{ item.receivable }}</text>
+              </view>
+            </scroll-view>
+          </view>
+        </uni-collapse-item>
+      </uni-collapse>
+
+      <view class="stats-result">
+        <view class="stat-item">
+          <text>共拉大框</text>
+          <text class="value">{{ merchantStats.totalBigBoxes }}</text>
+        </view>
+        <view class="stat-item">
+          <text>共拉小框</text>
+          <text class="value">{{ merchantStats.totalSmallBoxes }}</text>
+        </view>
+        <view class="stat-item">
+          <text>共拉斤数</text>
+          <text class="value">{{ merchantStats.totalWeight }}</text>
+        </view>
+        <view class="stat-item">
+          <text>应结金额</text>
+          <text class="value">¥{{ merchantStats.receivable }}</text>
+        </view>
+        <view class="stat-item">
+          <text>已结金额</text>
+          <text class="value">¥{{ merchantStats.paid }}</text>
+        </view>
+        <view class="stat-item">
+          <text>待结金额</text>
+          <text class="value unpaid">¥{{ merchantStats.unpaid }}</text>
+        </view>
+      </view>
+    </template>
   </view>
 </template>
 
@@ -216,4 +221,15 @@ watch(() => [props.dateRange.start, props.dateRange.end], () => {
 .detail-item { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
 .detail-item text { flex: 1; text-align: center; }
 .detail-item:last-child { border-bottom: none; margin-bottom: 20rpx; }
+
+.empty-content{
+  width: 100%;
+  height: 200rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.empty-content .tips{
+  color: #666;
+}
 </style>

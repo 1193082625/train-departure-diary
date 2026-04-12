@@ -4,18 +4,18 @@
     <!-- 管理员中间商选择器 -->
     <middleman-selector />
 
+    <!-- 快捷日期范围选择 -->
+    <view class="quick-range">
+      <view @click="setQuickRange('today')" :class="['range-btn', getActiveRange() === 'today' && 'active']">今天</view>
+      <view @click="setQuickRange('month')" :class="['range-btn', getActiveRange() === 'month' && 'active']">本月</view>
+      <view @click="setQuickRange('lastMonth')" :class="['range-btn', getActiveRange() === 'lastMonth' && 'active']">上月</view>
+      <view @click="setQuickRange('year')" :class="['range-btn', getActiveRange() === 'year' && 'active']">本年</view>
+      <view @click="setQuickRange('all')" :class="['range-btn', getActiveRange() === 'all' && 'active']">全部</view>
+    </view>
+
     <view class="tabs">
       <view :class="['tab', activeTab === 'worker' && 'active']" @click="activeTab = 'worker'">按人员</view>
       <view :class="['tab', activeTab === 'merchant' && 'active']" @click="activeTab = 'merchant'">按鸡场</view>
-    </view>
-
-    <!-- 快捷日期范围选择 -->
-    <view class="quick-range">
-      <view @click="setQuickRange('today')" :class="['range-btn', dateRange.start === dateRange.end && dateRange.start === new Date().toISOString().split('T')[0] && 'active']">今天</view>
-      <view @click="setQuickRange('month')" class="range-btn">本月</view>
-      <view @click="setQuickRange('lastMonth')" class="range-btn">上月</view>
-      <view @click="setQuickRange('year')" class="range-btn">本年</view>
-      <view @click="setQuickRange('all')" class="range-btn">全部</view>
     </view>
 
     <!-- 按人员统计 -->
@@ -100,19 +100,56 @@ const setQuickRange = (type) => {
       break
   }
 }
+
+// 获取当前激活的快捷范围
+const getActiveRange = () => {
+  const todayObj = new Date()
+  const today = todayObj.toISOString().split('T')[0]
+  const year = todayObj.getFullYear()
+  const month = todayObj.getMonth()
+
+  // 今天
+  if(dateRange.start === today && dateRange.end === today) {
+    return 'today'
+  }
+
+   // 本月
+   const monthStart = new Date(year, month, 2).toISOString().split('T')[0]
+   if (dateRange.start === monthStart && dateRange.end === today) {
+     return 'month'
+   }
+
+   // 上月
+   const lastMonthStart = new Date(year, month - 1, 2).toISOString().split('T')[0]
+   const lastMonthEnd = new Date(year, month, 1).toISOString().split('T')[0]
+   if (dateRange.start === lastMonthStart && dateRange.end === lastMonthEnd) {
+     return 'lastMonth'
+   }
+
+   // 本年
+   const yearStart = new Date(year, 0, 2).toISOString().split('T')[0]
+   if (dateRange.start === yearStart && dateRange.end === today) {
+     return 'year'
+   }
+
+   // 全部
+   if (departureStore.records.length > 0) {
+     const dates = departureStore.records.map(r => r.date).sort()
+     if (dateRange.start === dates[0] && dateRange.end === today) {
+       return 'all'
+     }
+   }
+
+   return null
+}
 </script>
 
-<style>
-.uni-calendar-item__weeks-box-item {
-  width: 100%!important;
-}
-</style>
 <style scoped>
 .statistics-page { padding: 20px; }
 .tabs { display: flex; gap: 10px; background: #f5f5f5; border-radius: 8px; margin-bottom: 20px; }
 .tab { flex: 1; text-align: center; padding: 10px; border-radius: 8px; background: #fff;}
 .tab.active { background: #007aff; color: #fff; }
 .quick-range { display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap; }
-.range-btn { padding: 8px 12px; background: #fff; border-radius: 4px; font-size: 14px; border: 1px solid #ddd; }
+.range-btn { flex: 1; text-align: center; padding: 8px 0; background: #fff; border-radius: 4px; font-size: 14px; border: 1px solid #ddd; }
 .range-btn.active { background: #007aff; color: #fff; border-color: #007aff; }
 </style>

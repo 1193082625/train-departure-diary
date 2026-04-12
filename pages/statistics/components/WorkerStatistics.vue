@@ -12,53 +12,58 @@
       <view class="picker">结束: {{ dateRange.end }}</view>
     </picker>
 
-    <uni-calendar
-    	:insert="true"
-		:start-date="dateRange.start"
-		:end-date="dateRange.end"
-		:clear-date="true"
-		:show-month="false"
-		:selected="personRecord"
-	  	@change="changeDateRange"
-		@monthSwitch="clearWorkerStats"
-	  	 />
-
-     <!-- 明细列表 -->
-     <uni-collapse class="mt-section detail-list-collapse" v-if="personRecordList.length > 0">
-      <uni-collapse-item title="明细列表" :open="openPersonRecordList">
-        <view class="detail-list">
-          <view class="detail-header">
-            <text>日期</text>
-            <text>信息</text>
-          </view>
-          <scroll-view scroll-y class="detail-scroll" :style="{ height: scrollHeight }">
-            <view class="detail-item" v-for="(item, index) in personRecordList" :key="`${item.date}-${index}`">
-              <text>{{ item.date }}</text>
-              <text>{{ item.info }}</text>
-            </view>
-          </scroll-view>
-        </view>
-      </uni-collapse-item>
-     </uni-collapse>
-
-    <view class="stats-result">
-      <view class="stat-item">
-        <text>出勤天数</text>
-        <text class="value">{{ workerStats.workDays }}</text>
-      </view>
-      <view class="stat-item">
-        <text>发车次数</text>
-        <text class="value">{{ workerStats.departureCount }}</text>
-      </view>
-      <view class="stat-item">
-        <text>装车次数</text>
-        <text class="value">{{ workerStats.loadingCount }}</text>
-      </view>
-      <view class="stat-item">
-        <text>应结金额</text>
-        <text class="value profit">¥{{ workerStats.totalProfit }}</text>
-      </view>
+    <view class="empty-content" v-if="!selectedWorker">
+      <text class="tips">选择人员后查看数据</text>
     </view>
+    <template v-else>
+      <uni-calendar
+        :insert="true"
+      :start-date="dateRange.start"
+      :end-date="dateRange.end"
+      :clear-date="true"
+      :show-month="false"
+      :selected="personRecord"
+        @change="changeDateRange"
+      @monthSwitch="clearWorkerStats"
+        />
+
+      <!-- 明细列表 -->
+      <uni-collapse class="mt-section detail-list-collapse" v-if="personRecordList.length > 0">
+        <uni-collapse-item title="明细列表" :open="openPersonRecordList">
+          <view class="detail-list">
+            <view class="detail-header">
+              <text>日期</text>
+              <text>信息</text>
+            </view>
+            <scroll-view scroll-y class="detail-scroll" :style="{ height: scrollHeight }">
+              <view class="detail-item" v-for="(item, index) in personRecordList" :key="`${item.date}-${index}`">
+                <text>{{ item.date }}</text>
+                <text>{{ item.info }}</text>
+              </view>
+            </scroll-view>
+          </view>
+        </uni-collapse-item>
+      </uni-collapse>
+
+      <view class="stats-result">
+        <view class="stat-item">
+          <text>出勤天数</text>
+          <text class="value">{{ workerStats.workDays }}</text>
+        </view>
+        <view class="stat-item">
+          <text>发车次数</text>
+          <text class="value">{{ workerStats.departureCount }}</text>
+        </view>
+        <view class="stat-item">
+          <text>装车次数</text>
+          <text class="value">{{ workerStats.loadingCount }}</text>
+        </view>
+        <view class="stat-item">
+          <text>应结金额</text>
+          <text class="value profit">¥{{ workerStats.totalProfit }}</text>
+        </view>
+      </view>
+    </template>
   </view>
 </template>
 
@@ -229,4 +234,15 @@ const workerStats = computed(() => {
 .detail-item { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
 .detail-item text { flex: 1; text-align: center; }
 .detail-item:last-child { border-bottom: none; }
+
+.empty-content{
+  width: 100%;
+  height: 200rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.empty-content .tips{
+  color: #666;
+}
 </style>
