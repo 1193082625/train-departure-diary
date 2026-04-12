@@ -13,7 +13,7 @@
     </picker>
 
     <view class="empty-content" v-if="!selectedMerchant">
-      <text class="tips">选择人员后查看数据</text>
+      <text class="tips">选择鸡场后查看数据</text>
     </view>
     <template v-else>
       <!-- 明细列表 -->
