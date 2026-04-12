@@ -28,7 +28,7 @@
 
       <!-- 非管理员直接展示 -->
       <template v-else>
-        <view v-for="merchant in merchantStore.filteredMerchants" :key="merchant.id" class="merchant-card">
+        <view v-for="merchant in filteredMerchants" :key="merchant.id" class="merchant-card">
           <view class="merchant-info">
             <text class="name">{{ merchant.name }}</text>
             <text class="phone">{{ merchant.phone }}</text>
@@ -42,6 +42,16 @@
           </view>
         </view>
       </template>
+    </view>
+
+    <!-- 加载状态 -->
+    <view v-if="loading" class="loading">
+      <text>加载中...</text>
+    </view>
+
+    <!-- 加载更多 -->
+    <view v-if="loadingMore" class="loading-more">
+      <text>加载更多...</text>
     </view>
 
     <!-- 添加/编辑弹窗 -->
@@ -70,21 +80,22 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
-import { onShow, onHide } from '@dcloudio/uni-app'
-import { useMerchantStore } from '@/store/merchant'
-import { useUserStore } from '@/store/user'
-import { subscribe } from '@/utils/eventBus'
+import { onShow, onHide, onReachBottom, onPullDownRefresh } from '@dcloudio/uni-app'
+import { useUserStore, ROLES } from '@/store/user'
+import { request } from '@/utils/api'
+import { subscribe, publish } from '@/utils/eventBus'
 import toast from '@/utils/toast'
 
-const merchantStore = useMerchantStore()
 const userStore = useUserStore()
 
 let unsubscribe = null
 
 onShow(() => {
   unsubscribe = subscribe('merchant:refresh', () => {
-    merchantStore.loadMerchants()
+    loadMerchants(1)
   })
+  // 初始加载
+  loadMerchants(1)
 })
 
 onHide(() => {
@@ -97,30 +108,96 @@ onMounted(async () => {
   }
 })
 
-const showAddModal = ref(false)
-const editingMerchant = ref(null)
-const form = reactive({
-  name: '',
-  phone: '',
-  margin: null
+// 上拉加载更多
+onReachBottom(() => {
+  if (!loadingMore.value && pagination.value.page < pagination.value.totalPages) {
+    loadMerchants(pagination.value.page + 1, true)
+  }
 })
 
-// 分组展开状态
-const expandedGroups = ref(new Set())
+// 下拉刷新
+onPullDownRefresh(() => {
+  loadMerchants(1).then(() => {
+    uni.stopPullDownRefresh()
+  })
+})
+
+// 状态
+const merchants = ref([])
+const loading = ref(false)
+const loadingMore = ref(false)
+const pagination = ref({
+  page: 1,
+  pageSize: 50,
+  total: 0,
+  totalPages: 0
+})
+
+// 直接调用分页接口，绕过缓存
+// appendMode: true 时追加数据，false 时替换数据
+const loadMerchants = async (page = 1, appendMode = false) => {
+  if (appendMode) {
+    loadingMore.value = true
+  } else {
+    loading.value = true
+  }
+
+  try {
+    const res = await request(`/merchants/list?page=${page}&pageSize=${pagination.value.pageSize}&sort=createdAt&order=desc`)
+    const newData = res.data || []
+
+    if (appendMode) {
+      merchants.value = [...merchants.value, ...newData]
+    } else {
+      merchants.value = newData
+    }
+
+    pagination.value.total = res.pagination?.total || 0
+    pagination.value.totalPages = res.pagination?.totalPages || 0
+    pagination.value.page = page
+  } catch (e) {
+    console.error('【Merchant】加载商户列表失败:', e)
+    toast.error('加载商户列表失败')
+    if (!appendMode) {
+      merchants.value = []
+    }
+  } finally {
+    loading.value = false
+    loadingMore.value = false
+  }
+}
+
+// 根据用户角色过滤商户
+const filteredMerchants = computed(() => {
+  const user = userStore.currentUser
+  if (!user) return []
+
+  if (user.role === ROLES.ADMIN) {
+    return merchants.value
+  }
+
+  if (user.role === ROLES.MIDDLEMAN) {
+    return merchants.value.filter(m => m.userId === user.id)
+  }
+
+  if (user.parentId) {
+    return merchants.value.filter(m => m.userId === user.parentId)
+  }
+
+  return []
+})
 
 // 分组展示（管理员视角）
 const groupedMerchants = computed(() => {
-  const allMerchants = merchantStore.filteredMerchants
   const middlemen = userStore.middlemanList
-
-  // 未选择中间商：显示所有分组
   return middlemen.map(mm => ({
     ...mm,
-    merchants: allMerchants.filter(m => m.userId === mm.id).sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    merchants: merchants.value.filter(m => m.userId === mm.id).sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''))
   })).filter(g => g.merchants.length > 0)
 })
 
 // 切换分组展开状态
+const expandedGroups = ref(new Set())
 const toggleGroup = (groupId) => {
   if (expandedGroups.value.has(groupId)) {
     expandedGroups.value.delete(groupId)
@@ -128,6 +205,15 @@ const toggleGroup = (groupId) => {
     expandedGroups.value.add(groupId)
   }
 }
+
+// 弹窗状态
+const showAddModal = ref(false)
+const editingMerchant = ref(null)
+const form = reactive({
+  name: '',
+  phone: '',
+  margin: null
+})
 
 const editMerchant = (merchant) => {
   editingMerchant.value = merchant
@@ -145,7 +231,7 @@ const closeModal = () => {
   form.margin = null
 }
 
-const saveMerchant = () => {
+const saveMerchant = async () => {
   // 校验手机号格式
   if (!form.phone || !form.phone.match(/^1[3-9]\d{9}$/)) {
     toast.error('请输入正确的手机号')
@@ -156,27 +242,51 @@ const saveMerchant = () => {
     toast.error('差额不能为空')
     return
   }
+
   const data = {
     name: form.name,
     phone: form.phone,
-    margin: Number(form.margin) || 0
+    margin: Number(form.margin) || 0,
+    userId: userStore.currentUser?.id || null
   }
 
-  if (editingMerchant.value) {
-    merchantStore.updateMerchant(editingMerchant.value.id, data)
-  } else {
-    merchantStore.addMerchant(data)
+  try {
+    if (editingMerchant.value) {
+      await request(`/merchants/${editingMerchant.value.id}`, {
+        method: 'PUT',
+        data: JSON.stringify(data)
+      })
+      toast.success('更新成功')
+    } else {
+      await request('/merchants', {
+        method: 'POST',
+        data: JSON.stringify(data)
+      })
+      toast.success('添加成功')
+    }
+    closeModal()
+    publish('merchant:refresh', null)
+  } catch (e) {
+    console.error('保存失败:', e)
+    toast.error('保存失败')
   }
-  closeModal()
 }
 
-const deleteMerchant = (id) => {
+const deleteMerchant = async (id) => {
   uni.showModal({
     title: '确认删除',
     content: '确定要删除此鸡场吗？',
-    success: (res) => {
+    success: async (res) => {
       if (res.confirm) {
-        merchantStore.deleteMerchant(id)
+        try {
+          await request(`/merchants/${id}`, { method: 'DELETE' })
+          toast.success('删除成功')
+          loadMerchants(pagination.value.page)
+          publish('merchant:refresh', null)
+        } catch (e) {
+          console.error('删除失败:', e)
+          toast.error('删除失败')
+        }
       }
     }
   })
@@ -195,6 +305,8 @@ const deleteMerchant = (id) => {
 .merchant-margin { color: #fa8c16; font-size: 14px; }
 .actions { display: flex; gap: 15px; }
 .delete { color: #ff4d4f; }
+.loading { text-align: center; padding: 20px; color: #999; }
+.loading-more { text-align: center; padding: 15px; color: #999; font-size: 14px; }
 .modal-mask { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; }
 .modal { background: #fff; padding: 20px; border-radius: 8px; width: 80%; }
 .modal-title { font-size: 18px; font-weight: bold; margin-bottom: 15px; display: block; }

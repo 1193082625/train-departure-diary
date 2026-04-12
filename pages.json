@@ -36,7 +36,8 @@
 	{
 		"path": "pages/merchant/merchant",
 		"style": {
-			"navigationBarTitleText": "鸡场"
+			"navigationBarTitleText": "鸡场",
+			"enablePullDownRefresh": true
 		}
 	},
 	{
