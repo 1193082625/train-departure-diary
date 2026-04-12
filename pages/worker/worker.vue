@@ -84,7 +84,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, nextTick } from 'vue'
 import { onShow, onHide, onReachBottom, onPullDownRefresh } from '@dcloudio/uni-app'
 import { useUserStore, ROLES } from '@/store/user'
 import { request } from '@/utils/api'
@@ -140,9 +140,17 @@ const pagination = ref({
 
 // 直接调用分页接口，绕过缓存
 // appendMode: true 时追加数据，false 时替换数据
+let lastScrollHeight = 0
 const loadWorkers = async (page = 1, appendMode = false) => {
   if (appendMode) {
     loadingMore.value = true
+    // 保存当前内容高度
+    const query = uni.createSelectorQuery().select('.worker-list')
+    query.boundingClientRect((rect) => {
+      if (rect) {
+        lastScrollHeight = rect.height
+      }
+    }).exec()
   } else {
     loading.value = true
   }
@@ -153,6 +161,18 @@ const loadWorkers = async (page = 1, appendMode = false) => {
 
     if (appendMode) {
       workers.value = [...workers.value, ...newData]
+      // DOM 更新后恢复滚动位置
+      nextTick(() => {
+        const newQuery = uni.createSelectorQuery().select('.worker-list')
+        newQuery.boundingClientRect((rect) => {
+          if (rect && lastScrollHeight > 0) {
+            uni.pageScrollTo({
+              scrollTop: rect.height - lastScrollHeight,
+              duration: 0
+            })
+          }
+        }).exec()
+      })
     } else {
       workers.value = newData
     }

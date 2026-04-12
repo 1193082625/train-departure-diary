@@ -9,7 +9,7 @@ import { ref } from 'vue'
 
 // API 基础 URL - 自建阿里云 MySQL 后端
 // const BASE_URL = ref('http://47.96.90.103:3000/api')
-const BASE_URL = ref('http://localhost:3000/api')
+const BASE_URL = ref('http://192.168.31.144:3000/api')
 
 // ==================== 缓存基础设施 ====================
 

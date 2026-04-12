@@ -51,7 +51,12 @@
 
     <!-- 加载更多 -->
     <view v-if="loadingMore" class="loading-more">
-      <text>加载更多...</text>
+      <text>加载中...</text>
+    </view>
+
+    <!-- 没有更多数据了 -->
+    <view v-else-if="hasMore === false && merchants.length > 0" class="no-more-data">
+      <text>没有更多数据了</text>
     </view>
 
     <!-- 添加/编辑弹窗 -->
@@ -79,7 +84,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, nextTick } from 'vue'
 import { onShow, onHide, onReachBottom, onPullDownRefresh } from '@dcloudio/uni-app'
 import { useUserStore, ROLES } from '@/store/user'
 import { request } from '@/utils/api'
@@ -128,16 +133,29 @@ const loading = ref(false)
 const loadingMore = ref(false)
 const pagination = ref({
   page: 1,
-  pageSize: 50,
+  pageSize: 15,
   total: 0,
   totalPages: 0
 })
 
+// 是否还有更多数据可加载
+const hasMore = computed(() => {
+  return pagination.value.page < pagination.value.totalPages
+})
+
 // 直接调用分页接口，绕过缓存
 // appendMode: true 时追加数据，false 时替换数据
+let lastScrollHeight = 0
 const loadMerchants = async (page = 1, appendMode = false) => {
   if (appendMode) {
     loadingMore.value = true
+    // 保存当前内容高度
+    const query = uni.createSelectorQuery().select('.merchant-list')
+    query.boundingClientRect((rect) => {
+      if (rect) {
+        lastScrollHeight = rect.height
+      }
+    }).exec()
   } else {
     loading.value = true
   }
@@ -148,6 +166,18 @@ const loadMerchants = async (page = 1, appendMode = false) => {
 
     if (appendMode) {
       merchants.value = [...merchants.value, ...newData]
+      // DOM 更新后恢复滚动位置
+      nextTick(() => {
+        const newQuery = uni.createSelectorQuery().select('.merchant-list')
+        newQuery.boundingClientRect((rect) => {
+          if (rect && lastScrollHeight > 0) {
+            uni.pageScrollTo({
+              scrollTop: rect.height - lastScrollHeight,
+              duration: 0
+            })
+          }
+        }).exec()
+      })
     } else {
       merchants.value = newData
     }
@@ -307,6 +337,7 @@ const deleteMerchant = async (id) => {
 .delete { color: #ff4d4f; }
 .loading { text-align: center; padding: 20px; color: #999; }
 .loading-more { text-align: center; padding: 15px; color: #999; font-size: 14px; }
+.no-more-data { text-align: center; padding: 15px; color: #999; font-size: 14px; }
 .modal-mask { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; }
 .modal { background: #fff; padding: 20px; border-radius: 8px; width: 80%; }
 .modal-title { font-size: 18px; font-weight: bold; margin-bottom: 15px; display: block; }
