@@ -31,10 +31,12 @@
             <text>日期</text>
             <text>信息</text>
           </view>
-          <view class="detail-item" v-for="item in personRecordList" :key="item.date">
-            <text>{{ item.date }}</text>
-            <text>{{ item.info }}</text>
-          </view>
+          <scroll-view scroll-y class="detail-scroll" :style="{ height: scrollHeight }">
+            <view class="detail-item" v-for="(item, index) in personRecordList" :key="`${item.date}-${index}`">
+              <text>{{ item.date }}</text>
+              <text>{{ item.info }}</text>
+            </view>
+          </scroll-view>
         </view>
       </uni-collapse-item>
      </uni-collapse>
@@ -220,6 +222,10 @@ const workerStats = computed(() => {
 .detail-title { font-size: 16px; font-weight: bold; margin-bottom: 10px; }
 .detail-header { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
 .detail-header text { flex: 1; text-align: center; }
+.detail-scroll {
+   max-height: 400px;
+   padding-bottom: 20rpx;
+ }
 .detail-item { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
 .detail-item text { flex: 1; text-align: center; }
 .detail-item:last-child { border-bottom: none; }
