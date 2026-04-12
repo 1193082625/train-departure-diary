@@ -286,7 +286,6 @@
 <script setup>
 import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useDepartureStore } from '@/store/departure'
-import { useMerchantStore } from '@/store/merchant'
 import { useSettingsStore } from '@/store/settings'
 import { useUserStore, ROLES } from '@/store/user'
 import { useDailyQuoteStore } from '@/store/dailyQuote'
@@ -296,7 +295,6 @@ import toast from '@/utils/toast'
 import MerchantSelector from './components/merchant-selector.vue'
 
 const departureStore = useDepartureStore()
-const merchantStore = useMerchantStore()
 const settingsStore = useSettingsStore()
 const userStore = useUserStore()
 const dailyQuoteStore = useDailyQuoteStore()
@@ -313,6 +311,39 @@ const loadWorkers = async () => {
     allWorkers.value = []
   }
 }
+
+// 鸡场数据（本地管理）
+const merchants = ref([])
+
+const loadMerchants = async () => {
+  try {
+    const res = await apiOps.queryAll('merchants')
+    merchants.value = res.data || []
+  } catch (e) {
+    console.error('加载鸡场列表失败:', e)
+    merchants.value = []
+  }
+}
+
+// 根据用户角色过滤鸡场
+const filteredMerchants = computed(() => {
+  const user = userStore.currentUser
+  if (!user) return []
+
+  if (user.role === ROLES.ADMIN) {
+    return merchants.value
+  }
+
+  if (user.role === ROLES.MIDDLEMAN) {
+    return merchants.value.filter(m => m.userId === user.id)
+  }
+
+  if (user.parentId) {
+    return merchants.value.filter(m => m.userId === user.parentId)
+  }
+
+  return []
+})
 
 // 根据用户角色过滤员工
 const filteredWorkers = computed(() => {
@@ -430,7 +461,7 @@ const showSaveButton = computed(() => {
 })
 
 // 鸡场选项（根据角色过滤）
-const merchantOptions = computed(() => merchantStore.filteredMerchants)
+const merchantOptions = computed(() => filteredMerchants.value)
 // 发车人员选项
 const departureWorkerOptions = computed(() => departureWorkers.value)
 // 装车人员选项
@@ -511,6 +542,7 @@ const calculated = computed(() => {
     smallWeight: smallWeight, // 本趟小框斤数
     truckCartonBoxesBig: truckCartonBoxesBig, // 货车共装大箱
     truckCartonBoxesSmall: truckCartonBoxesSmall, // 货车共装小箱
+    merchants: merchants.value, // 鸡场列表
   })
 
   // 最低差价： A: 差价4， B:差价是3
@@ -673,6 +705,8 @@ onMounted(async () => {
   loadDefaultSettings()
   // 加载员工数据
   await loadWorkers()
+  // 加载鸡场数据
+  await loadMerchants()
 
   // 检查是否有编辑ID
   const pages = getCurrentPages()
