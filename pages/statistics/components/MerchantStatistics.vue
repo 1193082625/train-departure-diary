@@ -66,10 +66,11 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, nextTick } from 'vue'
-import { useMerchantStore } from '@/store/merchant'
+import { ref, computed, watch, nextTick, onMounted } from 'vue'
+import { useUserStore, ROLES } from '@/store/user'
 import { useDepartureStore } from '@/store/departure'
 import { useTransactionStore } from '@/store/transaction'
+import { apiOps } from '@/utils/api'
 import { calculateMerchantItem } from '@/utils/calc'
 
 const props = defineProps({
@@ -81,18 +82,56 @@ const props = defineProps({
 
 const emit = defineEmits(['update:dateRange'])
 
-const merchantStore = useMerchantStore()
+const userStore = useUserStore()
 const departureStore = useDepartureStore()
 const transactionStore = useTransactionStore()
 
+const merchants = ref([])
 const selectedMerchantId = ref('')
 const merchantRecord = ref([])
 const openMerchantRecordList = ref(true)
 const merchantRecordList = ref([])
 const merchantStats = ref({ totalBigBoxes: 0, totalSmallBoxes: 0, totalWeight: 0, receivable: 0, paid: 0, unpaid: 0 })
 
-const merchantOptions = computed(() => merchantStore.filteredMerchants)
-const selectedMerchant = computed(() => merchantStore.getMerchantById(selectedMerchantId.value))
+// 加载商户列表
+const loadMerchants = async () => {
+  try {
+    const res = await apiOps.queryAll('merchants')
+    merchants.value = res.data || []
+  } catch (e) {
+    console.error('【MerchantStatistics】加载商户列表失败:', e)
+    merchants.value = []
+  }
+}
+
+// 根据用户角色过滤商户
+const filteredMerchants = computed(() => {
+  const user = userStore.currentUser
+  if (!user) return []
+
+  if (user.role === ROLES.ADMIN) {
+    return merchants.value
+  }
+
+  if (user.role === ROLES.MIDDLEMAN) {
+    return merchants.value.filter(m => m.userId === user.id)
+  }
+
+  if (user.parentId) {
+    return merchants.value.filter(m => m.userId === user.parentId)
+  }
+
+  return []
+})
+
+const getMerchantById = (id) => merchants.value.find(m => m.id === id)
+
+const merchantOptions = computed(() => filteredMerchants.value)
+const selectedMerchant = computed(() => getMerchantById(selectedMerchantId.value))
+
+onMounted(() => {
+  loadMerchants()
+})
 
 const onMerchantChange = (e) => {
   selectedMerchantId.value = merchantOptions.value[e.detail.value]?.id || ''
@@ -128,7 +167,7 @@ const updateMerchantStats = () => {
   let recordList = []
 
   merchantRecords.forEach(r => {
-    const merchant = merchantStore.getMerchantById(selectedMerchantId.value)
+    const merchant = getMerchantById(selectedMerchantId.value)
     if (merchant) {
       const detail = r.merchantDetails.find(m => m.merchantId === selectedMerchantId.value)
       const bigBoxes = detail?.bigBoxes || 0
