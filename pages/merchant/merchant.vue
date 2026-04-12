@@ -201,20 +201,9 @@ const loadMerchants = async (page = 1, appendMode = false) => {
 const filteredMerchants = computed(() => {
   const user = userStore.currentUser
   if (!user) return []
-
-  if (user.role === ROLES.ADMIN) {
-    return merchants.value
-  }
-
-  if (user.role === ROLES.MIDDLEMAN) {
-    return merchants.value.filter(m => m.userId === user.id)
-  }
-
-  if (user.parentId) {
-    return merchants.value.filter(m => m.userId === user.parentId)
-  }
-
-  return []
+  // 服务端已通过 getAccessibleUserIds 做了角色权限过滤，
+  // 直接使用服务端返回的数据，不再客户端二次过滤
+  return merchants.value
 })
 
 // 分组展示（管理员视角）

@@ -318,15 +318,16 @@ calculateMerchantCost() -> 计算鸡场成本
 
 ## Store 模块结构
 
-| Store            | 文件                                      | 职责                       |
-| ---------------- | ----------------------------------------- | -------------------------- |
-| userStore        | store/user.ts                             | 用户认证、角色、邀请码管理 |
-| merchantStore    | store/merchant.ts                         | 鸡场 CRUD                  |
-| workerStore      | store/worker.ts                           | 员工 CRUD                  |
-| departureStore   | store/departure.ts                         | 发车记录 CRUD              |
-| transactionStore | store/transaction.ts                       | 交易记录 CRUD              |
-| settingsStore    | store/settings.ts                          | 系统参数配置               |
-| dailyQuote       | pages/home/components/daily-quotes.vue    | 日报价 API-first 管理      |
+| Store            | 文件                    | 职责                       |
+| ---------------- | ----------------------- | -------------------------- |
+| userStore        | store/user.ts           | 用户认证、角色、邀请码管理 |
+| merchantStore    | store/merchant.ts       | 鸡场 CRUD                  |
+| workerStore      | store/worker.ts         | 员工 CRUD                  |
+| departureStore   | store/departure.ts      | 发车记录 CRUD              |
+| transactionStore | store/transaction.ts    | 交易记录 CRUD              |
+| settingsStore    | store/settings.ts       | 系统参数配置               |
+
+> **注意**: 日报价 (daily-quotes.vue) 已重构为 API-first 模式，直接使用 `dailyQuoteApi` 调用后端 API，不再使用 Pinia store 管理。
 
 ### userStore 主要功能
 
@@ -374,12 +375,13 @@ filteredRecords = computed(() => {
 
 前端通过 HTTP API 与后端通信，封装了所有数据库操作。
 
-| 模块        | 方法                                                      | 说明               |
-| ----------- | -------------------------------------------------------- | ------------------ |
-| apiOps      | queryAll, queryBy, getById, insert, update, delete       | 通用 CRUD          |
-| userApi     | getUserByPhone, getUserById, getUserByInviteCode, etc.  | 用户操作           |
-| inviteApi   | getByCode, create, useCode, getByCreator                | 邀请码操作         |
-| setApiBaseUrl | (url)                                                  | 设置 API 基础地址  |
+| 模块          | 方法                                                      | 说明               |
+| ------------- | -------------------------------------------------------- | ------------------ |
+| apiOps        | queryAll, queryBy, getById, insert, update, delete       | 通用 CRUD          |
+| userApi       | getUserByPhone, getUserById, getUserByInviteCode, etc.  | 用户操作           |
+| inviteApi     | getByCode, create, useCode, getByCreator                | 邀请码操作         |
+| dailyQuoteApi | getByDate, getByDateRange, create, update, delete       | 日报价 CRUD (API-first) |
+| setApiBaseUrl | (url)                                                    | 设置 API 基础地址  |
 
 ### 后端服务 (独立项目 train-departure-diary-server)
 
