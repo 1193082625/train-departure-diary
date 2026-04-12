@@ -48,15 +48,30 @@
           <text @click="deleteTransaction(t.id)" class="delete">删除</text>
         </view>
       </view>
+
+      <!-- 加载状态 -->
+      <view v-if="loading" class="loading">
+        <text>加载中...</text>
+      </view>
+
+      <!-- 加载更多 -->
+      <view v-if="loadingMore" class="loading-more">
+        <text>加载中...</text>
+      </view>
+
+      <!-- 没有更多数据了 -->
+      <view v-else-if="hasMore === false && transactions.length > 0" class="no-more-data">
+        <text>没有更多数据了</text>
+      </view>
     </view>
   </view>
 </template>
 
 <script setup>
-import { ref, computed, reactive } from 'vue'
-import { onShow, onHide } from '@dcloudio/uni-app'
+import { ref, computed, reactive, nextTick } from 'vue'
+import { onShow, onHide, onReachBottom, onPullDownRefresh } from '@dcloudio/uni-app'
 import { useUserStore, ROLES } from '@/store/user'
-import { apiOps } from '@/utils/api'
+import { apiOps, request } from '@/utils/api'
 import { subscribe } from '@/utils/eventBus'
 import toast from '@/utils/toast'
 
@@ -66,24 +81,92 @@ let unsubscribe = null
 
 // 交易记录（本地管理）
 const transactions = ref([])
+const loading = ref(false)
+const loadingMore = ref(false)
+const pagination = ref({
+  page: 1,
+  pageSize: 15,
+  total: 0,
+  totalPages: 0
+})
 
-const loadTransactions = async () => {
+const hasMore = computed(() => pagination.value.page < pagination.value.totalPages)
+
+// 直接调用分页接口，绕过缓存
+// appendMode: true 时追加数据，false 时替换数据
+let lastScrollHeight = 0
+const loadTransactions = async (page = 1, appendMode = false) => {
+  if (appendMode) {
+    loadingMore.value = true
+    // 保存当前内容高度
+    const query = uni.createSelectorQuery().select('.records')
+    query.boundingClientRect((rect) => {
+      if (rect) {
+        lastScrollHeight = rect.height
+      }
+    }).exec()
+  } else {
+    loading.value = true
+  }
+
   try {
-    const res = await apiOps.queryAll('transactions')
-    transactions.value = res.data || []
+    const res = await request(`/transactions/list?page=${page}&pageSize=${pagination.value.pageSize}&sort=date&order=desc`)
+    const newData = res.data || []
+
+    if (appendMode) {
+      transactions.value = [...transactions.value, ...newData]
+      // DOM 更新后恢复滚动位置
+      nextTick(() => {
+        const newQuery = uni.createSelectorQuery().select('.records')
+        newQuery.boundingClientRect((rect) => {
+          if (rect && lastScrollHeight > 0) {
+            uni.pageScrollTo({
+              scrollTop: rect.height - lastScrollHeight,
+              duration: 0
+            })
+          }
+        }).exec()
+      })
+    } else {
+      transactions.value = newData
+    }
+
+    pagination.value.total = res.pagination?.total || 0
+    pagination.value.totalPages = res.pagination?.totalPages || 0
+    pagination.value.page = page
   } catch (e) {
     console.error('加载交易记录失败:', e)
-    transactions.value = []
+    toast.error('加载交易记录失败')
+    if (!appendMode) {
+      transactions.value = []
+    }
+  } finally {
+    loading.value = false
+    loadingMore.value = false
   }
 }
 
 onShow(() => {
   unsubscribe = subscribe('transaction:refresh', () => {
-    loadTransactions()
+    loadTransactions(1)
   })
   loadWorkers()
   loadMerchants()
-  loadTransactions()
+  loadTransactions(1)
+})
+
+// 上拉加载更多
+onReachBottom(() => {
+  if (!loadingMore.value && pagination.value.page < pagination.value.totalPages) {
+    loadTransactions(pagination.value.page + 1, true)
+  }
+})
+
+// 下拉刷新
+onPullDownRefresh(() => {
+  loadTransactions(1).then(() => {
+    uni.stopPullDownRefresh()
+  })
 })
 
 onHide(() => {
@@ -182,7 +265,7 @@ const selectedTarget = computed(() => {
 })
 
 const recentTransactions = computed(() =>
-  transactions.value.slice().reverse().slice(0, 20).map(t => ({
+  transactions.value.slice().reverse().map(t => ({
     ...t,
     targetName: t.type === 'payment_to_merchant'
       ? getMerchantById(t.targetId)?.name
@@ -261,4 +344,7 @@ const deleteTransaction = (id) => {
 .record-right { display: flex; align-items: center; gap: 10px; }
 .amount { color: #ff4d4f; font-weight: bold; }
 .delete { color: #999; font-size: 12px; }
+.loading { text-align: center; padding: 20px; color: #999; }
+.loading-more { text-align: center; padding: 15px; color: #999; font-size: 14px; }
+.no-more-data { text-align: center; padding: 15px; color: #999; font-size: 14px; }
 </style>
