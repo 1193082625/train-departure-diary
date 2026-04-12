@@ -66,12 +66,9 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, nextTick, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useUserStore, ROLES } from '@/store/user'
-import { useDepartureStore } from '@/store/departure'
-import { useTransactionStore } from '@/store/transaction'
 import { apiOps } from '@/utils/api'
-import { calculateMerchantItem } from '@/utils/calc'
 
 const props = defineProps({
   dateRange: {
@@ -83,8 +80,6 @@ const props = defineProps({
 const emit = defineEmits(['update:dateRange'])
 
 const userStore = useUserStore()
-const departureStore = useDepartureStore()
-const transactionStore = useTransactionStore()
 
 const merchants = ref([])
 const selectedMerchantId = ref('')
@@ -124,10 +119,8 @@ const filteredMerchants = computed(() => {
   return []
 })
 
-const getMerchantById = (id) => merchants.value.find(m => m.id === id)
-
 const merchantOptions = computed(() => filteredMerchants.value)
-const selectedMerchant = computed(() => getMerchantById(selectedMerchantId.value))
+const selectedMerchant = computed(() => merchants.value.find(m => m.id === selectedMerchantId.value))
 
 onMounted(() => {
   loadMerchants()
@@ -146,7 +139,7 @@ const onEndDateChange = (e) => {
 }
 
 // 计算鸡场统计数据
-const updateMerchantStats = () => {
+const updateMerchantStats = async () => {
   if (!selectedMerchantId.value) {
     merchantRecord.value = []
     merchantRecordList.value = []
@@ -154,66 +147,37 @@ const updateMerchantStats = () => {
     return
   }
 
-  const records = departureStore.getRecordsByDateRange(props.dateRange.start, props.dateRange.end)
-  const merchantRecords = records.filter(r => r.merchantDetails.some(m => m.merchantId === selectedMerchantId.value))
+  // 调用后端聚合接口获取完整数据
+  try {
+    const res = await apiOps.aggregate({
+      type: 'byMerchant',
+      merchantId: selectedMerchantId.value,
+      startDate: props.dateRange.start,
+      endDate: props.dateRange.end
+    })
+    const data = res.data
 
-  // 日历记录
-  merchantRecord.value = [...new Set(merchantRecords)].map(r => ({
-    date: r.date,
-    info: '有生意'
-  }))
-
-  let totalBigBoxes = 0, totalSmallBoxes = 0, totalWeight = 0, receivable = 0
-  let recordList = []
-
-  merchantRecords.forEach(r => {
-    const merchant = getMerchantById(selectedMerchantId.value)
-    if (merchant) {
-      const detail = r.merchantDetails.find(m => m.merchantId === selectedMerchantId.value)
-      const bigBoxes = detail?.bigBoxes || 0
-      const smallBoxes = detail?.smallBoxes || 0
-      const weight = detail?.weight || 0
-
-      totalBigBoxes += bigBoxes
-      totalSmallBoxes += smallBoxes
-      totalWeight += weight
-
-      const receivePrice = calculateMerchantItem({
-        formData: r,
-        merchantDetail: {
-          margin: merchant.margin,
-          ...detail
-        }
-      })
-      receivable += receivePrice
-
-      recordList.push({
-        date: r.date,
-        bigBoxes: bigBoxes,
-        smallBoxes: smallBoxes,
-        weight: weight,
-        dailyQuote: r.dailyQuote,
-        receivable: receivePrice.toFixed(2)
-      })
-    }
-  })
-
-  nextTick(() => {
-    merchantRecordList.value = recordList.sort((a, b) => b.date.localeCompare(a.date))
+    // 使用后端返回的 merchantRecordList
+    merchantRecordList.value = data.merchantRecordList || []
     openMerchantRecordList.value = true
-  })
 
-  // 交易记录
-  const transactions = transactionStore.getTransactionsByTarget(selectedMerchantId.value)
-  const paid = transactions.reduce((sum, t) => sum + Number(t.amount), 0)
+    // 构造日历记录
+    merchantRecord.value = [...new Set(merchantRecordList.value)].map(r => ({
+      date: r.date,
+      info: '有生意'
+    }))
 
-  merchantStats.value = {
-    totalBigBoxes,
-    totalSmallBoxes,
-    totalWeight,
-    receivable: receivable.toFixed(2),
-    paid: Number(paid || 0).toFixed(2),
-    unpaid: (receivable - paid).toFixed(2)
+    // 使用后端返回的统计数据
+    merchantStats.value = {
+      totalBigBoxes: data.totalBigBoxes || 0,
+      totalSmallBoxes: data.totalSmallBoxes || 0,
+      totalWeight: data.totalWeight.toFixed(2) || 0,
+      receivable: data.totalEarned || 0,
+      paid: data.settledAmount || 0,
+      unpaid: data.unpaidAmount || 0
+    }
+  } catch (e) {
+    console.error('【MerchantStatistics】获取聚合数据失败:', e)
   }
 }
 

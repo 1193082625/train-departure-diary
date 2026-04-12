@@ -308,6 +308,15 @@ export const apiOps = {
     })
     invalidateCache(table)  // 清除该表缓存
     return result
+  },
+
+  // 聚合统计（不走缓存，因为是计算结果）
+  aggregate: (params) => {
+    // params: { type, workerId, merchantId, startDate, endDate, date, field, operation }
+    return request('/departures/aggregate', {
+      method: 'POST',
+      data: JSON.stringify(params)
+    })
   }
 }
 

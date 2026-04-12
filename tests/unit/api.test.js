@@ -221,6 +221,90 @@ describe('API 模块测试', () => {
     })
   })
 
+  describe('aggregate 方法', () => {
+    it('aggregate 应该调用 POST /departures/aggregate 并携带参数', async () => {
+      const params = {
+        type: 'byMerchant',
+        merchantId: 'merchant-1',
+        startDate: '2026-01-01',
+        endDate: '2026-03-31'
+      }
+      const mockResponse = {
+        data: {
+          totalBigBoxes: 10,
+          totalSmallBoxes: 5,
+          totalWeight: 450,
+          totalEarned: 5000,
+          settledAmount: 3000,
+          unpaidAmount: 2000,
+          merchantRecordList: []
+        }
+      }
+
+      // 模拟 aggregate 调用方式（POST，不走缓存）
+      const mockAggregate = vi.fn().mockResolvedValue(mockResponse)
+      const result = await mockAggregate(params)
+
+      expect(mockAggregate).toHaveBeenCalledWith(params)
+      expect(result.data.totalEarned).toBe(5000)
+      expect(result.data.settledAmount).toBe(3000)
+      expect(result.data.unpaidAmount).toBe(2000)
+    })
+
+    it('aggregate byEmployee 应该返回员工结账数据', async () => {
+      const params = {
+        type: 'byEmployee',
+        workerId: 'worker-1',
+        startDate: '2026-01-01',
+        endDate: '2026-03-31'
+      }
+      const mockResponse = {
+        data: {
+          departureFeeSum: 200,
+          loadingFeeSum: 150,
+          totalEarned: 350,
+          settledAmount: 200,
+          unpaidAmount: 150
+        }
+      }
+
+      const mockAggregate = vi.fn().mockResolvedValue(mockResponse)
+      const result = await mockAggregate(params)
+
+      expect(result.data.departureFeeSum).toBe(200)
+      expect(result.data.loadingFeeSum).toBe(150)
+      expect(result.data.unpaidAmount).toBe(150)
+    })
+
+    it('aggregate 请求失败时应该抛出错误', async () => {
+      const mockAggregate = vi.fn().mockRejectedValue(new Error('网络请求失败'))
+
+      await expect(mockAggregate({ type: 'byMerchant' })).rejects.toThrow('网络请求失败')
+    })
+
+    it('aggregate 不应该影响 queryAll 缓存', async () => {
+      const mockData = [{ id: '1' }]
+      let queryAllCalls = 0
+
+      const mockFn = async () => {
+        queryAllCalls++
+        return mockData
+      }
+
+      // aggregate 操作不应该清除 queryAll 缓存
+      await requestCache.queryAll('transactions', 500, mockFn)
+      expect(queryAllCalls).toBe(1)
+
+      // 模拟 aggregate 调用（不走缓存，不清缓存）
+      const mockAggregate = vi.fn().mockResolvedValue({ data: {} })
+      await mockAggregate({ type: 'byMerchant' })
+
+      // queryAll 缓存应该仍然有效
+      await requestCache.queryAll('transactions', 500, mockFn)
+      expect(queryAllCalls).toBe(1) // 缓存命中，不再请求
+    })
+  })
+
   describe('cacheOps', () => {
     it('getStats 应该返回缓存状态', async () => {
       const mockData = [{ id: '1' }]

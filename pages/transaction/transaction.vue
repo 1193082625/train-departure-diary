@@ -53,25 +53,37 @@
 </template>
 
 <script setup>
-import { ref, computed, reactive, onMounted } from 'vue'
+import { ref, computed, reactive } from 'vue'
 import { onShow, onHide } from '@dcloudio/uni-app'
-import { useTransactionStore } from '@/store/transaction'
 import { useUserStore, ROLES } from '@/store/user'
 import { apiOps } from '@/utils/api'
 import { subscribe } from '@/utils/eventBus'
 import toast from '@/utils/toast'
 
-const transactionStore = useTransactionStore()
 const userStore = useUserStore()
 
 let unsubscribe = null
 
+// 交易记录（本地管理）
+const transactions = ref([])
+
+const loadTransactions = async () => {
+  try {
+    const res = await apiOps.queryAll('transactions')
+    transactions.value = res.data || []
+  } catch (e) {
+    console.error('加载交易记录失败:', e)
+    transactions.value = []
+  }
+}
+
 onShow(() => {
   unsubscribe = subscribe('transaction:refresh', () => {
-    transactionStore.loadTransactions()
+    loadTransactions()
   })
   loadWorkers()
   loadMerchants()
+  loadTransactions()
 })
 
 onHide(() => {
@@ -170,7 +182,7 @@ const selectedTarget = computed(() => {
 })
 
 const recentTransactions = computed(() =>
-  transactionStore.transactions.slice().reverse().slice(0, 20).map(t => ({
+  transactions.value.slice().reverse().slice(0, 20).map(t => ({
     ...t,
     targetName: t.type === 'payment_to_merchant'
       ? getMerchantById(t.targetId)?.name
@@ -184,32 +196,45 @@ const onTargetChange = (e) => {
 
 const onDateChange = (e) => { form.date = e.detail.value }
 
-const addTransaction = () => {
+const addTransaction = async () => {
   if (!form.targetId || !form.amount) {
     toast.error('请完善信息')
     return
   }
 
-  transactionStore.addTransaction({
-    type: form.type,
-    targetId: form.targetId,
-    amount: form.amount,
-    date: form.date,
-    note: form.note
-  })
-
-  toast.success('结账成功')
-  form.amount = null
-  form.note = ''
+  try {
+    // 根据 type 确定 targetType
+    const targetType = form.type === 'payment_to_merchant' ? 'merchant' : 'worker'
+    await apiOps.insert('transactions', {
+      type: form.type,
+      targetId: form.targetId,
+      targetType,
+      amount: form.amount,
+      date: form.date,
+      note: form.note
+    })
+    await loadTransactions()
+    toast.success('结账成功')
+    form.amount = null
+    form.note = ''
+  } catch (e) {
+    toast.error('结账失败')
+  }
 }
 
 const deleteTransaction = (id) => {
   uni.showModal({
     title: '确认删除',
     content: '确定要删除此记录吗？',
-    success: (res) => {
+    success: async (res) => {
       if (res.confirm) {
-        transactionStore.deleteTransaction(id)
+        try {
+          await apiOps.delete('transactions', id)
+          await loadTransactions()
+          toast.success('删除成功')
+        } catch (e) {
+          toast.error('删除失败')
+        }
       }
     }
   })
