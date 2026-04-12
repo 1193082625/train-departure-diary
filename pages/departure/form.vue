@@ -288,8 +288,8 @@ import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useDepartureStore } from '@/store/departure'
 import { useSettingsStore } from '@/store/settings'
 import { useUserStore, ROLES } from '@/store/user'
-import { useDailyQuoteStore } from '@/store/dailyQuote'
-import { apiOps } from '@/utils/api'
+import { dailyQuoteApi, apiOps } from '@/utils/api'
+import { subscribe } from '@/utils/eventBus'
 import { calculateMerchantCost } from '@/utils/calc'
 import toast from '@/utils/toast'
 import MerchantSelector from './components/merchant-selector.vue'
@@ -297,7 +297,21 @@ import MerchantSelector from './components/merchant-selector.vue'
 const departureStore = useDepartureStore()
 const settingsStore = useSettingsStore()
 const userStore = useUserStore()
-const dailyQuoteStore = useDailyQuoteStore()
+
+// 获取指定日期的报价（由后端过滤）
+const getQuoteByDate = async (date) => {
+  try {
+    const res = await dailyQuoteApi.getByDate(date)
+    // 后端返回格式: { success: true, data: [{ id, date, quote, ... }] }
+    if (res && res.success && Array.isArray(res.data) && res.data.length > 0) {
+      return res.data[0].quote
+    }
+    return null
+  } catch (e) {
+    console.error('获取日报价失败:', e)
+    return null
+  }
+}
 
 // 员工数据（本地管理）
 const allWorkers = ref([])
@@ -585,9 +599,9 @@ const calculated = computed(() => {
 })
 
 // 根据日期自动带出报价
-const loadQuoteByDate = (date) => {
+const loadQuoteByDate = async (date) => {
   // 优先从云端日报价表读取
-  const manualQuote = dailyQuoteStore.getQuoteByDate(date)
+  const manualQuote = await getQuoteByDate(date)
   if (manualQuote) {
     form.dailyQuote = manualQuote
     return
@@ -688,13 +702,6 @@ const saveRecord = () => {
     departureStore.updateRecord(form.id, record)
   } else {
     departureStore.addRecord(record)
-  }
-
-  // 保存当日报价到云端（自动填充）
-  if (form.dailyQuote) {
-    dailyQuoteStore.saveQuote(form.date, form.dailyQuote).catch(e => {
-      console.error('保存日报价失败:', e)
-    })
   }
 
   uni.navigateBack()

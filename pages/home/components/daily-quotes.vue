@@ -10,11 +10,13 @@
     <!-- Tab1: 报价日历 -->
     <view v-if="activeTab === 'calendar'" class="tab-content">
       <uni-calendar
+        :key="calendarKey"
         :selected="calendarSelected"
         :start-date="calendarStart"
         :end-date="calendarEnd"
         :show-month="true"
         @change="onCalendarChange"
+        @monthSwitch="onMonthChange"
       />
     </view>
 
@@ -58,9 +60,6 @@
           <text class="popup-close" @click="quotePopup.close()">×</text>
         </view>
         <view class="popup-content">
-          <view v-if="popupHasRecordQuote" class="record-quote-tip">
-            当日发车记录报价: ¥{{ popupRecordQuote }}
-          </view>
           <view class="form-item">
             <text>报价金额</text>
             <input v-model="quoteInput" type="digit" placeholder="请输入报价（元/框）" />
@@ -74,17 +73,122 @@
 
 <script setup>
 import { ref, computed, watch, nextTick } from 'vue'
-import { useDepartureStore } from '@/store/departure'
-import { useUserStore } from '@/store/user'
-import { useDailyQuoteStore } from '@/store/dailyQuote'
+import { onShow, onHide } from '@dcloudio/uni-app'
+import { useUserStore, ROLES } from '@/store/user'
+import { dailyQuoteApi } from '@/utils/api'
+import { subscribe, publish } from '@/utils/eventBus'
 import toast from '@/utils/toast'
 
-const departureStore = useDepartureStore()
 const userStore = useUserStore()
-const dailyQuoteStore = useDailyQuoteStore()
+
+// 事件总线订阅
+let unsubscribe = null
+
+onShow(() => {
+  unsubscribe = subscribe('dailyQuote:refresh', () => {
+    const today = new Date()
+    const currentMonth = getMonthRange(today.getFullYear(), today.getMonth() + 1)
+    loadQuotes(currentMonth.start, currentMonth.end)
+  })
+  // 切换回当前 tab 时加载当月数据
+  const today = new Date()
+  const currentMonth = getMonthRange(today.getFullYear(), today.getMonth() + 1)
+  loadQuotes(currentMonth.start, currentMonth.end)
+})
+
+onHide(() => {
+  if (unsubscribe) {
+    unsubscribe()
+    unsubscribe = null
+  }
+})
+
+// 本地状态
+const quotes = ref([])
+const loading = ref(false)
+const isLoadingQuotes = ref(false)
+
+// API 调用：按日期范围加载日报价
+const loadQuotes = async (startDate, endDate) => {
+  // 防止重复请求
+  if (isLoadingQuotes.value) return
+
+  // 如果没有传入日期范围，使用当前可见月份范围
+  let start = startDate
+  let end = endDate
+  if (!start || !end) {
+    const today = new Date()
+    const year = today.getFullYear()
+    const month = today.getMonth() + 1
+    const range = getMonthRange(year, month)
+    start = range.start
+    end = range.end
+  }
+
+  isLoadingQuotes.value = true
+  try {
+    const res = await dailyQuoteApi.getByDateRange(start, end)
+    // 后端返回格式: { success: true, data: [...] }
+    quotes.value = (res && res.success && res.data) ? res.data : []
+    // 数据加载完成后更新日历显示
+    updateCalendarSelected()
+  } catch (e) {
+    console.error('【DailyQuote】加载日报价失败:', e)
+    quotes.value = []
+  } finally {
+    isLoadingQuotes.value = false
+  }
+}
+
+// API 调用：保存报价
+const saveQuoteToServer = async (date, quote) => {
+  const middlemanId = userStore.getMiddlemanId()
+  if (!middlemanId) {
+    throw new Error('无权限保存报价')
+  }
+
+  // 查找是否已有该日期的报价
+  const existing = quotes.value.find(q => q.date === date && q.userId === middlemanId)
+
+  if (existing) {
+    // 更新已有报价
+    await request(`/daily_quotes/${existing.id}`, {
+      method: 'PUT',
+      data: JSON.stringify({ quote: Number(quote) })
+    })
+  } else {
+    // 创建新报价
+    await request('/daily_quotes', {
+      method: 'POST',
+      data: JSON.stringify({
+        date,
+        quote: Number(quote),
+        userId: middlemanId
+      })
+    })
+  }
+}
+
+// 获取指定日期的报价（由后端过滤）
+const getQuoteByDate = async (date) => {
+  try {
+    const res = await dailyQuoteApi.getByDate(date)
+    // 后端返回格式: { success: true, data: [{ id, date, quote, ... }] }
+    if (res && res.success && Array.isArray(res.data) && res.data.length > 0) {
+      return res.data[0].quote
+    }
+    return null
+  } catch (e) {
+    console.error('获取日报价失败:', e)
+    return null
+  }
+}
 
 // Tab 状态
 const activeTab = ref('calendar')
+
+// 日历 key，用于触发重新渲染
+const calendarKey = ref(0)
 
 // 日历相关
 const calendarSelected = ref([])
@@ -92,9 +196,36 @@ const calendarStart = ref('')
 const calendarEnd = ref('')
 const quotePopup = ref(null)
 const popupDate = ref('')
-const popupHasRecordQuote = ref(false)
-const popupRecordQuote = ref(0)
 const quoteInput = ref(null)
+
+// 计算指定月份的日期范围
+// month 是 1-indexed (1=Jan, 12=Dec)
+// startDate: month-1 是 Date 的 0-indexed 月份
+// endDate: month 是 Date 的 0-indexed 月份，day=0 取上个月最后一天，所以 month+1 再 day=0 取当月最后一天
+const getMonthRange = (year, month) => {
+  const startDate = new Date(year, month - 1, 2)
+  const endDate = new Date(year, month, 1) // 当月最后一天
+  return {
+    start: startDate.toISOString().split('T')[0],
+    end: endDate.toISOString().split('T')[0]
+  }
+}
+
+// 当前可见月份的日期范围（用于按需加载）
+// 直接初始化防止 onShow 先于 initCurrentMonth 执行导致日期错误
+const currentVisibleMonth = ref(getMonthRange(new Date().getFullYear(), new Date().getMonth() + 1))
+
+// 记录用户切换到的目标月份（解决 onShow 时 currentVisibleMonth 可能未及时更新的问题）
+const lastVisibleMonth = ref({
+  start: currentVisibleMonth.value.start,
+  end: currentVisibleMonth.value.end
+})
+
+// 初始化当前可见月份（冗余，用于确保初始化正确）
+const initCurrentMonth = () => {
+  const today = new Date()
+  currentVisibleMonth.value = getMonthRange(today.getFullYear(), today.getMonth() + 1)
+}
 
 // 获取日历的开始和结束日期
 const initCalendarRange = () => {
@@ -106,39 +237,26 @@ const initCalendarRange = () => {
   calendarEnd.value = `${year}-12-31`
 }
 
-// 获取所有报价数据（从发车记录和云端日报价表）
+// 获取所有报价数据（只从云端日报价表获取）
 const getAllQuotes = () => {
-  const quotes = {}
+  const quotesMap = {}
 
-  // 从发车记录中提取报价（使用 filteredRecords 确保按中间商过滤）
-  departureStore.filteredRecords.forEach(record => {
-    if (record.date && record.dailyQuote) {
-      if (!quotes[record.date] || quotes[record.date].source === 'manual') {
-        quotes[record.date] = {
-          date: record.date,
-          quote: record.dailyQuote,
-          source: 'record'
-        }
-      }
+  // 从云端日报价表获取手动填写的报价（后端已按用户过滤）
+  quotes.value.forEach(item => {
+    quotesMap[item.date] = {
+      date: item.date,
+      quote: item.quote,
+      source: 'manual'
     }
   })
 
-  // 从云端日报价表获取手动填写的报价（使用过滤后的数据）
-  dailyQuoteStore.filteredQuotes.forEach(item => {
-      quotes[item.date] = {
-        date: item.date,
-        quote: item.quote,
-        source: 'manual'
-      }
-  })
-
-  return quotes
+  return quotesMap
 }
 
 // 更新日历选中状态
 const updateCalendarSelected = () => {
-  const quotes = getAllQuotes()
-  const selected = Object.values(quotes).map(q => ({
+  const quotesMap = getAllQuotes()
+  const selected = Object.values(quotesMap).map(q => ({
     date: q.date,
     info: `¥${q.quote}`,
     color: q.source === 'record' ? '#52c41a' : '#1890ff'
@@ -147,35 +265,33 @@ const updateCalendarSelected = () => {
 }
 
 // 日历日期点击事件
-const onCalendarChange = (e) => {
+const onCalendarChange = async (e) => {
   const date = e.fulldate
   popupDate.value = date
 
-  // 检查当日是否有发车记录报价
-  const records = departureStore.getRecordsByDate(date)
-  const recordQuote = records.find(r => r.dailyQuote)?.dailyQuote
+  // 获取当日报价
+  const manualQuote = await getQuoteByDate(date)
 
-  if (recordQuote) {
-    popupHasRecordQuote.value = true
-    popupRecordQuote.value = recordQuote
-  } else {
-    popupHasRecordQuote.value = false
-    popupRecordQuote.value = 0
-  }
-
-  // 获取当日报价（优先显示云端日报价，如果没有则显示记录中的）
-  const manualQuote = dailyQuoteStore.getQuoteByDate(date)
-
-  if (manualQuote !== undefined) {
+  if (manualQuote !== undefined && manualQuote !== null) {
     quoteInput.value = manualQuote
-  } else if (recordQuote) {
-    quoteInput.value = recordQuote
   } else {
     quoteInput.value = null
   }
 
-  // 如果当日无报价，弹出填写窗口
+  // 弹出填写窗口
   quotePopup.value.open('center')
+}
+
+// 日历月份切换事件
+const onMonthChange = async (e) => {
+  const { year, month } = e
+  const range = getMonthRange(year, month)
+  currentVisibleMonth.value = range
+  lastVisibleMonth.value = { start: range.start, end: range.end }
+  // 加载新月份的报价数据
+  await loadQuotes(currentVisibleMonth.value.start, currentVisibleMonth.value.end)
+  // 更新日历显示
+  updateCalendarSelected()
 }
 
 // 保存报价
@@ -186,15 +302,22 @@ const saveQuote = async () => {
   }
 
   try {
-    await dailyQuoteStore.saveQuote(popupDate.value, quoteInput.value)
+    await saveQuoteToServer(popupDate.value, quoteInput.value)
     toast.success('报价保存成功')
     quotePopup.value.close()
+
+    // 重新加载报价数据
+    await loadQuotes(currentVisibleMonth.value.start, currentVisibleMonth.value.end)
+
+    // 发布事件通知其他组件
+    publish('dailyQuote:refresh', { date: popupDate.value, quote: quoteInput.value })
 
     // 更新日历显示
     updateCalendarSelected()
 
   } catch (e) {
     console.error('保存日报价失败:', e)
+    toast.error('保存日报价失败')
   }
 }
 
@@ -204,16 +327,14 @@ const chartPoints = ref([])
 const chartWidth = ref(320)
 const chartHeight = ref(220)
 
-// 全屏图表相关
-const emit = defineEmits(['openChartFullscreen'])
-
 const openChartFullscreen = () => {
-  // 传递图表数据到父组件
-  emit('openChartFullscreen', {
+  const data = {
     chartData: chartData.value,
     chartOpts: chartOpts.value,
     chartRange: chartRange.value
-  })
+  }
+
+  uni.navigateTo({ url: '/pages/home/chart-fullscreen?data=' + encodeURIComponent(JSON.stringify(data)) })
 }
 
 // 图表配置（适配 uCharts 格式）
@@ -244,12 +365,6 @@ const chartData = ref({
       data: [],
       areaStyle: true
     },
-    // {
-    //   name: '盈利',
-    //   color: '#52C41A',
-    //   data: [],
-    //   areaStyle: false
-    // }
   ]
 })
 
@@ -267,8 +382,8 @@ const chartValues = computed(() => {
   }
 })
 
-// 获取指定时间范围的报价和盈利数据
-const getChartData = () => {
+// 获取指定时间范围的报价数据（从云端API获取）
+const getChartData = async () => {
   const today = new Date()
   let startDate = ''
   let endDate = today.toISOString().split('T')[0]
@@ -285,8 +400,9 @@ const getChartData = () => {
       startDate = weekStart.toISOString().split('T')[0]
       break
     case 'month':
-      // 本月
-      startDate = new Date(year, month, 1).toISOString().split('T')[0]
+      // 本月: 1号到本月最后一天
+      startDate = new Date(year, month, 2).toISOString().split('T')[0]
+      endDate = new Date(year, month + 1, 1).toISOString().split('T')[0]
       break
     case 'year':
       // 本年
@@ -294,8 +410,36 @@ const getChartData = () => {
       break
   }
 
-  // 获取日期范围内的报价
-  const quotes = getAllQuotes()
+  // 年视图使用按月聚合的数据格式
+  if (chartRange.value === 'year') {
+    try {
+      const res = await dailyQuoteApi.getByDateRange(startDate, endDate, { groupBy: 'month' })
+      if (res && res.success && Array.isArray(res.data)) {
+        return res.data.map(item => ({
+          date: item.month,
+          quote: item.avgQuote,
+          count: item.count
+        }))
+      }
+    } catch (e) {
+      console.error('获取图表报价数据失败:', e)
+    }
+    return []
+  }
+
+  // 非年视图：按日期粒度获取数据
+  let quotesMap = {}
+  try {
+    const res = await dailyQuoteApi.getByDateRange(startDate, endDate)
+    if (res && res.success && Array.isArray(res.data)) {
+      res.data.forEach(item => {
+        quotesMap[item.date] = { quote: item.quote, source: 'manual' }
+      })
+    }
+  } catch (e) {
+    console.error('获取图表报价数据失败:', e)
+  }
+
   const dateData = []
 
   // 生成日期范围内的所有日期
@@ -304,28 +448,12 @@ const getChartData = () => {
 
   while (currentDate <= end) {
     const dateStr = currentDate.toISOString().split('T')[0]
-    const quoteInfo = quotes[dateStr]
-
-    // 获取当日的盈利（从发车记录中获取）
-    const records = departureStore.getRecordsByDate(dateStr)
-    let profit = 0
-    if (records && records.length > 0) {
-      // 计算当日总盈利
-      profit = records.reduce((sum, r) => sum + parseFloat(r.getMoney || 0), 0)
-    }
+    const quoteInfo = quotesMap[dateStr]
 
     if (quoteInfo) {
       dateData.push({
         date: dateStr,
-        quote: quoteInfo.quote,
-        profit: profit
-      })
-    } else if (profit !== 0) {
-      // 即使没有报价，只要有盈利也显示
-      dateData.push({
-        date: dateStr,
-        quote: null,
-        profit: profit
+        quote: quoteInfo.quote
       })
     }
     currentDate.setDate(currentDate.getDate() + 1)
@@ -335,15 +463,14 @@ const getChartData = () => {
 }
 
 // 更新图表数据（uCharts格式）
-const updateChartData = () => {
-  const data = getChartData()
+const updateChartData = async () => {
+  const data = await getChartData()
 
   if (data.length === 0) {
     chartData.value = {
       categories: [],
       series: [
         { name: '报价', color: '#FF9500', data: [], areaStyle: true },
-        // { name: '盈利', color: '#52C41A', data: [], areaStyle: false }
       ]
     }
     chartPoints.value = []
@@ -352,10 +479,11 @@ const updateChartData = () => {
 
   // 更新 chartData
   const categories = data.map(d => {
-    const date = new Date(d.date)
     if (chartRange.value === 'year') {
-      return `${date.getMonth() + 1}月`
+      // 年视图：d.date 格式为 "2026-02"
+      return d.date.slice(5) + '月'
     }
+    const date = new Date(d.date)
     return `${date.getMonth() + 1}/${date.getDate()}`
   })
 
@@ -371,12 +499,6 @@ const updateChartData = () => {
         data: quoteData,
         areaStyle: true
       },
-    //   {
-    //     name: '盈利',
-    //     color: '#52C41A',
-    //     data: profitData,
-    //     areaStyle: false
-    //   }
     ]
   }
 
@@ -389,11 +511,12 @@ const updateChartData = () => {
     chartPoints.value = data.map((d, index) => {
       const x = 20 + (280 / (data.length - 1 || 1)) * index
       const y = 180 - ((d.quote - minValue) / (maxValue - minValue || 1)) * 180
-      const date = new Date(d.date)
       let label = ''
       if (chartRange.value === 'year') {
-        label = `${date.getMonth() + 1}月`
+        // 年视图：d.date 格式为 "2026-02"
+        label = d.date.slice(5) + '月'
       } else {
+        const date = new Date(d.date)
         label = `${date.getMonth() + 1}/${date.getDate()}`
       }
 
@@ -420,34 +543,39 @@ watch(activeTab, (newVal) => {
     nextTick(() => {
       updateChartData()
     })
+  } else if (newVal === 'calendar') {
+    // 切回日历 tab 时刷新当月报价数据
+    const today = new Date()
+    const currentMonth = getMonthRange(today.getFullYear(), today.getMonth() + 1)
+    // 触发日历重新渲染
+    calendarKey.value++
+    loadQuotes(currentMonth.start, currentMonth.end).then(() => {
+      updateCalendarSelected()
+    })
   }
 })
 
-// 监听发车记录变化，更新日历
-watch(() => departureStore.records, () => {
-  updateCalendarSelected()
-}, { deep: true })
-
-// 监听日报价数据变化，更新日历
-watch(() => dailyQuoteStore.quotes, () => {
-  updateCalendarSelected()
-}, { deep: true })
-
 // 监听中间商切换，更新日历和图表
 watch(() => userStore.currentMiddlemanId, () => {
-  updateCalendarSelected()
-  updateChartData()
+  const today = new Date()
+  const currentMonth = getMonthRange(today.getFullYear(), today.getMonth() + 1)
+  loadQuotes(currentMonth.start, currentMonth.end).then(() => {
+    updateCalendarSelected()
+    updateChartData()
+  })
 })
 
-// 初始化
+// 初始化 - 必须在 uni-calendar 渲染前初始化当前月份，防止 monthchange 先于 initCurrentMonth 执行
 initCalendarRange()
+initCurrentMonth()
 updateCalendarSelected()
-updateChartData()
+// chart 数据将在切换到图表 tab 时才加载
 
 // 暴露给父组件使用
 defineExpose({
   updateCalendarSelected,
-  updateChartData
+  updateChartData,
+  loadQuotes
 })
 </script>
 
@@ -460,7 +588,6 @@ defineExpose({
 
 /* 报价弹窗 */
 .quote-popup { background: #fff; border-radius: 16px; padding-bottom: 20px; width: 80vw; margin: 0 auto; }
-.record-quote-tip { background: #f6ffed; padding: 10px; border-radius: 4px; margin-bottom: 15px; color: #52c41a; font-size: 14px; }
 .popup-header { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; border-bottom: 1px solid #f0f0f0; }
 .popup-title { font-size: 18px; font-weight: bold; }
 .popup-close { font-size: 28px; color: #999; }

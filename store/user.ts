@@ -29,81 +29,9 @@ export const ROLE_NAMES = {
   [ROLES.FARM]: '鸡场'
 }
 
-// 预设管理员信息
-const ADMIN_PHONE = '15369375170'
-const ADMIN_CODE = '888888'
 
 // 会话有效期：7 天（毫秒）
 const SESSION_EXPIRY = 7 * 24 * 60 * 60 * 1000
-
-// 测试用户数据
-const TEST_USERS = [
-  { phone: '15369375170', role: ROLES.ADMIN, inviteCode: '888888', nickname: '管理员', password: '123456' },
-  { phone: '18131172057', role: ROLES.MIDDLEMAN, inviteCode: '111111', nickname: '中间商A', password: '123456' },
-  { phone: '13800000002', role: ROLES.LOADER, inviteCode: '222222', nickname: '装发车A', parentId: null, password: '123456' },
-  { phone: '13800000003', role: ROLES.FARM, inviteCode: '333333', nickname: '鸡场A', parentId: null, password: '123456' }
-]
-
-// 测试邀请码
-const TEST_INVITE_CODES = [
-  { code: '111111', type: ROLES.MIDDLEMAN },
-  { code: '222222', type: ROLES.LOADER },
-  { code: '333333', type: ROLES.FARM }
-]
-
-// 初始化测试数据
-const initTestData = async () => {
-  try {
-    // 创建测试用户
-    for (const testUser of TEST_USERS) {
-      const res = await userApi.getUserByPhone(testUser.phone)
-      const existingUsers = res.data || []
-      if (!existingUsers || existingUsers.length === 0) {
-        const newUser = {
-          phone: testUser.phone,
-          nickname: testUser.nickname,
-          password: testUser.password || null,
-          role: testUser.role,
-          inviteCode: testUser.inviteCode,
-          invitedBy: null,
-          parentId: testUser.parentId || null
-        }
-        await userApi.createUser(newUser)
-      }
-    }
-
-    // 创建测试邀请码
-    for (const testCode of TEST_INVITE_CODES) {
-      const res = await inviteApi.getByCode(testCode.code)
-      const existingCodes = res.data || []
-      if (!existingCodes || existingCodes.length === 0) {
-        // 查找创建者
-        const creatorPhone = testCode.type === ROLES.MIDDLEMAN ?
-          '13800000001' : null
-
-        let creatorId = null
-        if (creatorPhone) {
-          const creatorsRes = await userApi.getUserByPhone(creatorPhone)
-          const creators = creatorsRes.data || []
-          creatorId = creators && creators.length > 0 ? creators[0].id : null
-        }
-
-        const codeData = {
-          code: testCode.code,
-          type: testCode.type,
-          creatorId: creatorId,
-          usedBy: null,
-          usedAt: null
-        }
-        await inviteApi.create(codeData)
-      }
-    }
-
-  } catch (e) {
-    console.error('【User】初始化测试数据失败:', e)
-    toast.error('初始化测试数据失败')
-  }
-}
 
 export const useUserStore = defineStore('user', () => {
   const currentUser = ref(null)
@@ -150,8 +78,6 @@ export const useUserStore = defineStore('user', () => {
   // 初始化 - 从本地存储恢复登录状态
   const init = async () => {
     try {
-      // 先初始化测试数据
-      // await initTestData()
 
       // 从本地存储恢复登录状态
       const userData = uni.getStorageSync('currentUser')

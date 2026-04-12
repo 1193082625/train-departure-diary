@@ -431,13 +431,6 @@ onMounted(() => {
 .picker-text { background: #f5f5f5; padding: 10px; border-radius: 4px; font-size: 18px; font-weight: bold; }
 .picker-text-label { font-size: 12px; color: #999; margin-top: 5px; }
 
-/* 统计汇总 */
-.summary { display: flex; justify-content: space-around; background: #f0f7ff; padding: 15px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.1); }
-.summary-item { display: flex; flex-direction: column; align-items: center; }
-.summary-label { font-size: 12px; color: #666; }
-.summary-value { font-size: 16px; font-weight: bold; color: #333; }
-.summary-value.profit { color: #52c41a; }
-
 /* 记录分组 */
 .record-group { margin-bottom: 20px; }
 .group-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee; margin-bottom: 10px; }

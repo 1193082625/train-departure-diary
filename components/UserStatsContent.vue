@@ -20,6 +20,26 @@
         <view class="picker">结束: {{ dateRange.end }}</view>
       </picker>
     </view>
+    
+    <!-- 统计汇总 -->
+    <view class="summary">
+      <view class="summary-item">
+        <text class="summary-label">发车次数</text>
+        <text class="summary-value">{{ totalStats.departureCount }}</text>
+      </view>
+      <view class="summary-item">
+        <text class="summary-label">总大框数</text>
+        <text class="summary-value">{{ totalStats.totalBigBoxes }}</text>
+      </view>
+      <view class="summary-item">
+        <text class="summary-label">总小框数</text>
+        <text class="summary-value">{{ totalStats.totalSmallBoxes }}</text>
+      </view>
+      <view class="summary-item" v-if="userStore.isAdmin || userStore.isMiddleman">
+        <text class="summary-label">总盈利</text>
+        <text class="summary-value profit">¥{{ totalStats.totalProfit.toFixed(2) }}</text>
+      </view>
+    </view>
 
     <!-- 发车记录列表 -->
     <view class="record-list" v-if="userStore.isAdmin || userStore.isMiddleman">
@@ -42,28 +62,6 @@
       <view v-if="filteredRecords.length === 0" class="empty">暂无发车记录</view>
     </view>
 
-    <!-- 底部统计信息 -->
-    <view class="stats-summary">
-      <view class="summary-title">统计汇总</view>
-      <view class="summary-item">
-        <text>发车次数</text>
-        <text class="value">{{ totalStats.departureCount }}</text>
-      </view>
-      <view class="summary-item">
-        <text>总大框数</text>
-        <text class="value">{{ totalStats.totalBigBoxes }}</text>
-      </view>
-      <view class="summary-item">
-        <text>总小框数</text>
-        <text class="value">{{ totalStats.totalSmallBoxes }}</text>
-      </view>
-      <view class="summary-item highlight">
-        <text>总盈利</text>
-        <text :class="['value', 'profit', totalStats.totalProfit >= 0 ? 'positive' : 'negative']">
-          ¥{{ totalStats.totalProfit.toFixed(2) }}
-        </text>
-      </view>
-    </view>
   </view>
 </template>
 
@@ -214,7 +212,9 @@ const avgProfit = computed(() => {
 }
 
 .range-btn {
-  padding: 8px 12px;
+  flex: 1;
+  text-align: center;
+  padding: 8px 0;
   background: #fff;
   border-radius: 4px;
   font-size: 14px;

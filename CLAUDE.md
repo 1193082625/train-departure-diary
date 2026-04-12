@@ -318,15 +318,15 @@ calculateMerchantCost() -> 计算鸡场成本
 
 ## Store 模块结构
 
-| Store            | 文件                 | 职责                       |
-| ---------------- | -------------------- | -------------------------- |
-| userStore        | store/user.ts        | 用户认证、角色、邀请码管理 |
-| merchantStore    | store/merchant.ts    | 鸡场 CRUD                  |
-| workerStore      | store/worker.ts      | 员工 CRUD                  |
-| departureStore   | store/departure.ts   | 发车记录 CRUD              |
-| transactionStore | store/transaction.ts | 交易记录 CRUD              |
-| settingsStore    | store/settings.ts    | 系统参数配置               |
-| dailyQuoteStore  | store/dailyQuote.ts  | 日报价管理                 |
+| Store            | 文件                                      | 职责                       |
+| ---------------- | ----------------------------------------- | -------------------------- |
+| userStore        | store/user.ts                             | 用户认证、角色、邀请码管理 |
+| merchantStore    | store/merchant.ts                         | 鸡场 CRUD                  |
+| workerStore      | store/worker.ts                           | 员工 CRUD                  |
+| departureStore   | store/departure.ts                         | 发车记录 CRUD              |
+| transactionStore | store/transaction.ts                       | 交易记录 CRUD              |
+| settingsStore    | store/settings.ts                          | 系统参数配置               |
+| dailyQuote       | pages/home/components/daily-quotes.vue    | 日报价 API-first 管理      |
 
 ### userStore 主要功能
 
@@ -449,7 +449,7 @@ Express 后端已独立为单独项目，提供 RESTful API，数据库操作在
 | utils/calc.ts                     | 计算工具函数            |
 | store/user.ts                     | 用户状态管理            |
 | store/departure.ts                | 发车记录状态管理        |
-| store/dailyQuote.ts               | 日报价状态管理          |
+| pages/home/components/daily-quotes.vue | 日报价组件 (API-first) |
 | pages/departure/form.vue          | 发车表单 (含成本计算)   |
 | sql/schema-mysql.sql              | MySQL 建表语句          |
 | train-departure-diary-server/index.js | Express 后端服务入口 |
@@ -578,7 +578,11 @@ tests/
 ├── setup.js              # Vitest 全局 mock 配置
 ├── unit/
 │   ├── api.test.js       # API 封装测试 (缓存逻辑、CRUD)
-│   └── worker.test.js     # 人员管理模块测试 (角色过滤、表单验证)
+│   ├── worker.test.js    # 人员管理模块测试 (角色过滤、表单验证)
+│   ├── merchant.test.js  # 鸡场管理模块测试 (CRUD、角色过滤)
+│   ├── transaction.test.js # 交易记录模块测试
+│   ├── merchantStatistics.test.js # 鸡场统计模块测试
+│   └── dailyQuote.test.js # 每日报价模块测试 (API-first)
 └── e2e/
     └── worker.spec.js     # 人员管理页面 E2E 测试
 ```
@@ -602,6 +606,13 @@ npx playwright install --with-deps chromium
 - 角色过滤逻辑 (管理员/中间商/装发车)
 - CRUD 操作 (添加/编辑/删除员工)
 - 表单验证 (姓名、手机号)
+
+**dailyQuote.test.js**:
+- 角色过滤逻辑 (管理员/中间商/装发车/鸡场)
+- 按日期获取报价 (getQuoteByDate)
+- API 调用模拟 (加载/新增/更新报价)
+- 事件总线集成 (dailyQuote:refresh)
+- 数据一致性验证
 
 ### E2E 测试覆盖范围
 
