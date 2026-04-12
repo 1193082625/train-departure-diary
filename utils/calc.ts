@@ -1,5 +1,4 @@
 import { MerchantDetail } from "../types/departureRecord"
-import { useMerchantStore } from "../store/merchant"
 import { useSettingsStore } from "../store/settings"
 import { MerchantAmount } from "../types/departureRecord"
 
@@ -29,18 +28,19 @@ export const calculateMerchantItem = ({
 // 鸡场拉货成本
 export const calculateMerchantCost = ({
   merchantDetails,
+  merchants,
   dailyQuote,
   smallWeight,
   truckCartonBoxesBig, // 货车共装大箱
   truckCartonBoxesSmall, // 货车共装小
 }: {
   merchantDetails: MerchantDetail[],
+  merchants: any[],
   dailyQuote: number,
   smallWeight: number,
   truckCartonBoxesBig: number,
   truckCartonBoxesSmall: number,
 }) => {
-    const merchantStore = useMerchantStore()
     const settingsStore = useSettingsStore()
     // 本趟合计收货价
     let totalReceivePrice = 0
@@ -49,7 +49,7 @@ export const calculateMerchantCost = ({
     // 鸡场金额明细
     let merchantAmount: MerchantAmount[] = []
     merchantDetails.forEach(detail => {
-        const merchant = merchantStore.getMerchantById(detail.merchantId)
+        const merchant = merchants.find(m => m.id === detail.merchantId)
         if (merchant && dailyQuote) {
           // 大框
           const bigBoxes = Number(detail.bigBoxes) || 0
