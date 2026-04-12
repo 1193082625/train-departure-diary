@@ -32,6 +32,8 @@ onShow(() => {
   unsubscribe = subscribe('departure:refresh', () => {
     departureStore.loadRecords()
   })
+  // 重置日历到当前月
+  dailyQuotesRef.value?.resetCalendarToCurrentMonth()
 })
 
 onHide(() => {

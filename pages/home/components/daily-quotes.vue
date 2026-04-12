@@ -10,10 +10,12 @@
     <!-- Tab1: 报价日历 -->
     <view v-if="activeTab === 'calendar'" class="tab-content">
       <uni-calendar
+        ref="calendarRef"
         :key="calendarKey"
         :selected="calendarSelected"
         :start-date="calendarStart"
         :end-date="calendarEnd"
+        :date="calendarDate"
         :show-month="true"
         @change="onCalendarChange"
         @monthSwitch="onMonthChange"
@@ -90,7 +92,8 @@ onShow(() => {
     const currentMonth = getMonthRange(today.getFullYear(), today.getMonth() + 1)
     loadQuotes(currentMonth.start, currentMonth.end)
   })
-  // 切换回当前 tab 时加载当月数据
+  // 切换回当前 tab 时重置日历到当前月并加载当月数据
+  resetCalendarToCurrentMonth()
   const today = new Date()
   const currentMonth = getMonthRange(today.getFullYear(), today.getMonth() + 1)
   loadQuotes(currentMonth.start, currentMonth.end)
@@ -190,6 +193,28 @@ const activeTab = ref('calendar')
 // 日历 key，用于触发重新渲染
 const calendarKey = ref(0)
 
+// 日历日期控制（用于重置日历到当前月）
+const calendarDate = ref(new Date().toISOString().split('T')[0])
+
+// 重置日历时防止触发弹窗的标志
+let isResettingCalendar = false
+
+// 重置日历到当前月
+const resetCalendarToCurrentMonth = () => {
+  // 使用 backToday 重置日历，backToday 会触发 change 事件
+  // 我们用标志位防止此时打开弹窗
+  isResettingCalendar = true
+  if (calendarRef.value) {
+    calendarRef.value.backToday()
+  }
+  nextTick(() => {
+    isResettingCalendar = false
+  })
+}
+
+// 日历 ref
+const calendarRef = ref(null)
+
 // 日历相关
 const calendarSelected = ref([])
 const calendarStart = ref('')
@@ -266,6 +291,9 @@ const updateCalendarSelected = () => {
 
 // 日历日期点击事件
 const onCalendarChange = async (e) => {
+  // 如果是重置日历触发的 change，不打开弹窗
+  if (isResettingCalendar) return
+
   const date = e.fulldate
   popupDate.value = date
 
@@ -544,12 +572,9 @@ watch(activeTab, (newVal) => {
       updateChartData()
     })
   } else if (newVal === 'calendar') {
-    // 切回日历 tab 时刷新当月报价数据
-    const today = new Date()
-    const currentMonth = getMonthRange(today.getFullYear(), today.getMonth() + 1)
-    // 触发日历重新渲染
-    calendarKey.value++
-    loadQuotes(currentMonth.start, currentMonth.end).then(() => {
+    // 切回日历 tab 时重置日历到当前月并刷新当月报价数据
+    resetCalendarToCurrentMonth()
+    loadQuotes(currentVisibleMonth.value.start, currentVisibleMonth.value.end).then(() => {
       updateCalendarSelected()
     })
   }
@@ -575,7 +600,8 @@ updateCalendarSelected()
 defineExpose({
   updateCalendarSelected,
   updateChartData,
-  loadQuotes
+  loadQuotes,
+  resetCalendarToCurrentMonth
 })
 </script>
 
