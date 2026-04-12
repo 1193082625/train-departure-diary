@@ -107,6 +107,12 @@ onHide(() => {
   if (unsubscribe) { unsubscribe(); unsubscribe = null }
 })
 
+onMounted(async () => {
+  if (userStore.users.length === 0) {
+    await userStore.loadUsers()
+  }
+})
+
 // 上拉加载更多
 onReachBottom(() => {
   if (!loadingMore.value && pagination.value.page < pagination.value.totalPages) {

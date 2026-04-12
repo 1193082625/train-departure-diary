@@ -69,7 +69,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { onShow, onHide } from '@dcloudio/uni-app'
 import { useMerchantStore } from '@/store/merchant'
 import { useUserStore } from '@/store/user'
@@ -89,6 +89,12 @@ onShow(() => {
 
 onHide(() => {
   if (unsubscribe) { unsubscribe(); unsubscribe = null }
+})
+
+onMounted(async () => {
+  if (userStore.users.length === 0) {
+    await userStore.loadUsers()
+  }
 })
 
 const showAddModal = ref(false)

@@ -153,9 +153,6 @@ export const useUserStore = defineStore('user', () => {
       // 先初始化测试数据
       // await initTestData()
 
-      // 加载所有用户
-      await loadUsers()
-
       // 从本地存储恢复登录状态
       const userData = uni.getStorageSync('currentUser')
       if (userData) {
@@ -171,6 +168,11 @@ export const useUserStore = defineStore('user', () => {
         }
         currentUser.value = JSON.parse(userData)
         isLoggedIn.value = true
+
+        // 管理员需要中间商列表，其他角色按需加载
+        if (currentUser.value.role === ROLES.ADMIN) {
+          await loadUsers()
+        }
       }
     } catch (e) {
       console.error('【User】初始化失败:', e)
