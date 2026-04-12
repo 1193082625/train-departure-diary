@@ -270,7 +270,6 @@ const saveWorker = async () => {
       toast.success('添加成功')
     }
     closeModal()
-    loadWorkers(pagination.value.page)
     publish('worker:refresh', null)
   } catch (e) {
     console.error('保存失败:', e)
