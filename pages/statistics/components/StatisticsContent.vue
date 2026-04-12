@@ -29,7 +29,6 @@
 <script setup>
 import { ref, reactive } from 'vue'
 import { onShow, onHide } from '@dcloudio/uni-app'
-import { useMerchantStore } from '@/store/merchant'
 import { useDepartureStore } from '@/store/departure'
 import { useTransactionStore } from '@/store/transaction'
 import { subscribe } from '@/utils/eventBus'
@@ -37,7 +36,6 @@ import MiddlemanSelector from '@/components/middleman-selector.vue'
 import WorkerStatistics from './WorkerStatistics.vue'
 import MerchantStatistics from './MerchantStatistics.vue'
 
-const merchantStore = useMerchantStore()
 const departureStore = useDepartureStore()
 const transactionStore = useTransactionStore()
 
@@ -47,10 +45,7 @@ onShow(() => {
   unsubscribers.push(subscribe('departure:refresh', () => {
     departureStore.loadRecords()
   }))
-  unsubscribers.push(subscribe('merchant:refresh', () => {
-    merchantStore.loadMerchants()
-  }))
-  unsubscribers.push(subscribe('transaction:refresh', () => {
+    unsubscribers.push(subscribe('transaction:refresh', () => {
     transactionStore.loadTransactions()
   }))
 })
