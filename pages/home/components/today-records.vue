@@ -21,20 +21,38 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
-import { useDepartureStore } from '@/store/departure'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { departureApi } from '@/utils/api'
 import { useUserStore } from '@/store/user'
+import { subscribe } from '@/utils/eventBus'
 
-const departureStore = useDepartureStore()
 const userStore = useUserStore()
+
+const todayRecords = ref([])
+
+const loadTodayRecords = async () => {
+  const today = new Date().toISOString().split('T')[0]
+  todayRecords.value = await departureApi.loadRecordsByDate(today)
+}
+
+let unsubscribe = null
+
+onMounted(async () => {
+  await loadTodayRecords()
+  unsubscribe = subscribe('departure:refresh', () => {
+    loadTodayRecords()
+  })
+})
+
+onUnmounted(() => {
+  if (unsubscribe) { unsubscribe(); unsubscribe = null }
+})
 
 const goToDepartureForm = () => uni.navigateTo({ url: '/pages/departure/form' })
 
 const editRecord = (record) => {
   uni.navigateTo({ url: `/pages/departure/form?id=${record.id}` })
 }
-
-const todayRecords = computed(() => departureStore.getTodayRecords().sort((a, b) => b.createdAt.localeCompare(a.createdAt)))
 
 const todayStats = computed(() => {
   const records = todayRecords.value

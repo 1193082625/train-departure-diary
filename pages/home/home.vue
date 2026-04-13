@@ -16,28 +16,17 @@
 
 <script setup>
 import { ref } from 'vue'
-import { onShow, onHide } from '@dcloudio/uni-app'
-import { useDepartureStore } from '@/store/departure'
-import { subscribe } from '@/utils/eventBus'
+import { onShow } from '@dcloudio/uni-app'
 import MiddlemanSelector from '@/components/middleman-selector.vue'
 import QuickEntry from './components/quick-entry.vue'
 import DailyQuotes from './components/daily-quotes.vue'
 import TodayRecords from './components/today-records.vue'
 
 const dailyQuotesRef = ref(null)
-const departureStore = useDepartureStore()
-let unsubscribe = null
 
 onShow(() => {
-  unsubscribe = subscribe('departure:refresh', () => {
-    departureStore.loadRecords()
-  })
   // 重置日历到当前月
   dailyQuotesRef.value?.resetCalendarToCurrentMonth()
-})
-
-onHide(() => {
-  if (unsubscribe) { unsubscribe(); unsubscribe = null }
 })
 </script>
 
