@@ -285,16 +285,14 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted, watch } from 'vue'
-import { useDepartureStore } from '@/store/departure'
 import { useSettingsStore } from '@/store/settings'
 import { useUserStore, ROLES } from '@/store/user'
-import { dailyQuoteApi, apiOps } from '@/utils/api'
-import { subscribe } from '@/utils/eventBus'
+import { departureApi, dailyQuoteApi, apiOps } from '@/utils/api'
+import { subscribe, publish } from '@/utils/eventBus'
 import { calculateMerchantCost } from '@/utils/calc'
 import toast from '@/utils/toast'
 import MerchantSelector from './components/merchant-selector.vue'
 
-const departureStore = useDepartureStore()
 const settingsStore = useSettingsStore()
 const userStore = useUserStore()
 
@@ -606,13 +604,6 @@ const loadQuoteByDate = async (date) => {
     form.dailyQuote = manualQuote
     return
   }
-
-  // 其次从发车记录中查找
-  const records = departureStore.getRecordsByDate(date)
-  const recordQuote = records.find(r => r.dailyQuote)?.dailyQuote
-  if (recordQuote) {
-    form.dailyQuote = recordQuote
-  }
 }
 
 const onDateChange = (e) => {
@@ -631,7 +622,7 @@ const removeMerchant = (index) => { form.merchantDetails.splice(index, 1) }
 const addTruckRow = () => { form.truckRows.push({ rowNumber: form.truckRows.length + 1, bigBoxes: null, smallBoxes: null }) }
 const removeTruckRow = (index) => { form.truckRows.splice(index, 1) }
 
-const saveRecord = () => {
+const saveRecord = async () => {
   // 添加校验
   if (!form.dailyQuote) {
     toast.error('请填写当日报价')
@@ -699,11 +690,12 @@ const saveRecord = () => {
   }
 
   if (form.id) {
-    departureStore.updateRecord(form.id, record)
+    await departureApi.update(form.id, record)
   } else {
-    departureStore.addRecord(record)
+    await departureApi.create(record)
   }
 
+  publish('departure:refresh', null)
   uni.navigateBack()
 }
 
@@ -721,11 +713,10 @@ onMounted(async () => {
   const options = currentPage.options || {}
 
   if (options.id) {
-    // 确保数据已加载后再查找记录
-    await departureStore.loadRecords()
-    const record = departureStore.records.find(r => r.id === options.id)
-    if (record) {
-      Object.assign(form, record)
+    // 根据ID获取记录详情
+    const res = await departureApi.getById(options.id)
+    if (res && res.success && res.data) {
+      Object.assign(form, res.data)
     }
   } else {
     // 非编辑模式，自动带出当日报价
