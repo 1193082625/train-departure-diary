@@ -149,7 +149,15 @@ export const departureApi = {
   },
 
   // 删除记录
-  delete: (id) => apiOps.delete('departures', id)
+  delete: (id) => apiOps.delete('departures', id),
+
+  // 聚合统计
+  aggregate: (startDate, endDate, type = 'summary') => {
+    const queryString = buildQueryString({ type, startDate, endDate })
+    return request(`/departures/aggregate${queryString}`, {
+      method: 'GET'
+    })
+  }
 }
 
 export { parseJsonField }

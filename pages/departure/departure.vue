@@ -83,23 +83,23 @@
     <view v-if="records.length > 0" class="summary">
       <view class="summary-item">
         <text class="summary-label">总车次</text>
-        <text class="summary-value">{{ records.length }}</text>
+        <text class="summary-value">{{ aggregateStats.departureCount }}</text>
       </view>
       <view class="summary-item">
         <text class="summary-label">大框</text>
-        <text class="summary-value">{{ totalBigBoxes }}</text>
+        <text class="summary-value">{{ aggregateStats.truckBigTotal }}</text>
       </view>
       <view class="summary-item">
         <text class="summary-label">小框</text>
-        <text class="summary-value">{{ totalSmallBoxes }}</text>
+        <text class="summary-value">{{ aggregateStats.truckSmallTotal }}</text>
       </view>
       <view class="summary-item">
         <text class="summary-label">斤数</text>
-        <text class="summary-value">{{ totalWeight.toFixed(2) || '--' }}</text>
+        <text class="summary-value">{{ aggregateStats.truckWeightTotal.toFixed(2) || '--' }}</text>
       </view>
       <view class="summary-item" v-if="userStore.isAdmin || userStore.isMiddleman">
         <text class="summary-label">总盈利</text>
-        <text class="summary-value profit">¥{{ totalProfit.toFixed(2) }}</text>
+        <text class="summary-value profit">¥{{ aggregateStats.profitTotal.toFixed(2) }}</text>
       </view>
     </view>
 
@@ -117,9 +117,9 @@
       <template v-if="viewMode !== 'day'">
         <view v-for="(group, groupKey) in groupedRecords" :key="groupKey" class="record-group">
           <view class="group-header">
-            <text class="group-title">{{ groupKey }}</text>
+            <view class="group-title">{{ groupKey }}</view>
             <view class="group-summary">
-              {{ group.records.length }}车 | 大框{{ group.bigBoxes }} | 小框{{ group.smallBoxes }} | 斤数{{ group.weight }} <text v-if="userStore.isAdmin || userStore.isMiddleman"> | ¥{{ group.profit.toFixed(2) }}</text>
+              {{ group.records.length }}车 | 大框{{ group.bigBoxes }} | 小框{{ group.smallBoxes }} | 斤数{{ group.weight.toFixed(2) }} <text v-if="userStore.isAdmin || userStore.isMiddleman"> | ¥{{ group.profit.toFixed(2) }}</text>
             </view>
           </view>
           <view
@@ -129,7 +129,7 @@
             @click="editRecord(record)"
           >
             <view class="record-header">
-              <text class="trip-number">{{ getTripNumber(record) }}</text>
+              <text class="trip-number">{{ record.tripNumber }}</text>
               <text class="time">{{ record.date }}</text>
             </view>
             <view class="record-content">
@@ -236,6 +236,14 @@ const loadRecords = async (reset = false) => {
       allRecords.value = [...allRecords.value, ...(res.data || [])]
     }
 
+    // 按日期和时间排序，确保车次编号正确
+    allRecords.value.sort((a, b) => {
+      if (a.date !== b.date) return a.date.localeCompare(b.date)
+      const aTime = a.createdAt || ''
+      const bTime = b.createdAt || ''
+      return aTime.localeCompare(bTime)
+    })
+
     // 判断是否还有更多数据
     const receivedCount = res.data?.length || 0
     hasMore.value = receivedCount >= pageSize.value
@@ -253,9 +261,48 @@ const loadRecords = async (reset = false) => {
   }
 }
 
+// 统计汇总（后端聚合）
+const aggregateStats = ref({
+  departureCount: 0,
+  truckBigTotal: 0,
+  truckSmallTotal: 0,
+  truckWeightTotal: 0,
+  profitTotal: 0
+})
+const statsLoading = ref(false)
+
+const loadAggregateStats = async () => {
+  if (statsLoading.value) return
+
+  statsLoading.value = true
+  try {
+    let startDate, endDate
+    if (viewMode.value === 'day') {
+      startDate = selectedDate.value
+      endDate = selectedDate.value
+    } else if (viewMode.value === 'month') {
+      startDate = `${selectedYear.value}-${String(selectedMonth.value).padStart(2, '0')}-01`
+      endDate = getMonthEndDate(selectedYear.value, selectedMonth.value)
+    } else {
+      startDate = `${selectedYearForYear.value}-01-01`
+      endDate = `${selectedYearForYear.value}-12-31`
+    }
+
+    const res = await departureApi.aggregate(startDate, endDate, 'summary')
+    if (res.data) {
+      aggregateStats.value = res.data
+    }
+  } catch (e) {
+    console.error('加载聚合统计失败:', e)
+  } finally {
+    statsLoading.value = false
+  }
+}
+
 // 下拉刷新
 const onRefresh = () => {
   loadRecords(true)
+  loadAggregateStats()
 }
 
 // 上拉加载更多
@@ -282,6 +329,7 @@ const getWorkerById = (id) => allWorkers.value.find(w => w.id === id)
 
 onShow(() => {
   loadRecords(true)
+  loadAggregateStats()
 })
 
 // 今天的日期
@@ -317,42 +365,50 @@ const monthOptions = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
 // 切换视图模式
 const switchViewMode = (mode) => {
   viewMode.value = mode
+  loadAggregateStats()
 }
 
 // 快捷选择今天
 const selectToday = () => {
   selectedDate.value = today
+  loadAggregateStats()
 }
 
 // 快捷选择本月
 const selectCurrentMonth = () => {
   selectedYear.value = currentYear
   selectedMonth.value = currentMonth
+  loadAggregateStats()
 }
 
 // 快捷选择本年
 const selectCurrentYear = () => {
   selectedYearForYear.value = currentYear
+  loadAggregateStats()
 }
 
 // 日期变化
 const onDateChange = (e) => {
   selectedDate.value = e.detail.value
+  loadAggregateStats()
 }
 
 // 年份变化（按月模式）
 const onYearChange = (e) => {
   selectedYear.value = yearOptions.value[e.detail.value]
+  loadAggregateStats()
 }
 
 // 月份变化
 const onMonthChange = (e) => {
   selectedMonth.value = monthOptions[e.detail.value]
+  loadAggregateStats()
 }
 
 // 年份变化（按年模式）
 const onYearForYearChange = (e) => {
   selectedYearForYear.value = yearOptions.value[e.detail.value]
+  loadAggregateStats()
 }
 
 // 监听时间范围变化，自动重新加载
@@ -360,6 +416,7 @@ watch(
   () => [viewMode.value, selectedDate.value, selectedYear.value, selectedMonth.value, selectedYearForYear.value],
   () => {
     loadRecords(true)
+    loadAggregateStats()
   }
 )
 
@@ -399,41 +456,30 @@ const groupedRecords = computed(() => {
     groups[key].profit += parseFloat(record.getMoney || 0)
   })
 
-  return groups
-})
-
-// 计算总大框
-const totalBigBoxes = computed(() => {
-  return records.value.reduce((sum, r) => sum + calculateTotalBigBoxes(r), 0)
-})
-
-// 计算总小框
-const totalSmallBoxes = computed(() => {
-  return records.value.reduce((sum, r) => sum + calculateTotalSmallBoxes(r), 0)
-})
-
-// 计算总斤数
-const totalWeight = computed(() => {
-  return records.value.reduce((sum, r) => sum + calculateTotalWeight(r), 0)
-})
-
-// 计算总盈利
-const totalProfit = computed(() => {
-  return records.value.reduce((sum, r) => sum + parseFloat(r.getMoney || 0), 0)
-})
-
-// 计算车次编号
-const getTripNumber = (record) => {
-  const sameDayRecords = records.value
-    .filter(r => r.date === record.date)
-    .sort((a, b) => {
+  // 为每个分组内的记录计算车次编号
+  // 分组内按创建时间正序排序（最早的「第01趟」）
+  Object.values(groups).forEach(group => {
+    const sortedGroupRecords = [...group.records].sort((a, b) => {
       const aTime = a.createdAt || ''
       const bTime = b.createdAt || ''
-      return aTime.localeCompare(bTime)
+      const timeCompare = aTime.localeCompare(bTime)
+      if (timeCompare !== 0) return timeCompare
+      return a.id.localeCompare(b.id)
     })
-  const index = sameDayRecords.findIndex(r => r.id === record.id)
-  return `第${String(index + 1).padStart(2, '0')}趟`
-}
+    // 建立 id -> 编号 的映射
+    const tripNumberMap = {}
+    sortedGroupRecords.forEach((r, index) => {
+      tripNumberMap[r.id] = `第${String(index + 1).padStart(2, '0')}趟`
+    })
+    // 按创建时间正序重新排列分组内的记录，并设置编号
+    group.records = sortedGroupRecords.map(r => {
+      r.tripNumber = tripNumberMap[r.id]
+      return r
+    })
+  })
+
+  return groups
+})
 
 // 获取空文本
 const getEmptyText = () => {
@@ -475,7 +521,6 @@ const calculateTotalWeight = (record) => {
 }
 
 onMounted(() => {
-  loadRecords(true)
   loadWorkers()
 })
 </script>
@@ -504,7 +549,7 @@ onMounted(() => {
 
 /* 记录分组 */
 .record-group { margin-bottom: 20px; }
-.group-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee; margin-bottom: 10px; }
+.group-header { padding: 10px; border-bottom: 1px solid #eee; margin-bottom: 10px; }
 .group-title { font-weight: bold; color: #333; }
 .group-summary { font-size: 12px; color: #666; }
 
