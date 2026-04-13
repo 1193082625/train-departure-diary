@@ -70,7 +70,7 @@
           <text class="summary-value profit">¥{{ workerStats.unpaidAmount }}</text>
         </view>
       </view> -->
-      <uni-calendar
+      <!-- <uni-calendar
         :insert="true"
         :date="currentDate"
         :start-date="dateRange.start"
@@ -80,7 +80,7 @@
         :selected="calendarRecords"
         @change="changeDateRange"
         @monthSwitch="onMonthSwitch"
-      />
+      /> -->
 
       <!-- 明细列表 -->
       <uni-collapse class="mt-section detail-list-collapse" v-if="personRecordList.length > 0">
@@ -366,7 +366,7 @@ watch(() => [props.dateRange.start, props.dateRange.end], () => {
 <style scoped>
 .tab-content { display: flex; flex-direction: column; gap: 10px; }
 .picker { background: #fff; padding: 12px; border-radius: 4px; }
-.stats-result { background: #fff; padding: 15px; border-radius: 8px; margin-top: 10px; margin-bottom: 15px;}
+.stats-result { background: #fff; padding: 15px; border-radius: 8px; margin-top: 10px;}
 .stat-item { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
 .stat-item:last-child { border-bottom: none; }
 .value { font-weight: bold; color: #007aff; }
