@@ -29,21 +29,12 @@
 <script setup>
 import { ref, reactive } from 'vue'
 import { onShow, onHide } from '@dcloudio/uni-app'
-import { useDepartureStore } from '@/store/departure'
 import { subscribe } from '@/utils/eventBus'
 import MiddlemanSelector from '@/components/middleman-selector.vue'
 import WorkerStatistics from './WorkerStatistics.vue'
 import MerchantStatistics from './MerchantStatistics.vue'
 
-const departureStore = useDepartureStore()
-
 let unsubscribers = []
-
-onShow(() => {
-  unsubscribers.push(subscribe('departure:refresh', () => {
-    departureStore.loadRecords()
-  }))
-})
 
 onHide(() => {
   unsubscribers.forEach(fn => fn())
@@ -51,12 +42,14 @@ onHide(() => {
 })
 
 const activeTab = ref('worker')
+const isAllRange = ref(false) // 标记是否为全部范围
 const dateRange = reactive({
   start: new Date(new Date().setDate(1)).toISOString().split('T')[0], // 本月第一天
   end: new Date().toISOString().split('T')[0]
 })
 
 const onDateRangeUpdate = (newRange) => {
+  isAllRange.value = false
   dateRange.start = newRange.start
   dateRange.end = newRange.end
 }
@@ -69,40 +62,40 @@ const setQuickRange = (type) => {
 
   switch (type) {
     case 'today':
+      isAllRange.value = false
       dateRange.start = today.toISOString().split('T')[0]
       dateRange.end = dateRange.start
       break
     case 'month':
-      // 获取本月第一天
+      isAllRange.value = false
       dateRange.start = new Date(year, month, 2).toISOString().split('T')[0]
-      // 获取本月最后一天
       dateRange.end = today.toISOString().split('T')[0]
       break
     case 'lastMonth':
-      // 获取上月第一天
+      isAllRange.value = false
       dateRange.start = new Date(year, month - 1, 2).toISOString().split('T')[0]
-      // 获取上月最后一天
       dateRange.end = new Date(year, month, 1).toISOString().split('T')[0]
       break
     case 'year':
-      // 获取本年第一天
+      isAllRange.value = false
       dateRange.start = new Date(year, 0, 2).toISOString().split('T')[0]
-      // 获取本年最后一天
       dateRange.end = today.toISOString().split('T')[0]
       break
     case 'all':
-      // 获取最早记录日期
-      if (departureStore.records.length > 0) {
-        const dates = departureStore.records.map(r => r.date).sort()
-        dateRange.start = dates[0]
-        dateRange.end = today.toISOString().split('T')[0]
-      }
+      isAllRange.value = true
+      // 全部范围不传日期，由后端处理
+      dateRange.start = ''
+      dateRange.end = ''
       break
   }
 }
 
 // 获取当前激活的快捷范围
 const getActiveRange = () => {
+  if (isAllRange.value) {
+    return 'all'
+  }
+
   const todayObj = new Date()
   const today = todayObj.toISOString().split('T')[0]
   const year = todayObj.getFullYear()
@@ -113,34 +106,26 @@ const getActiveRange = () => {
     return 'today'
   }
 
-   // 本月
-   const monthStart = new Date(year, month, 2).toISOString().split('T')[0]
-   if (dateRange.start === monthStart && dateRange.end === today) {
-     return 'month'
-   }
+  // 本月
+  const monthStart = new Date(year, month, 2).toISOString().split('T')[0]
+  if (dateRange.start === monthStart && dateRange.end === today) {
+    return 'month'
+  }
 
-   // 上月
-   const lastMonthStart = new Date(year, month - 1, 2).toISOString().split('T')[0]
-   const lastMonthEnd = new Date(year, month, 1).toISOString().split('T')[0]
-   if (dateRange.start === lastMonthStart && dateRange.end === lastMonthEnd) {
-     return 'lastMonth'
-   }
+  // 上月
+  const lastMonthStart = new Date(year, month - 1, 2).toISOString().split('T')[0]
+  const lastMonthEnd = new Date(year, month, 1).toISOString().split('T')[0]
+  if (dateRange.start === lastMonthStart && dateRange.end === lastMonthEnd) {
+    return 'lastMonth'
+  }
 
-   // 本年
-   const yearStart = new Date(year, 0, 2).toISOString().split('T')[0]
-   if (dateRange.start === yearStart && dateRange.end === today) {
-     return 'year'
-   }
+  // 本年
+  const yearStart = new Date(year, 0, 2).toISOString().split('T')[0]
+  if (dateRange.start === yearStart && dateRange.end === today) {
+    return 'year'
+  }
 
-   // 全部
-   if (departureStore.records.length > 0) {
-     const dates = departureStore.records.map(r => r.date).sort()
-     if (dateRange.start === dates[0] && dateRange.end === today) {
-       return 'all'
-     }
-   }
-
-   return null
+  return null
 }
 </script>
 

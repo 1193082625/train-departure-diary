@@ -6,10 +6,10 @@
     </picker>
 
     <picker mode="date" :value="dateRange.start" @change="onStartDateChange">
-      <view class="picker">开始: {{ dateRange.start }}</view>
+      <view class="picker">开始: {{ dateRange.start || '--' }}</view>
     </picker>
     <picker mode="date" :value="dateRange.end" @change="onEndDateChange">
-      <view class="picker">结束: {{ dateRange.end }}</view>
+      <view class="picker">结束: {{ dateRange.end || '--' }}</view>
     </picker>
 
     <view class="empty-content" v-if="!selectedMerchant">
@@ -303,7 +303,9 @@ watch(selectedMerchantId, () => {
 })
 
 watch(() => [props.dateRange.start, props.dateRange.end], () => {
-  updateMerchantStats()
+  if (selectedMerchant.value) {
+    updateMerchantStats()
+  }
 }, { deep: true })
 </script>
 

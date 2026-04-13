@@ -6,10 +6,10 @@
     </picker>
 
     <picker mode="date" :value="dateRange.start" @change="onStartDateChange">
-      <view class="picker">开始: {{ dateRange.start }}</view>
+      <view class="picker">开始: {{ dateRange.start || '--' }}</view>
     </picker>
     <picker mode="date" :value="dateRange.end" @change="onEndDateChange">
-      <view class="picker">结束: {{ dateRange.end }}</view>
+      <view class="picker">结束: {{ dateRange.end || '--' }}</view>
     </picker>
 
     <view class="empty-content" v-if="!selectedWorker">
@@ -182,7 +182,7 @@ const loadWorkers = async () => {
 
 // 加载统计数据
 const loadWorkerStats = async () => {
-  if (!selectedWorkerId.value || !props.dateRange.start || !props.dateRange.end) {
+  if (!selectedWorkerId.value) {
     workerStats.value = {
       workerId: '',
       workDays: 0,
@@ -223,7 +223,7 @@ const loadWorkerStats = async () => {
 
 // 加载日历数据
 const loadCalendarRecords = async () => {
-  if (!selectedWorkerId.value || !props.dateRange.start || !props.dateRange.end) {
+  if (!selectedWorkerId.value) {
     calendarRecords.value = []
     return
   }
@@ -247,7 +247,7 @@ const loadCalendarRecords = async () => {
 
 // 加载列表数据（第一页）
 const loadListData = async () => {
-  if (!selectedWorkerId.value || !props.dateRange.start || !props.dateRange.end) {
+  if (!selectedWorkerId.value) {
     personRecordList.value = []
     totalList.value = []
     return
