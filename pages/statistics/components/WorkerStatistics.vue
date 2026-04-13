@@ -125,8 +125,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
-import { onShow } from '@dcloudio/uni-app'
+import { ref, computed, watch, onMounted } from 'vue'
 import { departureApi, apiOps } from '@/api'
 import { useUserStore, ROLES } from '@/store/user'
 
@@ -322,9 +321,8 @@ const changeDateRange = () => {
   refreshData()
 }
 
-onShow(() => {
+onMounted(() => {
   loadWorkers()
-  refreshData()
 })
 
 const workerOptions = computed(() => allWorkers.value)
