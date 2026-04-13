@@ -49,7 +49,6 @@ export const useSettingsStore = defineStore('settings', () => {
           ...defaultSettings
         }
         await apiOps.insert('settings', newSettings)
-        console.log(`【Settings】为用户 ${userId} 创建默认settings`)
       }
     } catch (e) {
       console.error(`【Settings】初始化用户settings失败:`, e)
@@ -64,7 +63,6 @@ export const useSettingsStore = defineStore('settings', () => {
 
     // 管理员角色不加载settings，使用默认值
     if (!middlemanId) {
-      console.log('【Settings】非中间商角色，使用默认设置')
       resetToDefaults()
       currentSettingsUserId.value = null
       return

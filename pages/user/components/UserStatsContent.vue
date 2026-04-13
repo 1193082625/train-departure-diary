@@ -42,15 +42,24 @@
     </view>
 
     <!-- 发车记录列表 -->
-    <view class="record-list" v-if="userStore.isAdmin || userStore.isMiddleman">
-      <view class="list-header">
-        <text>日期</text>
-        <text>鸡场</text>
-        <text>大框</text>
-        <text>小框</text>
-        <text>盈利</text>
-      </view>
-      <view v-for="record in filteredRecords" :key="record.id" class="record-item">
+    <view class="list-header">
+      <text>日期</text>
+      <text>鸡场</text>
+      <text>大框</text>
+      <text>小框</text>
+      <text>盈利</text>
+    </view>
+    <scroll-view
+      class="record-list"
+      scroll-y
+      :refresher-enabled="true"
+      :refresher-triggered="isRefreshing"
+      :lower-threshold="50"
+      @refresherrefresh="onPullDownRefresh"
+      @scrolltolower="loadMore"
+      v-if="userStore.isAdmin || userStore.isMiddleman"
+    >
+      <view v-for="record in records" :key="record.id" class="record-item">
         <text>{{ record.date }}</text>
         <text class="merchant-name">{{ formatMerchants(record.merchantDetails) }}</text>
         <text>{{ getTotalBigBoxes(record) }}</text>
@@ -59,27 +68,142 @@
           ¥{{ record.getMoney ? Number(record.getMoney).toFixed(2) : '0.00' }}
         </text>
       </view>
-      <view v-if="filteredRecords.length === 0" class="empty">暂无发车记录</view>
-    </view>
+      <view v-if="records.length === 0 && !isLoading" class="empty">暂无发车记录</view>
+      <view v-if="isLoadingMore" class="loading-more">加载中...</view>
+      <view v-if="!hasMore && records.length > 0" class="no-more">没有更多了</view>
+    </scroll-view>
 
   </view>
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue'
-import { useDepartureStore } from '@/store/departure'
+import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
+import { departureApi } from '@/utils/api'
 import { useUserStore } from '@/store/user'
+import { subscribe } from '@/utils/eventBus'
 
-const departureStore = useDepartureStore()
 const userStore = useUserStore()
 
 // 快捷日期类型
 const quickRangeType = ref('month')
 
-// 日期范围
+// 日期范围（必须在其他使用 dateRange 的代码之前定义）
 const dateRange = reactive({
   start: new Date(new Date().setDate(1)).toISOString().split('T')[0], // 本月第一天
   end: new Date().toISOString().split('T')[0]
+})
+
+// 分页数据
+const records = ref([])
+const currentPage = ref(1)
+const pageSize = 20
+const totalPages = ref(1)
+const hasMore = computed(() => currentPage.value < totalPages.value)
+const isLoading = ref(false)
+const isLoadingMore = ref(false)
+const isRefreshing = ref(false)
+
+// 缓存 key
+const getCacheKey = () => `userStats:${dateRange.start}:${dateRange.end}:${currentPage.value}`
+
+// 缓存 Map（内存缓存，避免重复请求）
+const pageCache = new Map()
+
+// 加载记录（分页）
+const loadRecords = async (reset = false) => {
+  if (isLoading.value && !reset) {
+    return
+  }
+
+  if (reset) {
+    currentPage.value = 1
+    records.value = []
+    pageCache.clear()
+  }
+
+  const cacheKey = getCacheKey()
+  if (pageCache.has(cacheKey)) {
+    return
+  }
+
+  isLoading.value = true
+  try {
+    const res = await departureApi.getRecordsByDateRange(
+      dateRange.start,
+      dateRange.end,
+      currentPage.value,
+      pageSize
+    )
+
+    const newRecords = res.data || []
+    // 从 pagination 对象中获取 total（后端返回格式：{ data, pagination: { total, totalPages } }）
+    const total = res.pagination?.total || 0
+    totalPages.value = Math.max(1, Math.ceil(total / pageSize))
+
+    if (currentPage.value === 1) {
+      records.value = newRecords
+    } else {
+      records.value = [...records.value, ...newRecords]
+    }
+
+    // 缓存当前页
+    pageCache.set(cacheKey, newRecords)
+  } catch (err) {
+    console.error('[UserStats] Failed to load records:', err)
+    uni.showToast({ title: '加载失败', icon: 'none' })
+  } finally {
+    isLoading.value = false
+  }
+}
+
+// 加载更多（上拉加载）
+const loadMore = async () => {
+
+  // 只有第一页加载完成后才能加载更多
+  if (isLoading.value || isLoadingMore.value || !hasMore.value) {
+    return
+  }
+
+  isLoadingMore.value = true
+  currentPage.value++
+
+  await loadRecords()
+
+  isLoadingMore.value = false
+}
+
+// 下拉刷新
+const onPullDownRefresh = async () => {
+  isRefreshing.value = true
+  await loadRecords(true)
+  isRefreshing.value = false
+}
+
+// 日期范围变化时重新加载（防抖处理）
+let reloadTimer = null
+const reloadDateRange = () => {
+  if (reloadTimer) clearTimeout(reloadTimer)
+  reloadTimer = setTimeout(() => {
+    loadRecords(true)
+  }, 100)
+}
+
+// 监听日期范围变化
+watch(() => dateRange.start, reloadDateRange)
+watch(() => dateRange.end, reloadDateRange)
+
+let unsubscribe = null
+
+onMounted(async () => {
+  await loadRecords(true)
+  unsubscribe = subscribe('departure:refresh', () => {
+    loadRecords(true)
+  })
+})
+
+onUnmounted(() => {
+  if (unsubscribe) { unsubscribe(); unsubscribe = null }
+  if (reloadTimer) clearTimeout(reloadTimer)
 })
 
 // 设置快捷日期范围
@@ -88,6 +212,9 @@ const setQuickRange = (type) => {
   const year = today.getFullYear()
   const month = today.getMonth()
   quickRangeType.value = type
+
+  // 用于"全部"选项的历史最小日期
+  const minDate = '2020-01-01'
 
   switch (type) {
     case 'today':
@@ -107,13 +234,11 @@ const setQuickRange = (type) => {
       dateRange.end = today.toISOString().split('T')[0]
       break
     case 'all':
-      if (departureStore.records.length > 0) {
-        const dates = departureStore.records.map(r => r.date).sort()
-        dateRange.start = dates[0]
-        dateRange.end = today.toISOString().split('T')[0]
-      }
+      dateRange.start = minDate
+      dateRange.end = today.toISOString().split('T')[0]
       break
   }
+  // 依赖 watch 的防抖处理来触发加载
 }
 
 // 日期选择变化
@@ -125,17 +250,6 @@ const onEndDateChange = (e) => {
   dateRange.end = e.detail.value
   quickRangeType.value = ''
 }
-
-// 获取日期范围内的记录
-const records = computed(() => {
-  return departureStore.getRecordsByDateRange(dateRange.start, dateRange.end)
-})
-
-// 根据统计类型过滤和分组记录
-const filteredRecords = computed(() => {
-  const allRecords = records.value
-	return [...allRecords].sort((a, b) => b.date.localeCompare(a.date))
-})
 
 // 格式化鸡场名称
 const formatMerchants = (merchantDetails) => {
@@ -164,24 +278,22 @@ const getTotalSmallBoxes = (record) => {
 
 // 总统计
 const totalStats = computed(() => {
-  const allRecords = records.value
-
   let totalBigBoxes = 0
   let totalSmallBoxes = 0
   let profitDays = new Set()
   let profitMonths = new Set()
 
-  allRecords.forEach(record => {
+  records.value.forEach(record => {
     totalBigBoxes += record.merchantDetails?.reduce((sum, m) => sum + (m.bigBoxes || 0), 0) || 0
     totalSmallBoxes += record.merchantDetails?.reduce((sum, m) => sum + (m.smallBoxes || 0), 0) || 0
     profitDays.add(record.date)
     profitMonths.add(record.date.substring(0, 7))
   })
 
-  const totalProfit = allRecords.reduce((sum, r) => sum + parseFloat(r.getMoney || 0), 0)
+  const totalProfit = records.value.reduce((sum, r) => sum + parseFloat(r.getMoney || 0), 0)
 
   return {
-    departureCount: allRecords.length,
+    departureCount: records.value.length,
     totalBigBoxes,
     totalSmallBoxes,
     totalProfit,
@@ -189,19 +301,12 @@ const totalStats = computed(() => {
     profitMonths: profitMonths.size
   }
 })
-
-// 平均每趟盈利
-const avgProfit = computed(() => {
-  const count = filteredRecords.value.length
-  if (count === 0) return 0
-  return totalStats.value.totalProfit / count
-})
 </script>
 
 <style scoped>
 .user-stats-page {
   padding: 15px;
-  padding-bottom: 120px;
+  padding-bottom: 20px;
 }
 
 .quick-range {
@@ -274,7 +379,7 @@ const avgProfit = computed(() => {
   background: #fff;
   border-radius: 8px;
   overflow: hidden;
-  margin-bottom: 15px;
+  height: 400px;
 }
 
 .list-header {
@@ -329,6 +434,14 @@ const avgProfit = computed(() => {
   color: #999;
   text-align: center;
   padding: 30px;
+}
+
+.loading-more,
+.no-more {
+  color: #999;
+  text-align: center;
+  padding: 15px;
+  font-size: 13px;
 }
 
 .stats-summary {
