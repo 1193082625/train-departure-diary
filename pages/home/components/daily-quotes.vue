@@ -78,32 +78,16 @@ import { ref, computed, watch, nextTick } from 'vue'
 import { onShow, onHide } from '@dcloudio/uni-app'
 import { useUserStore, ROLES } from '@/store/user'
 import { dailyQuoteApi } from '@/api'
-import { subscribe, publish } from '@/utils/eventBus'
 import toast from '@/utils/toast'
 
 const userStore = useUserStore()
 
-// 事件总线订阅
-let unsubscribe = null
-
 onShow(() => {
-  unsubscribe = subscribe('dailyQuote:refresh', () => {
-    const today = new Date()
-    const currentMonth = getMonthRange(today.getFullYear(), today.getMonth() + 1)
-    loadQuotes(currentMonth.start, currentMonth.end)
-  })
   // 切换回当前 tab 时重置日历到当前月并加载当月数据
   resetCalendarToCurrentMonth()
   const today = new Date()
   const currentMonth = getMonthRange(today.getFullYear(), today.getMonth() + 1)
   loadQuotes(currentMonth.start, currentMonth.end)
-})
-
-onHide(() => {
-  if (unsubscribe) {
-    unsubscribe()
-    unsubscribe = null
-  }
 })
 
 // 本地状态
@@ -336,9 +320,6 @@ const saveQuote = async () => {
 
     // 重新加载报价数据
     await loadQuotes(currentVisibleMonth.value.start, currentVisibleMonth.value.end)
-
-    // 发布事件通知其他组件
-    publish('dailyQuote:refresh', { date: popupDate.value, quote: quoteInput.value })
 
     // 更新日历显示
     updateCalendarSelected()

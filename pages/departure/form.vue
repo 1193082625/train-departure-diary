@@ -288,7 +288,6 @@ import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useSettingsStore } from '@/store/settings'
 import { useUserStore, ROLES } from '@/store/user'
 import { departureApi, dailyQuoteApi, apiOps } from '@/api'
-import { subscribe, publish } from '@/utils/eventBus'
 import { calculateMerchantCost } from '@/utils/calc'
 import toast from '@/utils/toast'
 import MerchantSelector from './components/merchant-selector.vue'
@@ -695,7 +694,6 @@ const saveRecord = async () => {
     await departureApi.create(record)
   }
 
-  publish('departure:refresh', null)
   uni.navigateBack()
 }
 

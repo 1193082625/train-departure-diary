@@ -188,10 +188,9 @@
 
 <script setup>
 import { ref, computed, watch, onMounted, reactive } from 'vue'
-import { onShow, onHide } from '@dcloudio/uni-app'
+import { onShow } from '@dcloudio/uni-app'
 import { departureApi, apiOps } from '@/api'
 import { useUserStore, ROLES } from '@/store/user'
-import { subscribe } from '@/utils/eventBus'
 import MiddlemanSelector from '@/components/middleman-selector.vue'
 
 const userStore = useUserStore()
@@ -281,16 +280,8 @@ const loadWorkers = async () => {
 
 const getWorkerById = (id) => allWorkers.value.find(w => w.id === id)
 
-let unsubscribe = null
-
 onShow(() => {
-  unsubscribe = subscribe('departure:refresh', () => {
-    loadRecords(true)
-  })
-})
-
-onHide(() => {
-  if (unsubscribe) { unsubscribe(); unsubscribe = null }
+  loadRecords(true)
 })
 
 // 今天的日期

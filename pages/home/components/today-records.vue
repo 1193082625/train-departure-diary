@@ -21,10 +21,10 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import { departureApi } from '@/api'
 import { useUserStore } from '@/store/user'
-import { subscribe } from '@/utils/eventBus'
 
 const userStore = useUserStore()
 
@@ -35,17 +35,8 @@ const loadTodayRecords = async () => {
   todayRecords.value = await departureApi.loadRecordsByDate(today)
 }
 
-let unsubscribe = null
-
-onMounted(async () => {
-  await loadTodayRecords()
-  unsubscribe = subscribe('departure:refresh', () => {
-    loadTodayRecords()
-  })
-})
-
-onUnmounted(() => {
-  if (unsubscribe) { unsubscribe(); unsubscribe = null }
+onShow(() => {
+  loadTodayRecords()
 })
 
 const goToDepartureForm = () => uni.navigateTo({ url: '/pages/departure/form' })

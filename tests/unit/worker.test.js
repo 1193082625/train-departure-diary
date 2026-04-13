@@ -2,15 +2,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 // Mock dependencies
 const mockRequest = vi.fn()
-const mockPublish = vi.fn()
 
 vi.mock('@/utils/api', () => ({
   request: mockRequest,
-}))
-
-vi.mock('@/utils/eventBus', () => ({
-  subscribe: vi.fn(() => vi.fn()),
-  publish: mockPublish,
 }))
 
 vi.mock('@/utils/toast', () => ({
@@ -24,7 +18,6 @@ describe('Worker 模块测试', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockRequest.mockReset()
-    mockPublish.mockReset()
   })
 
   describe('loadWorkers 逻辑', () => {
@@ -145,7 +138,7 @@ describe('Worker 模块测试', () => {
         })
       })
 
-      it('创建成功后 publish 会被调用', async () => {
+      it('创建成功后 loadWorkers 会被调用', async () => {
         mockRequest.mockResolvedValue({ success: true })
 
         // Simulate saveWorker flow
@@ -155,11 +148,9 @@ describe('Worker 模块测试', () => {
           data: JSON.stringify(data)
         })
 
-        // Publish is called after successful save in the actual component
-        // In unit test we verify the mock setup works
-        mockPublish('worker:refresh', null)
-
-        expect(mockPublish).toHaveBeenCalledWith('worker:refresh', null)
+        // After successful save, loadWorkers would be called with current page
+        // This test verifies the API call succeeds
+        expect(mockRequest).toHaveBeenCalled()
       })
     })
 

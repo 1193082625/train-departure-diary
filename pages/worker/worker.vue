@@ -88,23 +88,13 @@ import { ref, reactive, computed, onMounted, nextTick } from 'vue'
 import { onShow, onHide, onReachBottom, onPullDownRefresh } from '@dcloudio/uni-app'
 import { useUserStore, ROLES } from '@/store/user'
 import { request } from '@/api'
-import { subscribe, publish } from '@/utils/eventBus'
 import toast from '@/utils/toast'
 
 const userStore = useUserStore()
 
-let unsubscribe = null
-
 onShow(() => {
-  unsubscribe = subscribe('worker:refresh', () => {
-    loadWorkers(1)
-  })
   // 初始加载
   loadWorkers(1)
-})
-
-onHide(() => {
-  if (unsubscribe) { unsubscribe(); unsubscribe = null }
 })
 
 onMounted(async () => {
@@ -290,7 +280,7 @@ const saveWorker = async () => {
       toast.success('添加成功')
     }
     closeModal()
-    publish('worker:refresh', null)
+    loadWorkers(pagination.value.page)
   } catch (e) {
     console.error('保存失败:', e)
     toast.error('保存失败')
@@ -307,7 +297,6 @@ const deleteWorker = async (id) => {
           await request(`/workers/${id}`, { method: 'DELETE' })
           toast.success('删除成功')
           loadWorkers(pagination.value.page)
-          publish('worker:refresh', null)
         } catch (e) {
           console.error('删除失败:', e)
           toast.error('删除失败')

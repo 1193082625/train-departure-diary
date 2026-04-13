@@ -28,18 +28,9 @@
 
 <script setup>
 import { ref, reactive } from 'vue'
-import { onShow, onHide } from '@dcloudio/uni-app'
-import { subscribe } from '@/utils/eventBus'
 import MiddlemanSelector from '@/components/middleman-selector.vue'
 import WorkerStatistics from './WorkerStatistics.vue'
 import MerchantStatistics from './MerchantStatistics.vue'
-
-let unsubscribers = []
-
-onHide(() => {
-  unsubscribers.forEach(fn => fn())
-  unsubscribers = []
-})
 
 const activeTab = ref('worker')
 const isAllRange = ref(false) // 标记是否为全部范围

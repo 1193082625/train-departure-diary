@@ -58,8 +58,7 @@
 │   ├── calc.ts          # 业务计算逻辑
 │   ├── api.js           # HTTP API 调用封装
 │   ├── toast.js         # Toast 提示封装
-│   ├── validate.js      # 表单验证
-│   └── eventBus.js      # 事件总线
+│   └── validate.js      # 表单验证
 ├── components/          # 公共组件
 ├── static/              # 静态资源
 ├── sql/                 # SQL 脚本

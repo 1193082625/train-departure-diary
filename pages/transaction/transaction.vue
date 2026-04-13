@@ -72,12 +72,9 @@ import { ref, computed, reactive, nextTick } from 'vue'
 import { onShow, onHide, onReachBottom, onPullDownRefresh } from '@dcloudio/uni-app'
 import { useUserStore, ROLES } from '@/store/user'
 import { apiOps, request } from '@/api'
-import { subscribe } from '@/utils/eventBus'
 import toast from '@/utils/toast'
 
 const userStore = useUserStore()
-
-let unsubscribe = null
 
 // 交易记录（本地管理）
 const transactions = ref([])
@@ -147,9 +144,6 @@ const loadTransactions = async (page = 1, appendMode = false) => {
 }
 
 onShow(() => {
-  unsubscribe = subscribe('transaction:refresh', () => {
-    loadTransactions(1)
-  })
   loadWorkers()
   loadMerchants()
   loadTransactions(1)
@@ -167,10 +161,6 @@ onPullDownRefresh(() => {
   loadTransactions(1).then(() => {
     uni.stopPullDownRefresh()
   })
-})
-
-onHide(() => {
-  if (unsubscribe) { unsubscribe(); unsubscribe = null }
 })
 
 // 员工数据（本地管理）

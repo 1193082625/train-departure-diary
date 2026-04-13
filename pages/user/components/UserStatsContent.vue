@@ -77,10 +77,10 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, reactive, computed, onUnmounted, watch } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import { departureApi } from '@/api'
 import { useUserStore } from '@/store/user'
-import { subscribe } from '@/utils/eventBus'
 
 const userStore = useUserStore()
 
@@ -192,17 +192,11 @@ const reloadDateRange = () => {
 watch(() => dateRange.start, reloadDateRange)
 watch(() => dateRange.end, reloadDateRange)
 
-let unsubscribe = null
-
-onMounted(async () => {
-  await loadRecords(true)
-  unsubscribe = subscribe('departure:refresh', () => {
-    loadRecords(true)
-  })
+onShow(() => {
+  loadRecords(true)
 })
 
 onUnmounted(() => {
-  if (unsubscribe) { unsubscribe(); unsubscribe = null }
   if (reloadTimer) clearTimeout(reloadTimer)
 })
 

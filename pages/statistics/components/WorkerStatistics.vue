@@ -126,9 +126,9 @@
 
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import { departureApi, apiOps } from '@/api'
 import { useUserStore, ROLES } from '@/store/user'
-import { subscribe } from '@/utils/eventBus'
 
 const props = defineProps({
   dateRange: {
@@ -322,18 +322,9 @@ const changeDateRange = () => {
   refreshData()
 }
 
-let unsubscribe = null
-
-onMounted(async () => {
-  currentDate.value = props.dateRange.start
-  await loadWorkers()
-  unsubscribe = subscribe('departure:refresh', () => {
-    refreshData()
-  })
-})
-
-onUnmounted(() => {
-  if (unsubscribe) { unsubscribe(); unsubscribe = null }
+onShow(() => {
+  loadWorkers()
+  refreshData()
 })
 
 // 根据用户角色过滤员工

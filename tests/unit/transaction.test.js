@@ -4,7 +4,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 const mockQueryAll = vi.fn()
 const mockInsert = vi.fn()
 const mockDelete = vi.fn()
-const mockPublish = vi.fn()
 
 vi.mock('@/utils/api', () => ({
   apiOps: {
@@ -12,11 +11,6 @@ vi.mock('@/utils/api', () => ({
     insert: mockInsert,
     delete: mockDelete,
   },
-}))
-
-vi.mock('@/utils/eventBus', () => ({
-  subscribe: vi.fn(() => vi.fn()),
-  publish: mockPublish,
 }))
 
 vi.mock('@/utils/toast', () => ({
@@ -32,7 +26,6 @@ describe('Transaction 模块测试', () => {
     mockQueryAll.mockReset()
     mockInsert.mockReset()
     mockDelete.mockReset()
-    mockPublish.mockReset()
   })
 
   // ==================== loadTransactions 逻辑 ====================

@@ -2,9 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 // Mock dependencies
 const mockRequest = vi.fn()
-const mockPublish = vi.fn()
 
-vi.mock('@/utils/api', () => ({
+vi.mock('@/api', () => ({
   request: mockRequest,
   dailyQuoteApi: {
     getByDate: vi.fn((date) => mockRequest(`/daily_quotes/by/date/${date}`)),
@@ -19,11 +18,6 @@ vi.mock('@/utils/api', () => ({
     update: vi.fn((id, data) => mockRequest(`/daily_quotes/${id}`, { method: 'PUT', data: JSON.stringify(data) })),
     delete: vi.fn((id) => mockRequest(`/daily_quotes/${id}`, { method: 'DELETE' })),
   },
-}))
-
-vi.mock('@/utils/eventBus', () => ({
-  subscribe: vi.fn(() => vi.fn()),
-  publish: mockPublish,
 }))
 
 // Mock quotes data (后端返回格式)
@@ -45,7 +39,6 @@ describe('每日报价模块测试 (dailyQuoteApi)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockRequest.mockReset()
-    mockPublish.mockReset()
   })
 
   describe('dailyQuoteApi.getByDate', () => {
