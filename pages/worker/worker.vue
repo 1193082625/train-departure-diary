@@ -29,7 +29,7 @@
 
       <!-- 非管理员直接展示 -->
       <template v-else>
-        <view v-for="worker in filteredWorkers" :key="worker.id" class="worker-card">
+        <view v-for="worker in workers" :key="worker.id" class="worker-card">
           <view class="worker-info">
             <text class="name">{{ worker.name }}</text>
             <text class="phone">{{ worker.phone }}</text>
@@ -86,7 +86,7 @@
 <script setup>
 import { ref, reactive, computed, onMounted, nextTick } from 'vue'
 import { onShow, onHide, onReachBottom, onPullDownRefresh } from '@dcloudio/uni-app'
-import { useUserStore, ROLES } from '@/store/user'
+import { useUserStore } from '@/store/user'
 import { request } from '@/api'
 import toast from '@/utils/toast'
 
@@ -181,26 +181,6 @@ const loadWorkers = async (page = 1, appendMode = false) => {
     loadingMore.value = false
   }
 }
-
-// 根据用户角色过滤员工
-const filteredWorkers = computed(() => {
-  const user = userStore.currentUser
-  if (!user) return []
-
-  if (user.role === ROLES.ADMIN) {
-    return workers.value
-  }
-
-  if (user.role === ROLES.MIDDLEMAN) {
-    return workers.value.filter(w => w.userId === user.id)
-  }
-
-  if (user.parentId) {
-    return workers.value.filter(w => w.userId === user.parentId)
-  }
-
-  return []
-})
 
 // 分组展示（管理员视角）
 const groupedWorkers = computed(() => {

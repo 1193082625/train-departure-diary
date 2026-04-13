@@ -70,11 +70,8 @@
 <script setup>
 import { ref, computed, reactive, nextTick } from 'vue'
 import { onShow, onHide, onReachBottom, onPullDownRefresh } from '@dcloudio/uni-app'
-import { useUserStore, ROLES } from '@/store/user'
 import { apiOps, request } from '@/api'
 import toast from '@/utils/toast'
-
-const userStore = useUserStore()
 
 // 交易记录（本地管理）
 const transactions = ref([])
@@ -176,26 +173,6 @@ const loadWorkers = async () => {
   }
 }
 
-// 根据用户角色过滤员工
-const filteredWorkers = computed(() => {
-  const user = userStore.currentUser
-  if (!user) return []
-
-  if (user.role === ROLES.ADMIN) {
-    return allWorkers.value
-  }
-
-  if (user.role === ROLES.MIDDLEMAN) {
-    return allWorkers.value.filter(w => w.userId === user.id)
-  }
-
-  if (user.parentId) {
-    return allWorkers.value.filter(w => w.userId === user.parentId)
-  }
-
-  return []
-})
-
 const getWorkerById = (id) => allWorkers.value.find(w => w.id === id)
 
 // 商户数据（本地管理）
@@ -211,26 +188,6 @@ const loadMerchants = async () => {
   }
 }
 
-// 根据用户角色过滤商户
-const filteredMerchants = computed(() => {
-  const user = userStore.currentUser
-  if (!user) return []
-
-  if (user.role === ROLES.ADMIN) {
-    return merchants.value
-  }
-
-  if (user.role === ROLES.MIDDLEMAN) {
-    return merchants.value.filter(m => m.userId === user.id)
-  }
-
-  if (user.parentId) {
-    return merchants.value.filter(m => m.userId === user.parentId)
-  }
-
-  return []
-})
-
 const getMerchantById = (id) => merchants.value.find(m => m.id === id)
 
 const form = reactive({
@@ -243,8 +200,8 @@ const form = reactive({
 
 const targetOptions = computed(() =>
   form.type === 'payment_to_merchant'
-    ? filteredMerchants
-    : filteredWorkers.value
+    ? merchants.value
+    : allWorkers.value
 )
 
 const selectedTarget = computed(() => {

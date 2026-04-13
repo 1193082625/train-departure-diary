@@ -76,26 +76,6 @@ const loadWorkers = async () => {
   }
 }
 
-// 根据用户角色过滤员工
-const filteredWorkers = computed(() => {
-  const user = userStore.currentUser
-  if (!user) return []
-
-  if (user.role === ROLES.ADMIN) {
-    return allWorkers.value
-  }
-
-  if (user.role === ROLES.MIDDLEMAN) {
-    return allWorkers.value.filter(w => w.userId === user.id)
-  }
-
-  if (user.parentId) {
-    return allWorkers.value.filter(w => w.userId === user.parentId)
-  }
-
-  return []
-})
-
 const roles = [
   { value: ROLES.LOADER, label: '装发车' },
   // { value: ROLES.FARM, label: '鸡场' },
@@ -103,7 +83,7 @@ const roles = [
 ]
 
 const selectedDepartureWorker = ref(null)
-const departureWorkerOptions = computed(() => filteredWorkers.value.filter(worker => worker.phone !== userStore.currentUser.phone))
+const departureWorkerOptions = computed(() => allWorkers.value.filter(worker => worker.phone !== userStore.currentUser.phone))
 const onDepartureWorkerChange = (worker) => {
   selectedDepartureWorker.value = worker
 }

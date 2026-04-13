@@ -151,27 +151,7 @@ const loadMerchants = async () => {
   }
 }
 
-// 根据用户角色过滤商户
-const filteredMerchants = computed(() => {
-  const user = userStore.currentUser
-  if (!user) return []
-
-  if (user.role === ROLES.ADMIN) {
-    return merchants.value
-  }
-
-  if (user.role === ROLES.MIDDLEMAN) {
-    return merchants.value.filter(m => m.userId === user.id)
-  }
-
-  if (user.parentId) {
-    return merchants.value.filter(m => m.userId === user.parentId)
-  }
-
-  return []
-})
-
-const merchantOptions = computed(() => filteredMerchants.value)
+const merchantOptions = computed(() => merchants.value)
 const selectedMerchant = computed(() => merchants.value.find(m => m.id === selectedMerchantId.value))
 
 onMounted(() => {

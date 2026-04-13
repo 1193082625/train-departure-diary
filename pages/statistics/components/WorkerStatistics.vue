@@ -327,27 +327,7 @@ onShow(() => {
   refreshData()
 })
 
-// 根据用户角色过滤员工
-const filteredWorkers = computed(() => {
-  const user = userStore.currentUser
-  if (!user) return []
-
-  if (user.role === ROLES.ADMIN) {
-    return allWorkers.value
-  }
-
-  if (user.role === ROLES.MIDDLEMAN) {
-    return allWorkers.value.filter(w => w.userId === user.id)
-  }
-
-  if (user.parentId) {
-    return allWorkers.value.filter(w => w.userId === user.parentId)
-  }
-
-  return []
-})
-
-const workerOptions = computed(() => filteredWorkers.value)
+const workerOptions = computed(() => allWorkers.value)
 const selectedWorker = computed(() => allWorkers.value.find(w => w.id === selectedWorkerId.value))
 
 const onWorkerChange = (e) => {

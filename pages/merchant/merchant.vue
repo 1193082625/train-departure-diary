@@ -28,7 +28,7 @@
 
       <!-- 非管理员直接展示 -->
       <template v-else>
-        <view v-for="merchant in filteredMerchants" :key="merchant.id" class="merchant-card">
+        <view v-for="merchant in merchants" :key="merchant.id" class="merchant-card">
           <view class="merchant-info">
             <text class="name">{{ merchant.name }}</text>
             <text class="phone">{{ merchant.phone }}</text>
@@ -86,7 +86,7 @@
 <script setup>
 import { ref, reactive, computed, onMounted, nextTick } from 'vue'
 import { onShow, onHide, onReachBottom, onPullDownRefresh } from '@dcloudio/uni-app'
-import { useUserStore, ROLES } from '@/store/user'
+import { useUserStore } from '@/store/user'
 import { request } from '@/api'
 import toast from '@/utils/toast'
 
@@ -186,15 +186,6 @@ const loadMerchants = async (page = 1, appendMode = false) => {
     loadingMore.value = false
   }
 }
-
-// 根据用户角色过滤商户
-const filteredMerchants = computed(() => {
-  const user = userStore.currentUser
-  if (!user) return []
-  // 服务端已通过 getAccessibleUserIds 做了角色权限过滤，
-  // 直接使用服务端返回的数据，不再客户端二次过滤
-  return merchants.value
-})
 
 // 分组展示（管理员视角）
 const groupedMerchants = computed(() => {

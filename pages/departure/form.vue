@@ -336,52 +336,12 @@ const loadMerchants = async () => {
   }
 }
 
-// 根据用户角色过滤鸡场
-const filteredMerchants = computed(() => {
-  const user = userStore.currentUser
-  if (!user) return []
-
-  if (user.role === ROLES.ADMIN) {
-    return merchants.value
-  }
-
-  if (user.role === ROLES.MIDDLEMAN) {
-    return merchants.value.filter(m => m.userId === user.id)
-  }
-
-  if (user.parentId) {
-    return merchants.value.filter(m => m.userId === user.parentId)
-  }
-
-  return []
-})
-
-// 根据用户角色过滤员工
-const filteredWorkers = computed(() => {
-  const user = userStore.currentUser
-  if (!user) return []
-
-  if (user.role === ROLES.ADMIN) {
-    return allWorkers.value
-  }
-
-  if (user.role === ROLES.MIDDLEMAN) {
-    return allWorkers.value.filter(w => w.userId === user.id)
-  }
-
-  if (user.parentId) {
-    return allWorkers.value.filter(w => w.userId === user.parentId)
-  }
-
-  return []
-})
-
 const departureWorkers = computed(() =>
-  filteredWorkers.value.filter(w => w.type === 'departure' || w.type === 'both')
+  allWorkers.value.filter(w => w.type === 'departure' || w.type === 'both')
 )
 
 const loadingWorkers = computed(() =>
-  filteredWorkers.value.filter(w => w.type === 'loading' || w.type === 'both')
+  allWorkers.value.filter(w => w.type === 'loading' || w.type === 'both')
 )
 
 const getWorkerById = (id) => allWorkers.value.find(w => w.id === id)
@@ -472,7 +432,7 @@ const showSaveButton = computed(() => {
 })
 
 // 鸡场选项（根据角色过滤）
-const merchantOptions = computed(() => filteredMerchants.value)
+const merchantOptions = computed(() => merchants.value)
 // 发车人员选项
 const departureWorkerOptions = computed(() => departureWorkers.value)
 // 装车人员选项
