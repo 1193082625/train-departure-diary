@@ -104,7 +104,15 @@
     </view>
 
     <!-- 记录列表 -->
-    <view class="record-list">
+    <scroll-view
+      class="record-list"
+      scroll-y
+      refresher-enabled
+      :refresher-triggered="refreshing"
+      @refresherrefresh="onRefresh"
+      @scrolltolower="onLoadMore"
+      lower-threshold="100"
+    >
       <!-- 按月/按年模式：分组展示 -->
       <template v-if="viewMode !== 'day'">
         <view v-for="(group, groupKey) in groupedRecords" :key="groupKey" class="record-group">
@@ -165,24 +173,98 @@
         </view>
       </template>
 
-      <view v-if="records.length === 0" class="empty">
+      <view v-if="records.length === 0 && !loading" class="empty">
         <text>{{ getEmptyText() }}</text>
       </view>
-    </view>
+      <view v-if="loading" class="loading-tip">
+        <text>加载中...</text>
+      </view>
+      <view v-if="!hasMore && records.length > 0" class="loading-tip">
+        <text>没有更多了</text>
+      </view>
+    </scroll-view>
   </view>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, reactive } from 'vue'
+import { ref, computed, watch, onMounted, reactive } from 'vue'
 import { onShow, onHide } from '@dcloudio/uni-app'
-import { useDepartureStore } from '@/store/departure'
+import { departureApi, apiOps } from '@/utils/api'
 import { useUserStore, ROLES } from '@/store/user'
-import { apiOps } from '@/utils/api'
 import { subscribe } from '@/utils/eventBus'
 import MiddlemanSelector from '@/components/middleman-selector.vue'
 
-const departureStore = useDepartureStore()
 const userStore = useUserStore()
+
+// 发车记录数据
+const allRecords = ref([])
+const currentPage = ref(1)
+const pageSize = ref(20)
+const hasMore = ref(true)
+const loading = ref(false)
+const refreshing = ref(false)
+
+// 加载记录（按时间范围+分页）
+const loadRecords = async (reset = false) => {
+  if (loading.value) return
+  if (!reset && !hasMore.value) return
+
+  loading.value = true
+  if (reset) {
+    currentPage.value = 1
+    hasMore.value = true
+    refreshing.value = true
+  }
+
+  try {
+    let startDate, endDate
+    if (viewMode.value === 'day') {
+      startDate = selectedDate.value
+      endDate = selectedDate.value
+    } else if (viewMode.value === 'month') {
+      startDate = `${selectedYear.value}-${String(selectedMonth.value).padStart(2, '0')}-01`
+      endDate = getMonthEndDate(selectedYear.value, selectedMonth.value)
+    } else {
+      startDate = `${selectedYearForYear.value}-01-01`
+      endDate = `${selectedYearForYear.value}-12-31`
+    }
+
+    const res = await departureApi.getRecordsByDateRange(startDate, endDate, currentPage.value, pageSize.value)
+
+    if (reset) {
+      allRecords.value = res.data || []
+    } else {
+      allRecords.value = [...allRecords.value, ...(res.data || [])]
+    }
+
+    // 判断是否还有更多数据
+    const receivedCount = res.data?.length || 0
+    hasMore.value = receivedCount >= pageSize.value
+
+    if (reset) {
+      refreshing.value = false
+    }
+  } catch (e) {
+    console.error('加载发车记录失败:', e)
+    if (reset) {
+      refreshing.value = false
+    }
+  } finally {
+    loading.value = false
+  }
+}
+
+// 下拉刷新
+const onRefresh = () => {
+  loadRecords(true)
+}
+
+// 上拉加载更多
+const onLoadMore = () => {
+  if (!hasMore.value || loading.value) return
+  currentPage.value++
+  loadRecords(false)
+}
 
 // 员工数据（本地管理）
 const allWorkers = ref([])
@@ -203,7 +285,7 @@ let unsubscribe = null
 
 onShow(() => {
   unsubscribe = subscribe('departure:refresh', () => {
-    departureStore.loadRecords()
+    loadRecords(true)
   })
 })
 
@@ -282,19 +364,17 @@ const onYearForYearChange = (e) => {
   selectedYearForYear.value = yearOptions.value[e.detail.value]
 }
 
-// 根据视图模式获取记录
-const records = computed(() => {
-  if (viewMode.value === 'day') {
-    return departureStore.getRecordsByDate(selectedDate.value)
-  } else if (viewMode.value === 'month') {
-    const startDate = `${selectedYear.value}-${String(selectedMonth.value).padStart(2, '0')}-01`
-    const endDate = getMonthEndDate(selectedYear.value, selectedMonth.value)
-    return departureStore.getRecordsByDateRange(startDate, endDate)
-  } else {
-    const startDate = `${selectedYearForYear.value}-01-01`
-    const endDate = `${selectedYearForYear.value}-12-31`
-    return departureStore.getRecordsByDateRange(startDate, endDate)
+// 监听时间范围变化，自动重新加载
+watch(
+  () => [viewMode.value, selectedDate.value, selectedYear.value, selectedMonth.value, selectedYearForYear.value],
+  () => {
+    loadRecords(true)
   }
+)
+
+// 根据视图模式获取记录（已按时间范围过滤）
+const records = computed(() => {
+  return allRecords.value
 })
 
 // 获取月份结束日期
@@ -404,13 +484,13 @@ const calculateTotalWeight = (record) => {
 }
 
 onMounted(() => {
-  departureStore.loadRecords()
+  loadRecords(true)
   loadWorkers()
 })
 </script>
 
 <style scoped>
-.departure-page { padding: 20px; }
+.departure-page { padding: 20px; display: flex; flex-direction: column; height: 100vh; }
 .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
 .title { font-size: 20px; font-weight: bold; }
 .add-btn { background: #007aff; color: #fff; padding: 8px 16px; border-radius: 4px; margin: 0;}
@@ -447,4 +527,11 @@ onMounted(() => {
 .record-stats { display: flex; gap: 20px; margin-top: 10px; color: #007aff; flex-wrap: wrap; }
 .profit { color: #52c41a; font-weight: bold; }
 .empty { text-align: center; color: #999; padding: 40px; }
+.loading-tip { text-align: center; color: #999; padding: 20px; }
+
+/* 记录列表 - scroll-view 需要高度 */
+.record-list {
+  flex: 1;
+  min-height: 200px;
+}
 </style>
