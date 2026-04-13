@@ -37,6 +37,15 @@
     </view>
 
     <view class="records">
+      <view class="filter-section">
+        <text class="filter-label">筛选：</text>
+        <picker :range="filterOptions" :range-key="'name'" @change="onFilterChange">
+          <view class="filter-picker">
+            {{ filterOptions.find(o => o.id === filterTargetId)?.name || '全部' }}
+          </view>
+        </picker>
+      </view>
+
       <text class="title">结账记录</text>
       <view v-for="t in recentTransactions" :key="t.id" class="record-item">
         <view class="record-info">
@@ -68,7 +77,7 @@
 </template>
 
 <script setup>
-import { ref, computed, reactive, nextTick } from 'vue'
+import { ref, computed, reactive, nextTick, watch } from 'vue'
 import { onShow, onHide, onReachBottom, onPullDownRefresh } from '@dcloudio/uni-app'
 import { apiOps, request } from '@/api'
 import toast from '@/utils/toast'
@@ -82,6 +91,18 @@ const pagination = ref({
   pageSize: 15,
   total: 0,
   totalPages: 0
+})
+
+// 筛选器状态
+const filterTargetId = ref('')
+
+// 筛选器选项（包含"全部"选项）
+const filterOptions = computed(() => {
+  const allOption = [{ id: '', name: '全部' }]
+  if (form.type === 'payment_to_merchant') {
+    return [...allOption, ...merchants.value]
+  }
+  return [...allOption, ...allWorkers.value]
 })
 
 const hasMore = computed(() => pagination.value.page < pagination.value.totalPages)
@@ -104,7 +125,12 @@ const loadTransactions = async (page = 1, appendMode = false) => {
   }
 
   try {
-    const res = await request(`/transactions/list?page=${page}&pageSize=${pagination.value.pageSize}&sort=date&order=desc`)
+    const type = form.type === 'payment_to_merchant' ? 'payment_to_merchant' : 'payment_to_worker'
+    let url = `/transactions/list?page=${page}&pageSize=${pagination.value.pageSize}&sort=date&order=desc&type=${type}`
+    if (filterTargetId.value) {
+      url += `&targetId=${filterTargetId.value}`
+    }
+    const res = await request(url)
     const newData = res.data || []
 
     if (appendMode) {
@@ -198,6 +224,19 @@ const form = reactive({
   note: ''
 })
 
+// 切换 tab 时重置筛选器
+watch(() => form.type, () => {
+  filterTargetId.value = ''
+  loadTransactions(1)
+})
+
+// 筛选器变化时重新加载
+watch(filterTargetId, () => {
+  if (transactions.value.length > 0) {
+    loadTransactions(1)
+  }
+})
+
 const targetOptions = computed(() =>
   form.type === 'payment_to_merchant'
     ? merchants.value
@@ -222,6 +261,10 @@ const recentTransactions = computed(() =>
 
 const onTargetChange = (e) => {
   form.targetId = targetOptions.value[e.detail.value]?.id || ''
+}
+
+const onFilterChange = (e) => {
+  filterTargetId.value = filterOptions.value[e.detail.value]?.id || ''
 }
 
 const onDateChange = (e) => { form.date = e.detail.value }
@@ -282,6 +325,21 @@ const deleteTransaction = (id) => {
 .form-item input { text-align: right; width: 150px; }
 .add-btn { background: #52c41a; color: #fff; margin-top: 15px; margin: 0; }
 .records { background: #fff; padding: 15px; border-radius: 8px; }
+.filter-section {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #f0f0f0;
+}
+.filter-label { color: #666; font-size: 14px; }
+.filter-picker {
+  background: #f5f5f5;
+  padding: 5px 15px;
+  border-radius: 4px;
+  font-size: 14px;
+  color: #333;
+}
 .title { font-weight: bold; margin-bottom: 10px; display: block; }
 .record-item { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
 .record-item:last-child { border-bottom: none; }

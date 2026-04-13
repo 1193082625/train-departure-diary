@@ -156,7 +156,7 @@
           @click="editRecord(record)"
         >
           <view class="record-header">
-            <text class="trip-number">{{ getTripNumber(record) }}</text>
+            <text class="trip-number">{{ record.tripNumber }}</text>
             <text class="time">{{ record.date }}</text>
           </view>
           <view class="record-content">
