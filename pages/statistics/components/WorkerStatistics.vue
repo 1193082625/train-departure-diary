@@ -16,35 +16,8 @@
       <text class="tips">选择人员后查看数据</text>
     </view>
     <template v-else>
-      <uni-calendar
-        :insert="true"
-      :start-date="dateRange.start"
-      :end-date="dateRange.end"
-      :clear-date="true"
-      :show-month="false"
-      :selected="personRecord"
-        @change="changeDateRange"
-      @monthSwitch="clearWorkerStats"
-        />
 
-      <!-- 明细列表 -->
-      <uni-collapse class="mt-section detail-list-collapse" v-if="personRecordList.length > 0">
-        <uni-collapse-item title="明细列表" :open="openPersonRecordList">
-          <view class="detail-list">
-            <view class="detail-header">
-              <text>日期</text>
-              <text>信息</text>
-            </view>
-            <scroll-view scroll-y class="detail-scroll" :style="{ height: scrollHeight }">
-              <view class="detail-item" v-for="(item, index) in personRecordList" :key="`${item.date}-${index}`">
-                <text>{{ item.date }}</text>
-                <text>{{ item.info }}</text>
-              </view>
-            </scroll-view>
-          </view>
-        </uni-collapse-item>
-      </uni-collapse>
-
+      <!-- 统计汇总 -->
       <view class="stats-result">
         <view class="stat-item">
           <text>出勤天数</text>
@@ -60,19 +33,102 @@
         </view>
         <view class="stat-item">
           <text>应结金额</text>
-          <text class="value profit">¥{{ workerStats.totalProfit }}</text>
+          <text class="value">¥{{ workerStats.totalEarned || 0 }}</text>
+        </view>
+        <view class="stat-item">
+          <text>已结金额</text>
+          <text class="value">¥{{ workerStats.settledAmount || 0 }}</text>
+        </view>
+        <view class="stat-item">
+          <text>待结金额</text>
+          <text class="value unpaid">¥{{ workerStats.unpaidAmount || 0 }}</text>
         </view>
       </view>
+      <!-- <view class="summary mt-15">
+        <view class="summary-item">
+          <text class="summary-label">出勤(天)</text>
+          <text class="summary-value">{{ workerStats.workDays }}</text>
+        </view>
+        <view class="summary-item">
+          <text class="summary-label">发车(次)</text>
+          <text class="summary-value">{{ workerStats.departureCount }}</text>
+        </view>
+        <view class="summary-item">
+          <text class="summary-label">装车(次)</text>
+          <text class="summary-value">{{ workerStats.loadingCount }}</text>
+        </view>
+        <view class="summary-item">
+          <text class="summary-label">应结</text>
+          <text class="summary-value">¥{{ workerStats.totalEarned || 0 }}</text>
+        </view>
+        <view class="summary-item">
+          <text class="summary-label">已结</text>
+          <text class="summary-value">¥{{ workerStats.settledAmount || 0 }}</text>
+        </view>
+        <view class="summary-item">
+          <text class="summary-label">待结</text>
+          <text class="summary-value profit">¥{{ workerStats.unpaidAmount }}</text>
+        </view>
+      </view> -->
+      <uni-calendar
+        :insert="true"
+        :date="currentDate"
+        :start-date="dateRange.start"
+        :end-date="dateRange.end"
+        :clear-date="true"
+        :show-month="false"
+        :selected="calendarRecords"
+        @change="changeDateRange"
+        @monthSwitch="onMonthSwitch"
+      />
+
+      <!-- 明细列表 -->
+      <uni-collapse class="mt-section detail-list-collapse" v-if="personRecordList.length > 0">
+        <uni-collapse-item title="明细列表" :open="openPersonRecordList">
+          <view class="detail-list">
+            <view class="detail-header">
+              <text>日期</text>
+              <text>报价</text>
+              <text>信息</text>
+              <text>发车费</text>
+              <text>装车费</text>
+              <!-- <text>装车人数</text> -->
+            </view>
+            <scroll-view
+              scroll-y
+              class="detail-scroll"
+              :style="{ height: scrollHeight }"
+              @scrolltolower="loadMore"
+              :lower-threshold="50"
+            >
+              <view class="detail-item" v-for="(item, index) in personRecordList" :key="`${item.date}-${index}`" @click="goToDetail(item)">
+                <text>{{ item.date }}</text>
+                <text>{{ item.dailyQuote }}</text>
+                <text>{{ item.info }}</text>
+                <text>{{ item.departureFee }}</text>
+                <text>{{ item.loadingFee }}</text>
+                <!-- <text>{{ item.loadingWorkerCount }}</text> -->
+              </view>
+              <view class="load-more" v-if="hasMore">
+                <text>{{ loadingMore ? '加载中...' : '上拉加载更多' }}</text>
+              </view>
+              <view class="no-more" v-else-if="personRecordList.length > 0">
+                <text>没有更多了</text>
+              </view>
+            </scroll-view>
+          </view>
+        </uni-collapse-item>
+      </uni-collapse>
+
     </template>
   </view>
 </template>
 
 <script setup>
-import { ref, computed, watch, nextTick, onMounted } from 'vue'
-import { useDepartureStore } from '@/store/departure'
-import { useSettingsStore } from '@/store/settings'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { departureApi, apiOps } from '@/utils/api'
 import { useUserStore, ROLES } from '@/store/user'
-import { apiOps } from '@/utils/api'
+import { subscribe } from '@/utils/eventBus'
 
 const props = defineProps({
   dateRange: {
@@ -83,15 +139,36 @@ const props = defineProps({
 
 const emit = defineEmits(['update:dateRange'])
 
-const departureStore = useDepartureStore()
-const settingsStore = useSettingsStore()
 const userStore = useUserStore()
 
 const allWorkers = ref([])
 const selectedWorkerId = ref('')
-const personRecord = ref([])
 const openPersonRecordList = ref(true)
+
+// 统计数据
+const workerStats = ref({
+  workerId: '',
+  workDays: 0,
+  departureCount: 0,
+  departureFeeSum: 0,
+  loadingCount: 0,
+  loadingFeeSum: 0,
+  settledAmount: 0,
+  totalEarned: 0,
+  unpaidAmount: 0
+})
+
+// 日历数据
+const calendarRecords = ref([])
+const currentDate = ref('')
+
+// 列表数据（分页）
 const personRecordList = ref([])
+const currentPage = ref(1)
+const pageSize = 20
+const hasMore = ref(false)
+const loadingMore = ref(false)
+const totalList = ref([]) // 完整列表数据
 
 const loadWorkers = async () => {
   try {
@@ -102,6 +179,162 @@ const loadWorkers = async () => {
     allWorkers.value = []
   }
 }
+
+// 加载统计数据
+const loadWorkerStats = async () => {
+  if (!selectedWorkerId.value || !props.dateRange.start || !props.dateRange.end) {
+    workerStats.value = {
+      workerId: '',
+      workDays: 0,
+      departureCount: 0,
+      departureFeeSum: 0,
+      loadingCount: 0,
+      loadingFeeSum: 0,
+      settledAmount: 0,
+      totalEarned: 0,
+      unpaidAmount: 0
+    }
+    return
+  }
+  try {
+    const res = await departureApi.getWorkerStats(
+      selectedWorkerId.value,
+      props.dateRange.start,
+      props.dateRange.end
+    )
+    if (res.success && res.data) {
+      workerStats.value = res.data
+    }
+  } catch (e) {
+    console.error('加载员工统计失败:', e)
+    workerStats.value = {
+      workerId: '',
+      workDays: 0,
+      departureCount: 0,
+      departureFeeSum: 0,
+      loadingCount: 0,
+      loadingFeeSum: 0,
+      settledAmount: 0,
+      totalEarned: 0,
+      unpaidAmount: 0
+    }
+  }
+}
+
+// 加载日历数据
+const loadCalendarRecords = async () => {
+  if (!selectedWorkerId.value || !props.dateRange.start || !props.dateRange.end) {
+    calendarRecords.value = []
+    return
+  }
+  try {
+    const res = await departureApi.getWorkerCalendar(
+      selectedWorkerId.value,
+      props.dateRange.start,
+      props.dateRange.end
+    )
+    if (res.success && res.data) {
+      calendarRecords.value = (res.data.personRecord || []).map(item => ({
+        date: item.date,
+        info: item.info
+      }))
+    }
+  } catch (e) {
+    console.error('加载日历数据失败:', e)
+    calendarRecords.value = []
+  }
+}
+
+// 加载列表数据（第一页）
+const loadListData = async () => {
+  if (!selectedWorkerId.value || !props.dateRange.start || !props.dateRange.end) {
+    personRecordList.value = []
+    totalList.value = []
+    return
+  }
+  try {
+    const res = await departureApi.getWorkerList(
+      selectedWorkerId.value,
+      props.dateRange.start,
+      props.dateRange.end,
+      1,
+      pageSize
+    )
+    if (res.success && res.data) {
+      totalList.value = res.data.list || []
+      personRecordList.value = totalList.value
+      hasMore.value = res.data.hasMore || false
+      currentPage.value = 1
+    }
+  } catch (e) {
+    console.error('加载列表数据失败:', e)
+    personRecordList.value = []
+    totalList.value = []
+  }
+}
+
+// 加载更多
+const loadMore = async () => {
+  if (loadingMore.value || !hasMore.value) return
+
+  loadingMore.value = true
+  try {
+    const nextPage = currentPage.value + 1
+    const res = await departureApi.getWorkerList(
+      selectedWorkerId.value,
+      props.dateRange.start,
+      props.dateRange.end,
+      nextPage,
+      pageSize
+    )
+    if (res.success && res.data) {
+      const newList = res.data.list || []
+      totalList.value = [...totalList.value, ...newList]
+      personRecordList.value = totalList.value
+      hasMore.value = res.data.hasMore || false
+      currentPage.value = nextPage
+    }
+  } catch (e) {
+    console.error('加载更多失败:', e)
+  } finally {
+    loadingMore.value = false
+  }
+}
+
+// 下拉刷新（重新加载所有数据）
+const refreshData = async () => {
+  await Promise.all([
+    loadWorkerStats(),
+    loadCalendarRecords(),
+    loadListData()
+  ])
+}
+
+// 月份切换
+const onMonthSwitch = () => {
+  // 月份切换时重新加载日历数据
+  loadCalendarRecords()
+}
+
+// 日期范围变化
+const changeDateRange = () => {
+  // 日历选择变化时刷新数据
+  refreshData()
+}
+
+let unsubscribe = null
+
+onMounted(async () => {
+  currentDate.value = props.dateRange.start
+  await loadWorkers()
+  unsubscribe = subscribe('departure:refresh', () => {
+    refreshData()
+  })
+})
+
+onUnmounted(() => {
+  if (unsubscribe) { unsubscribe(); unsubscribe = null }
+})
 
 // 根据用户角色过滤员工
 const filteredWorkers = computed(() => {
@@ -126,10 +359,6 @@ const filteredWorkers = computed(() => {
 const workerOptions = computed(() => filteredWorkers.value)
 const selectedWorker = computed(() => allWorkers.value.find(w => w.id === selectedWorkerId.value))
 
-onMounted(() => {
-  loadWorkers()
-})
-
 const onWorkerChange = (e) => {
   selectedWorkerId.value = workerOptions.value[e.detail.value]?.id || ''
 }
@@ -142,84 +371,41 @@ const onEndDateChange = (e) => {
   emit('update:dateRange', { ...props.dateRange, end: e.detail.value })
 }
 
-const clearWorkerStats = () => {}
-
-const changeDateRange = () => {}
-
-// 更新出勤记录的函数
-const updatePersonRecord = () => {
-  if (!selectedWorkerId.value) {
-    personRecord.value = []
-    return
+// 跳转详情
+const goToDetail = (item) => {
+  if (item.id) {
+    uni.navigateTo({ url: `/pages/departure/form?id=${item.id}` })
   }
-  const records = departureStore.getRecordsByDateRange(props.dateRange.start, props.dateRange.end)
-  const workDates = records
-    .filter(r => r.departureWorkerId === selectedWorkerId.value || r.loadingWorkerIds.includes(selectedWorkerId.value))
-
-  personRecord.value = [...new Set(workDates)].map(r => {
-    const label = []
-    if(r.departureWorkerId === selectedWorkerId.value) {
-      label.push('发')
-    }
-    if(r.loadingWorkerIds.includes(selectedWorkerId.value)) {
-      label.push('装')
-    }
-    return {
-      date: r.date,
-      info: label.join('+')
-    }
-  })
-
-  nextTick(() => {
-    personRecordList.value = personRecord.value.sort((a, b) => b.date.localeCompare(a.date))
-    openPersonRecordList.value = true
-  })
 }
 
-// 监听选择人员变化，更新出勤记录
+// 监听选择人员变化
 watch(selectedWorkerId, () => {
-  updatePersonRecord()
+  if (selectedWorkerId.value) {
+    refreshData()
+  }
 })
 
-// 监听日期范围变化，更新记录
+// 监听日期范围变化
 watch(() => [props.dateRange.start, props.dateRange.end], () => {
-  updatePersonRecord()
+  if (selectedWorkerId.value) {
+    currentDate.value = props.dateRange.start
+    refreshData()
+  }
 }, { deep: true })
-
-const workerStats = computed(() => {
-  if (!selectedWorkerId.value) return { workDays: 0, departureCount: 0, loadingCount: 0, totalProfit: 0 }
-
-  const records = departureStore.getRecordsByDateRange(props.dateRange.start, props.dateRange.end)
-
-  const workderRecords = records.filter(r => r.departureWorkerId === selectedWorkerId.value || r.loadingWorkerIds.includes(selectedWorkerId.value))
-
-  const workDays = new Set(workderRecords.map(r => r.date)).size
-  // 发车次数
-  const departureCount = workderRecords.filter(r => r.departureWorkerId === selectedWorkerId.value).length
-  // 装车次数
-  const loadingCount = workderRecords.filter(r => r.loadingWorkerIds.includes(selectedWorkerId.value)).length
-  // 应结算
-  let totalloadingCount = 0;
-  records.forEach(record => {
-    if(record.loadingWorkerIds.includes(selectedWorkerId.value)) {
-      totalloadingCount += Number(settingsStore.loadingFee || 0) / record.loadingWorkerIds.length
-    }
-  })
-  const totalProfit = departureCount * (settingsStore.departureFee || 0) + totalloadingCount
-
-  return { workDays, departureCount, loadingCount, totalProfit: totalProfit.toFixed(2) }
-})
 </script>
 
 <style scoped>
 .tab-content { display: flex; flex-direction: column; gap: 10px; }
 .picker { background: #fff; padding: 12px; border-radius: 4px; }
-.stats-result { background: #fff; padding: 15px; border-radius: 8px; margin-top: 15px; }
+.stats-result { background: #fff; padding: 15px; border-radius: 8px; margin-top: 10px; margin-bottom: 15px;}
 .stat-item { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
 .stat-item:last-child { border-bottom: none; }
 .value { font-weight: bold; color: #007aff; }
 .profit { color: #52c41a; }
 
+.detail-list-collapse{
+  margin-top: 15px;
+}
 .detail-list-collapse .uni-collapse {
   border-radius: 4px;
 }
@@ -234,6 +420,13 @@ const workerStats = computed(() => {
 .detail-item { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
 .detail-item text { flex: 1; text-align: center; }
 .detail-item:last-child { border-bottom: none; }
+
+.load-more, .no-more {
+  text-align: center;
+  padding: 20rpx;
+  color: #999;
+  font-size: 12px;
+}
 
 .empty-content{
   width: 100%;
