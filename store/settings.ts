@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
-import { apiOps } from '@/utils/api'
+import { apiOps } from '@/api'
 import { useUserStore } from './user'
 import { ROLES } from './user'
 import toast from '@/utils/toast'

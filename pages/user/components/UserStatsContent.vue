@@ -78,7 +78,7 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
-import { departureApi } from '@/utils/api'
+import { departureApi } from '@/api'
 import { useUserStore } from '@/store/user'
 import { subscribe } from '@/utils/eventBus'
 

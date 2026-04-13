@@ -113,7 +113,7 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import { useUserStore, ROLES } from '@/store/user'
-import { apiOps, departureApi } from '@/utils/api'
+import { apiOps, departureApi } from '@/api'
 
 const props = defineProps({
   dateRange: {

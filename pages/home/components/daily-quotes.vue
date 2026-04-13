@@ -77,7 +77,7 @@
 import { ref, computed, watch, nextTick } from 'vue'
 import { onShow, onHide } from '@dcloudio/uni-app'
 import { useUserStore, ROLES } from '@/store/user'
-import { dailyQuoteApi } from '@/utils/api'
+import { dailyQuoteApi } from '@/api'
 import { subscribe, publish } from '@/utils/eventBus'
 import toast from '@/utils/toast'
 

@@ -287,7 +287,7 @@
 import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useSettingsStore } from '@/store/settings'
 import { useUserStore, ROLES } from '@/store/user'
-import { departureApi, dailyQuoteApi, apiOps } from '@/utils/api'
+import { departureApi, dailyQuoteApi, apiOps } from '@/api'
 import { subscribe, publish } from '@/utils/eventBus'
 import { calculateMerchantCost } from '@/utils/calc'
 import toast from '@/utils/toast'

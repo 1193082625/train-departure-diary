@@ -189,7 +189,7 @@
 <script setup>
 import { ref, computed, watch, onMounted, reactive } from 'vue'
 import { onShow, onHide } from '@dcloudio/uni-app'
-import { departureApi, apiOps } from '@/utils/api'
+import { departureApi, apiOps } from '@/api'
 import { useUserStore, ROLES } from '@/store/user'
 import { subscribe } from '@/utils/eventBus'
 import MiddlemanSelector from '@/components/middleman-selector.vue'

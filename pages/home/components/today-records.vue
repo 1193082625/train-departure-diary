@@ -22,7 +22,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { departureApi } from '@/utils/api'
+import { departureApi } from '@/api'
 import { useUserStore } from '@/store/user'
 import { subscribe } from '@/utils/eventBus'
 

@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { apiOps, userApi, inviteApi } from '@/utils/api'
+import { apiOps, userApi, inviteApi } from '@/api'
 import toast from '@/utils/toast'
 
 // 生成邀请码

@@ -55,7 +55,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useUserStore, ROLE_NAMES, ROLES } from '@/store/user'
-import { apiOps } from '@/utils/api'
+import { apiOps } from '@/api'
 import toast from '@/utils/toast'
 
 const userStore = useUserStore()

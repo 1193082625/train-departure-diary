@@ -87,7 +87,7 @@
 import { ref, reactive, computed, onMounted, nextTick } from 'vue'
 import { onShow, onHide, onReachBottom, onPullDownRefresh } from '@dcloudio/uni-app'
 import { useUserStore, ROLES } from '@/store/user'
-import { request } from '@/utils/api'
+import { request } from '@/api'
 import { subscribe, publish } from '@/utils/eventBus'
 import toast from '@/utils/toast'
 
