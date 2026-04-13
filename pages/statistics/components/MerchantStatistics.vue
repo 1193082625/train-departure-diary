@@ -243,9 +243,9 @@ const loadListData = async () => {
       pageSize
     )
     if (res.success && res.data) {
-      totalList.value = res.data.list || []
+      totalList.value = res.data || []
       merchantRecordList.value = totalList.value
-      hasMore.value = res.data.hasMore || false
+      hasMore.value = res.pagination?.page < res.pagination?.totalPages
       currentPage.value = 1
       openMerchantRecordList.value = true
 
@@ -277,10 +277,10 @@ const loadMore = async () => {
       pageSize
     )
     if (res.success && res.data) {
-      const newList = res.data.list || []
+      const newList = res.data || []
       totalList.value = [...totalList.value, ...newList]
       merchantRecordList.value = totalList.value
-      hasMore.value = res.data.hasMore || false
+      hasMore.value = res.pagination?.page < res.pagination?.totalPages
       currentPage.value = nextPage
     }
   } catch (e) {

@@ -6,7 +6,7 @@
 
 <script setup>
 import { useUserStore } from '@/store/user'
-import UserStatsContent from '@/components/UserStatsContent.vue'
+import UserStatsContent from './components/UserStatsContent.vue'
 import LoaderProfitContent from '@/components/LoaderProfitContent.vue'
 
 const userStore = useUserStore()
