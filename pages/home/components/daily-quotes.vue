@@ -77,7 +77,7 @@
 import { ref, computed, watch, nextTick } from 'vue'
 import { onShow, onHide } from '@dcloudio/uni-app'
 import { useUserStore, ROLES } from '@/store/user'
-import { dailyQuoteApi } from '@/api'
+import request from '@/api/request'   
 import toast from '@/utils/toast'
 
 const userStore = useUserStore()
