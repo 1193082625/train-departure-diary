@@ -95,11 +95,11 @@
       </view>
       <view class="summary-item">
         <text class="summary-label">斤数</text>
-        <text class="summary-value">{{ aggregateStats.truckWeightTotal.toFixed(2) || '--' }}</text>
+        <text class="summary-value">{{ (aggregateStats.merchantWeightTotal ?? 0).toFixed(2) || '--' }}</text>
       </view>
       <view class="summary-item" v-if="userStore.isAdmin || userStore.isMiddleman">
         <text class="summary-label">总盈利</text>
-        <text class="summary-value profit">¥{{ aggregateStats.profitTotal.toFixed(2) }}</text>
+        <text class="summary-value profit">¥{{ (aggregateStats.profitTotal ?? 0).toFixed(2) }}</text>
       </view>
     </view>
 
@@ -119,58 +119,30 @@
           <view class="group-header">
             <view class="group-title">{{ groupKey }}</view>
             <view class="group-summary">
-              {{ group.records.length }}车 | 大框{{ group.bigBoxes }} | 小框{{ group.smallBoxes }} | 斤数{{ group.weight.toFixed(2) }} <text v-if="userStore.isAdmin || userStore.isMiddleman"> | ¥{{ group.profit.toFixed(2) }}</text>
+              {{ group.records.length }}车 | 大框{{ group.bigBoxes }} | 小框{{ group.smallBoxes }} | 斤数{{ (group.weight ?? 0).toFixed(2) }} <text v-if="userStore.isAdmin || userStore.isMiddleman"> | ¥{{ (group.profit ?? 0).toFixed(2) }}</text>
             </view>
           </view>
-          <view
+          <RecordCard
             v-for="record in group.records"
             :key="record.id"
-            class="record-card"
-            @click="editRecord(record)"
-          >
-            <view class="record-header">
-              <text class="trip-number">{{ record.tripNumber }}</text>
-              <text class="time">{{ record.date }}</text>
-            </view>
-            <view class="record-content">
-              <text>鸡场: {{ record.merchantDetails.map(m => m.merchantName).join(', ') }}</text>
-              <text>发车: {{ getWorkerName(record.departureWorkerId) }}</text>
-              <text>装车: {{ record.loadingWorkerIds.map(id => getWorkerName(id)).join(', ') }}</text>
-            </view>
-            <view class="record-stats">
-              <text>大框: {{ calculateTotalBigBoxes(record) }}</text>
-              <text>小框: {{ calculateTotalSmallBoxes(record) }}</text>
-              <text>斤数: {{ calculateTotalWeight(record).toFixed(2) }}</text>
-              <text class="profit" v-if="record.getMoney && (userStore.isAdmin || userStore.isMiddleman)">盈利: ¥{{ parseFloat(record.getMoney).toFixed(2) }}</text>
-            </view>
-          </view>
+            :record="record"
+            :workers="allWorkers"
+            :show-unit="false"
+            @click="editRecord"
+          />
         </view>
       </template>
 
       <!-- 按天模式：直接展示 -->
       <template v-else>
-        <view
+        <RecordCard
           v-for="record in records"
           :key="record.id"
-          class="record-card"
-          @click="editRecord(record)"
-        >
-          <view class="record-header">
-            <text class="trip-number">{{ record.tripNumber }}</text>
-            <text class="time">{{ record.date }}</text>
-          </view>
-          <view class="record-content">
-            <text>鸡场: {{ record.merchantDetails.map(m => m.merchantName).join(', ') }}</text>
-            <text>发车: {{ getWorkerName(record.departureWorkerId) }}</text>
-            <text>装车: {{ record.loadingWorkerIds.map(id => getWorkerName(id)).join(', ') }}</text>
-          </view>
-          <view class="record-stats">
-            <text>大框: {{ calculateTotalBigBoxes(record) }}</text>
-            <text>小框: {{ calculateTotalSmallBoxes(record) }}</text>
-            <text>散装: {{ calculateTotalWeight(record).toFixed(2) }} 斤</text>
-            <text class="profit" v-if="record.getMoney && (userStore.isAdmin || userStore.isMiddleman)">盈利: ¥{{ parseFloat(record.getMoney).toFixed(2) }}</text>
-          </view>
-        </view>
+          :record="record"
+          :workers="allWorkers"
+          :show-unit="true"
+          @click="editRecord"
+        />
       </template>
 
       <view v-if="records.length === 0 && !loading" class="empty">
@@ -192,6 +164,7 @@ import { onShow } from '@dcloudio/uni-app'
 import { departureApi, apiOps } from '@/api'
 import { useUserStore, ROLES } from '@/store/user'
 import MiddlemanSelector from '@/components/middleman-selector.vue'
+import RecordCard from './components/record-card.vue'
 
 const userStore = useUserStore()
 
@@ -266,7 +239,7 @@ const aggregateStats = ref({
   departureCount: 0,
   truckBigTotal: 0,
   truckSmallTotal: 0,
-  truckWeightTotal: 0,
+  merchantWeightTotal: 0,
   profitTotal: 0
 })
 const statsLoading = ref(false)
@@ -498,11 +471,6 @@ const goToForm = () => {
 
 const editRecord = (record) => {
   uni.navigateTo({ url: `/pages/departure/form?id=${record.id}` })
-}
-
-const getWorkerName = (id) => {
-  const worker = getWorkerById(id)
-  return worker ? worker.name : '未知'
 }
 
 const calculateTotalBigBoxes = (record) => {

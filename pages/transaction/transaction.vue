@@ -251,7 +251,7 @@ const selectedTarget = computed(() => {
 })
 
 const recentTransactions = computed(() =>
-  transactions.value.slice().reverse().map(t => ({
+  transactions.value.map(t => ({
     ...t,
     targetName: t.type === 'payment_to_merchant'
       ? getMerchantById(t.targetId)?.name

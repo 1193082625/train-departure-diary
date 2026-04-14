@@ -16,7 +16,7 @@
       </view>
       <view class="action-btn" @click="goToWorker" v-if="userStore.isAdmin || userStore.isMiddleman">
         <text class="icon">👤</text>
-        <text>管理人员</text>
+        <text>人员管理</text>
       </view>
       <view class="action-btn" @click="goToTransaction" v-if="userStore.isAdmin || userStore.isMiddleman">
         <text class="icon">💰</text>

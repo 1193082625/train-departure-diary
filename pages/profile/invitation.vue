@@ -1,9 +1,9 @@
 <template>
   <view class="invitation-container">
     <!-- 生成邀请码 -->
-    <view class="generate-card">
-      <text class="card-title">生成邀请码</text>
-      <view class="role-selector">
+    <view class="generate-card" v-if="departureWorkerOptions.length">
+      <text class="card-title">生成员工邀请码</text>
+      <!-- <view class="role-selector">
         <view
           v-for="role in roles"
           :key="role.value"
@@ -13,7 +13,7 @@
         >
           <text class="role-label">{{ role.label }}</text>
         </view>
-      </view>
+      </view> -->
       <!-- 如果角色是装发车，则显示选择人员列表 -->
       <view class="user-list" v-if="selectedRole && selectedRole === ROLES.LOADER">
         <view class="user-item" :class="{ active: selectedDepartureWorker?.id === worker.id }" v-for="worker in departureWorkerOptions" :key="worker.id" @click="onDepartureWorkerChange(worker)">
@@ -79,7 +79,7 @@ const loadWorkers = async () => {
 const roles = [
   { value: ROLES.LOADER, label: '装发车' },
   // { value: ROLES.FARM, label: '鸡场' },
-  { value: ROLES.MIDDLEMAN, label: '中间商' }
+  // { value: ROLES.MIDDLEMAN, label: '中间商' }
 ]
 
 const selectedDepartureWorker = ref(null)

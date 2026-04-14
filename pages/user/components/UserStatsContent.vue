@@ -184,6 +184,7 @@ let reloadTimer = null
 const reloadDateRange = () => {
   if (reloadTimer) clearTimeout(reloadTimer)
   reloadTimer = setTimeout(() => {
+    loadTotalStats()
     loadRecords(true)
   }, 100)
 }
@@ -193,6 +194,7 @@ watch(() => dateRange.start, reloadDateRange)
 watch(() => dateRange.end, reloadDateRange)
 
 onShow(() => {
+  loadTotalStats()
   loadRecords(true)
 })
 
@@ -270,31 +272,28 @@ const getTotalSmallBoxes = (record) => {
   return record.merchantDetails?.reduce((sum, m) => sum + (m.smallBoxes || 0), 0) || 0
 }
 
-// 总统计
-const totalStats = computed(() => {
-  let totalBigBoxes = 0
-  let totalSmallBoxes = 0
-  let profitDays = new Set()
-  let profitMonths = new Set()
-
-  records.value.forEach(record => {
-    totalBigBoxes += record.merchantDetails?.reduce((sum, m) => sum + (m.bigBoxes || 0), 0) || 0
-    totalSmallBoxes += record.merchantDetails?.reduce((sum, m) => sum + (m.smallBoxes || 0), 0) || 0
-    profitDays.add(record.date)
-    profitMonths.add(record.date.substring(0, 7))
-  })
-
-  const totalProfit = records.value.reduce((sum, r) => sum + parseFloat(r.getMoney || 0), 0)
-
-  return {
-    departureCount: records.value.length,
-    totalBigBoxes,
-    totalSmallBoxes,
-    totalProfit,
-    profitDays: profitDays.size,
-    profitMonths: profitMonths.size
-  }
+// 总统计（从 API 加载）
+const totalStats = reactive({
+  departureCount: 0,
+  totalBigBoxes: 0,
+  totalSmallBoxes: 0,
+  totalProfit: 0
 })
+
+// 加载总统计数据
+const loadTotalStats = async () => {
+  try {
+    const res = await departureApi.aggregate(dateRange.start, dateRange.end, 'summary')
+    if (res.data) {
+      totalStats.departureCount = res.data.departureCount || 0
+      totalStats.totalBigBoxes = res.data.truckBigTotal || 0
+      totalStats.totalSmallBoxes = res.data.truckSmallTotal || 0
+      totalStats.totalProfit = res.data.profitTotal || 0
+    }
+  } catch (err) {
+    console.error('[UserStats] Failed to load total stats:', err)
+  }
+}
 </script>
 
 <style scoped>

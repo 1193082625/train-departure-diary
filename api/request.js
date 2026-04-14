@@ -7,7 +7,8 @@ import { ref } from 'vue'
 // API 基础 URL
 // const BASE_URL = ref('http://47.96.90.103:3000/api')
 // const BASE_URL = ref('http://192.168.31.144:3000/api')
-const BASE_URL = ref('http://localhost:3000/api')
+// const BASE_URL = ref('http://localhost:3000/api')
+const BASE_URL = ref('http://47.96.90.103:3002/api')
 
 /**
  * 获取存储的 token
@@ -19,6 +20,7 @@ const getToken = () => uni.getStorageSync('token')
  */
 const redirectToLogin = () => {
   uni.removeStorageSync('token')
+  uni.removeStorageSync('currentUser')
   uni.reLaunch({ url: '/pages/login/login' })
 }
 

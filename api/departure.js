@@ -22,9 +22,6 @@ const parseJsonField = (value) => {
 
 // 发车记录相关 API
 export const departureApi = {
-  // 获取所有发车记录（带缓存，后端已过滤权限）
-  getRecords: (limit = 500) => apiOps.queryAll('departures', limit),
-
   // 员工统计信息
   getWorkerStats: (workerId, startDate, endDate) => {
     const queryString = buildQueryString({ startDate, endDate })
@@ -64,7 +61,7 @@ export const departureApi = {
 
   // 按日期范围获取记录（后端分页过滤）
   getRecordsByDateRange: (startDate, endDate, page = 1, pageSize = 50) => {
-    const queryString = buildQueryString({ startDate, endDate, page, pageSize })
+    const queryString = buildQueryString({ startDate, endDate, page, pageSize, sort: 'date', order: 'desc' })
     return request(`/departures/list${queryString}`, {
       method: 'GET'
     }).then(res => {
@@ -101,19 +98,6 @@ export const departureApi = {
   loadRecordsByDate: async (date) => {
     const queryString = buildQueryString({ startDate: date, endDate: date, sort: 'date', order: 'desc' })
     const res = await request(`/departures/list${queryString}`, { method: 'GET' })
-    const results = res.data || []
-    return results.map(r => ({
-      ...r,
-      merchantDetails: parseJsonField(r.merchantDetails),
-      loadingWorkerIds: parseJsonField(r.loadingWorkerIds),
-      truckRows: parseJsonField(r.truckRows),
-      merchantAmount: parseJsonField(r.merchantAmount)
-    }))
-  },
-
-  // 加载并解析记录
-  loadRecords: async () => {
-    const res = await apiOps.queryAll('departures')
     const results = res.data || []
     return results.map(r => ({
       ...r,

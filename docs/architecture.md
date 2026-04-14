@@ -56,6 +56,7 @@
 | store/departure.ts                | 发车记录状态管理        |
 | pages/home/components/daily-quotes.vue | 日报价组件 (API-first) |
 | pages/departure/form.vue          | 发车表单 (含成本计算)   |
+| components/record-card.vue        | 发车记录卡片组件        |
 | sql/schema-mysql.sql              | MySQL 建表语句          |
 | train-departure-diary-server/index.js | Express 后端服务入口 |
 | uniCloud-aliyun/database/*.schema.json | 历史遗留 (旧 Schema) |
