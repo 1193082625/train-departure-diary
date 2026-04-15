@@ -38,7 +38,7 @@
           </view>
           <view class="actions">
             <text @click="editMerchant(merchant)">编辑</text>
-            <text @click="deleteMerchant(merchant.id)" class="delete">删除</text>
+            <!-- <text @click="deleteMerchant(merchant.id)" class="delete">删除</text> -->
           </view>
         </view>
       </template>
@@ -67,7 +67,7 @@
 			<uni-forms-item label="姓名" name="name">
 				<uni-easyinput type="text" v-model="form.name" placeholder="请输入姓名" />
 			</uni-forms-item>
-			<uni-forms-item label="手机号" name="phone">
+			<uni-forms-item label="手机号" name="phone" v-if="!editingMerchant">
 				<uni-easyinput type="tel" v-model="form.phone" placeholder="请输入手机号" />
 			</uni-forms-item>
 			<uni-forms-item label="差额" name="margin">
@@ -269,7 +269,6 @@ const saveMerchant = async () => {
     invalidateCache('merchants')
   } catch (e) {
     console.error('保存失败:', e)
-    toast.error('保存失败')
   }
 }
 
@@ -286,7 +285,6 @@ const deleteMerchant = async (id) => {
           invalidateCache('merchants')
         } catch (e) {
           console.error('删除失败:', e)
-          toast.error('删除失败')
         }
       }
     }

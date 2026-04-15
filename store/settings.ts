@@ -166,7 +166,6 @@ export const useSettingsStore = defineStore('settings', () => {
       }
     } catch (e) {
       console.error('【Settings】保存设置失败:', e)
-      toast.error('保存设置失败')
     }
   }
 
@@ -243,7 +242,6 @@ export const useSettingsStore = defineStore('settings', () => {
       await saveSettings()
     } catch (e) {
       console.error('【Settings】批量更新设置失败:', e)
-      toast.error('保存设置失败')
       throw e
     }
   }

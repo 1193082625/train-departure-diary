@@ -152,7 +152,8 @@ const loadTransactions = async (page = 1, appendMode = false) => {
   try {
     const type = form.type === 'payment_to_merchant' ? 'payment_to_merchant' : 'payment_to_worker'
     let url = `/transactions/list?page=${page}&pageSize=${pagination.value.pageSize}&sort=date&order=desc&type=${type}`
-    if (filterTargetId.value) {
+    // 只有选择具体对象时才传targetId筛选，选择"全部"时不传
+    if (filterTargetId.value && filterTargetId.value.trim() !== '') {
       url += `&targetId=${filterTargetId.value}`
     }
     const res = await request(url)
@@ -316,7 +317,7 @@ const addTransaction = async () => {
     form.amount = null
     form.note = ''
   } catch (e) {
-    toast.error('结账失败')
+    // toast.error('结账失败')
   }
 }
 
@@ -331,7 +332,7 @@ const deleteTransaction = (id) => {
           await loadTransactions()
           toast.success('删除成功')
         } catch (e) {
-          toast.error('删除失败')
+          // toast.error('删除失败')
         }
       }
     }
@@ -361,7 +362,7 @@ const saveTransaction = async () => {
     transactionPopup.value.close()
     toast.success('修改成功')
   } catch (e) {
-    toast.error('修改失败')
+    // toast.error('修改失败')
   }
 }
 </script>

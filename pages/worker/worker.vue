@@ -41,7 +41,7 @@
           </view>
           <view class="actions">
             <text @click="editWorker(worker)">编辑</text>
-            <text @click="deleteWorker(worker.id)" class="delete">删除</text>
+            <!-- <text @click="deleteWorker(worker.id)" class="delete">删除</text> -->
           </view>
         </view>
       </template>
@@ -264,7 +264,6 @@ const saveWorker = async () => {
     invalidateCache('workers')
   } catch (e) {
     console.error('保存失败:', e)
-    toast.error('保存失败')
   }
 }
 
@@ -281,7 +280,6 @@ const deleteWorker = async (id) => {
           invalidateCache('workers')
         } catch (e) {
           console.error('删除失败:', e)
-          toast.error('删除失败')
         }
       }
     }

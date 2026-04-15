@@ -3,6 +3,7 @@
  */
 
 import { ref } from 'vue'
+import toast from '@/utils/toast'
 
 // API 基础 URL
 // const BASE_URL = ref('http://47.96.90.103:3000/api')
@@ -80,6 +81,7 @@ const request = async (endpoint, options = {}) => {
           if (res.statusCode >= 200 && res.statusCode < 300) {
             resolve(res.data)
           } else {
+            toast.error(res.data?.error || '操作失败')
             reject(new Error(res.data?.error || `请求失败: ${res.statusCode}`))
           }
         },

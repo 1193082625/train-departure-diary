@@ -202,7 +202,6 @@ export const useUserStore = defineStore('user', () => {
       return result
     } catch (e) {
       console.error('【User】设置密码失败:', e)
-      toast.error('设置密码失败')
       return { success: false, message: '设置密码失败' }
     }
   }
@@ -220,7 +219,6 @@ export const useUserStore = defineStore('user', () => {
       return { success: true }
     } catch (e) {
       console.error('【User】修改密码失败:', e)
-      toast.error('修改密码失败')
       return { success: false, message: '修改密码失败' }
     }
   }
@@ -248,7 +246,7 @@ export const useUserStore = defineStore('user', () => {
       return { success: true, user: newUser }
     } catch (e) {
       console.error('【User】创建用户失败:', e)
-      toast.error('创建用户失败')
+      // toast.error('创建用户失败')
       return { success: false, message: '创建用户失败' }
     }
   }
@@ -263,7 +261,6 @@ export const useUserStore = defineStore('user', () => {
       return { success: true }
     } catch (e) {
       console.error('【User】更新用户失败:', e)
-      toast.error('更新用户信息失败')
       // 云端更新失败时，仅更新本地内存状态
       currentUser.value = { ...currentUser.value, ...updates }
       uni.setStorageSync('currentUser', JSON.stringify(currentUser.value))
@@ -313,7 +310,6 @@ export const useUserStore = defineStore('user', () => {
       return code
     } catch (e) {
       console.error('【User】生成邀请码失败:', e)
-      toast.error('生成邀请码失败')
       return null
     }
   }
@@ -540,7 +536,6 @@ export const useUserStore = defineStore('user', () => {
       // return { success: true }
     } catch (e) {
       console.error('【User】删除中间商失败:', e)
-      toast.error('删除中间商失败')
       throw e
     }
   }
