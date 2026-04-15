@@ -91,13 +91,13 @@ const userStore = useUserStore()
 
 // 日期范围
 const dateRange = reactive({
-  start: new Date(new Date().setDate(1)).toISOString().split('T')[0], // 本月第一天
+  start: new Date((new Date()).getFullYear(), (new Date()).getMonth(), 2).toISOString().split('T')[0], // 本月第一天
   end: new Date().toISOString().split('T')[0]
 })
 
 const openPersonRecordList = ref(true)
 const scrollHeight = ref('400px')
-const isAllRange = ref(false) // 标记是否为全部范围
+const quickRangeType = ref('month') // 当前激活的快捷范围，默认本月
 
 // 统计数据
 const workerStats = ref({
@@ -284,10 +284,12 @@ onMounted(() => {
 
 const onStartDateChange = (e) => {
   dateRange.start = e.detail.value
+  quickRangeType.value = ''
 }
 
 const onEndDateChange = (e) => {
   dateRange.end = e.detail.value
+  quickRangeType.value = ''
 }
 
 // 设置快捷日期范围
@@ -295,30 +297,26 @@ const setQuickRange = (type) => {
   const today = new Date()
   const year = today.getFullYear()
   const month = today.getMonth()
+  quickRangeType.value = type
 
   switch (type) {
     case 'today':
-      isAllRange.value = false
       dateRange.start = today.toISOString().split('T')[0]
       dateRange.end = dateRange.start
       break
     case 'month':
-      isAllRange.value = false
       dateRange.start = new Date(year, month, 2).toISOString().split('T')[0]
       dateRange.end = today.toISOString().split('T')[0]
       break
     case 'lastMonth':
-      isAllRange.value = false
       dateRange.start = new Date(year, month - 1, 2).toISOString().split('T')[0]
       dateRange.end = new Date(year, month, 1).toISOString().split('T')[0]
       break
     case 'year':
-      isAllRange.value = false
       dateRange.start = new Date(year, 0, 2).toISOString().split('T')[0]
       dateRange.end = today.toISOString().split('T')[0]
       break
     case 'all':
-      isAllRange.value = true
       // 全部范围不传日期，由后端处理
       dateRange.start = ''
       dateRange.end = ''
@@ -328,40 +326,7 @@ const setQuickRange = (type) => {
 
 // 获取当前激活的快捷范围
 const getActiveRange = () => {
-  if (isAllRange.value) {
-    return 'all'
-  }
-
-  const todayObj = new Date()
-  const today = todayObj.toISOString().split('T')[0]
-  const year = todayObj.getFullYear()
-  const month = todayObj.getMonth()
-
-  // 今天
-  if(dateRange.start === today && dateRange.end === today) {
-    return 'today'
-  }
-
-  // 本月
-  const monthStart = new Date(year, month, 2).toISOString().split('T')[0]
-  if (dateRange.start === monthStart && dateRange.end === today) {
-    return 'month'
-  }
-
-  // 上月
-  const lastMonthStart = new Date(year, month - 1, 2).toISOString().split('T')[0]
-  const lastMonthEnd = new Date(year, month, 1).toISOString().split('T')[0]
-  if (dateRange.start === lastMonthStart && dateRange.end === lastMonthEnd) {
-    return 'lastMonth'
-  }
-
-  // 本年
-  const yearStart = new Date(year, 0, 2).toISOString().split('T')[0]
-  if (dateRange.start === yearStart && dateRange.end === today) {
-    return 'year'
-  }
-
-  return null
+  return quickRangeType.value
 }
 
 // 跳转详情

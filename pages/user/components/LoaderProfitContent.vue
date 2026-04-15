@@ -89,7 +89,7 @@ const scrollHeight = ref('400px')
 
 // 日期范围（必须在其他使用 dateRange 的代码之前定义）
 const dateRange = reactive({
-  start: new Date(new Date().setDate(1)).toISOString().split('T')[0], // 本月第一天
+  start: new Date((new Date()).getFullYear(), (new Date()).getMonth(), 2).toISOString().split('T')[0], // 本月第一天
   end: new Date().toISOString().split('T')[0]
 })
 
