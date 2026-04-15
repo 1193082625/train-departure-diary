@@ -167,7 +167,7 @@ export const useUserStore = defineStore('user', () => {
       }
 
       // 注册/登录成功，返回 needSetPassword: true
-      currentUser.value = regResult.data
+      currentUser.value = regResult.data.user || regResult.data
       // 不设置 isLoggedIn = true，等待设置密码后再登录
       uni.setStorageSync('currentUser', JSON.stringify(currentUser.value))
       // 存储 token

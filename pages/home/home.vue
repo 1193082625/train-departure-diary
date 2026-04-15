@@ -9,6 +9,9 @@
     <!-- 日报价组件（包含日历和图表） -->
     <daily-quotes ref="dailyQuotesRef" />
 
+    <!-- 装发车人员日历 -->
+    <loader-calendar />
+
     <!-- 今日记录组件 -->
     <today-records />
   </view>
@@ -17,16 +20,21 @@
 <script setup>
 import { ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
+import { useUserStore } from '@/store/user'
 import MiddlemanSelector from '@/components/middleman-selector.vue'
 import QuickEntry from './components/quick-entry.vue'
 import DailyQuotes from './components/daily-quotes.vue'
 import TodayRecords from './components/today-records.vue'
+import LoaderCalendar from './components/loader-calendar.vue'
 
 const dailyQuotesRef = ref(null)
 
 onShow(() => {
-  // 重置日历到当前月
-  dailyQuotesRef.value?.resetCalendarToCurrentMonth()
+  // 只有管理员或中间商角色才重置日报价日历
+  const userStore = useUserStore()
+  if (userStore.isAdmin || userStore.isMiddleman) {
+    dailyQuotesRef.value?.resetCalendarToCurrentMonth()
+  }
 })
 </script>
 

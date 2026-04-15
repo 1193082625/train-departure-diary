@@ -75,25 +75,51 @@ export const useSettingsStore = defineStore('settings', () => {
       // 按userId查询对应的settings
       const res = await apiOps.queryBy('settings', 'userId', middlemanId)
       const results = res.data || []
-      if (results && results.length > 0) {
-        const settings = results[0]
-        currentSettingsUserId.value = middlemanId
-        receiptBigBoxWeight.value = settings.receiptBigBoxWeight ?? 45
-        deliveryBigBoxWeight.value = settings.deliveryBigBoxWeight ?? 44
-        smallBoxWeight.value = settings.smallBoxWeight ?? 29.5
-        depotCartonBoxesBig.value = settings.depotCartonBoxesBig ?? 43
-        depotCartonBoxesSmall.value = settings.depotCartonBoxesSmall ?? 30
-        loadingFee.value = settings.loadingFee ?? 0
-        unloadingFee.value = settings.unloadingFee ?? 0
-        departureFee.value = settings.departureFee ?? 0
-        tollFee.value = settings.tollFee ?? 0
-        entryFee.value = settings.entryFee ?? 0
-        oilFee.value = settings.oilFee ?? 0
+
+      // 装发车角色：必须使用中间商的 settings，不能创建
+      if (userStore.isLoader) {
+        if (results && results.length > 0) {
+          const settings = results[0]
+          currentSettingsUserId.value = middlemanId
+          receiptBigBoxWeight.value = settings.receiptBigBoxWeight ?? 45
+          deliveryBigBoxWeight.value = settings.deliveryBigBoxWeight ?? 44
+          smallBoxWeight.value = settings.smallBoxWeight ?? 29.5
+          depotCartonBoxesBig.value = settings.depotCartonBoxesBig ?? 43
+          depotCartonBoxesSmall.value = settings.depotCartonBoxesSmall ?? 30
+          loadingFee.value = settings.loadingFee ?? 0
+          unloadingFee.value = settings.unloadingFee ?? 0
+          departureFee.value = settings.departureFee ?? 0
+          tollFee.value = settings.tollFee ?? 0
+          entryFee.value = settings.entryFee ?? 0
+          oilFee.value = settings.oilFee ?? 0
+        } else {
+          // 中间商没有 settings，提示用户（不清空 currentSettingsUserId）
+          console.warn(`【Settings】装发车角色登录，但中间商 ${middlemanId} 没有初始化 settings`)
+          toast.error('中间商未初始化，请联系管理员')
+          return  // 不调用 resetToDefaults，不触发创建
+        }
       } else {
-        // 没有找到settings，初始化一个
-        await initSettingsForUser(middlemanId)
-        resetToDefaults()
-        currentSettingsUserId.value = middlemanId
+        // 中间商/管理员角色：保持原有逻辑
+        if (results && results.length > 0) {
+          const settings = results[0]
+          currentSettingsUserId.value = middlemanId
+          receiptBigBoxWeight.value = settings.receiptBigBoxWeight ?? 45
+          deliveryBigBoxWeight.value = settings.deliveryBigBoxWeight ?? 44
+          smallBoxWeight.value = settings.smallBoxWeight ?? 29.5
+          depotCartonBoxesBig.value = settings.depotCartonBoxesBig ?? 43
+          depotCartonBoxesSmall.value = settings.depotCartonBoxesSmall ?? 30
+          loadingFee.value = settings.loadingFee ?? 0
+          unloadingFee.value = settings.unloadingFee ?? 0
+          departureFee.value = settings.departureFee ?? 0
+          tollFee.value = settings.tollFee ?? 0
+          entryFee.value = settings.entryFee ?? 0
+          oilFee.value = settings.oilFee ?? 0
+        } else {
+          // 没有找到settings，初始化一个
+          await initSettingsForUser(middlemanId)
+          resetToDefaults()
+          currentSettingsUserId.value = middlemanId
+        }
       }
     } catch (e) {
       console.error('【Settings】加载设置失败:', e)
