@@ -37,24 +37,24 @@
     </view>
 
     <view class="records">
-      <view class="filter-section">
-        <text class="filter-label">筛选：</text>
-        <picker :range="filterOptions" :range-key="'name'" @change="onFilterChange">
-          <view class="filter-picker">
-            {{ filterOptions.find(o => o.id === filterTargetId)?.name || '全部' }}
-          </view>
-        </picker>
+      <view class="flex flex-between items-center mb-10">
+        <text class="title">结账记录</text>
+        <view class="filter-section">
+          <text class="filter-label">筛选：</text>
+          <picker :range="filterOptions" :range-key="'name'" @change="onFilterChange">
+            <view class="filter-picker">
+              {{ filterOptions.find(o => o.id === filterTargetId)?.name || '全部' }}
+            </view>
+          </picker>
+        </view>
       </view>
-
-      <text class="title">结账记录</text>
       <view v-for="t in recentTransactions" :key="t.id" class="record-item">
         <view class="record-info">
           <text class="target">{{ t.targetName }}</text>
           <text class="date">{{ t.date }}</text>
         </view>
         <view class="record-right">
-          <text class="amount">-¥{{ t.amount }}</text>
-          <text @click="deleteTransaction(t.id)" class="delete">删除</text>
+          <text class="amount"  @click="openEditPopup(t)">-¥{{ t.amount }}</text>
         </view>
       </view>
 
@@ -73,12 +73,32 @@
         <text>没有更多数据了</text>
       </view>
     </view>
+    
+    <!-- 填写报价弹窗 -->
+    <uni-popup ref="transactionPopup" type="bottom">
+      <view class="transaction-popup">
+        <view class="popup-header">
+          <view class="flex flex-column popup-header-title">
+            <text class="popup-title">修改结账金额</text>
+            <text class="popup-date">{{ editingTransaction?.date }}</text>
+          </view>
+          <text class="popup-close" @click="transactionPopup.close()">×</text>
+        </view>
+        <view class="popup-content">
+          <view class="form-item">
+            <text>{{ editingTransaction?.targetName }}</text>
+            <input v-model="transactionInput" type="digit" placeholder="请输入结账金额" />
+          </view>
+        </view>
+        <button @click="saveTransaction" class="save-btn">保存</button>
+      </view>
+    </uni-popup>
   </view>
 </template>
 
 <script setup>
 import { ref, computed, reactive, nextTick, watch } from 'vue'
-import { onShow, onHide, onReachBottom, onPullDownRefresh } from '@dcloudio/uni-app'
+import { onShow, onReachBottom, onPullDownRefresh } from '@dcloudio/uni-app'
 import { apiOps, request } from '@/api'
 import toast from '@/utils/toast'
 
@@ -95,6 +115,11 @@ const pagination = ref({
 
 // 筛选器状态
 const filterTargetId = ref('')
+
+// 修改结账金额
+const transactionPopup = ref(null)
+const editingTransaction = ref(null)
+const transactionInput = ref(null)
 
 // 筛选器选项（包含"全部"选项）
 const filterOptions = computed(() => {
@@ -312,6 +337,33 @@ const deleteTransaction = (id) => {
     }
   })
 }
+
+const openEditPopup = (t) => {
+  editingTransaction.value = t
+  transactionInput.value = t.amount
+  transactionPopup.value.open('center')
+}
+
+const saveTransaction = async () => {
+  if (!transactionInput.value) {
+    toast.error('请输入结账金额')
+    return
+  }
+  try {
+    await apiOps.update('transactions', editingTransaction.value.id, {
+      amount: transactionInput.value
+    })
+    // 更新列表中的数据
+    const index = transactions.value.findIndex(t => t.id === editingTransaction.value.id)
+    if (index !== -1) {
+      transactions.value[index].amount = transactionInput.value
+    }
+    transactionPopup.value.close()
+    toast.success('修改成功')
+  } catch (e) {
+    toast.error('修改失败')
+  }
+}
 </script>
 
 <style scoped>
@@ -328,9 +380,6 @@ const deleteTransaction = (id) => {
 .filter-section {
   display: flex;
   align-items: center;
-  margin-bottom: 10px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid #f0f0f0;
 }
 .filter-label { color: #666; font-size: 14px; }
 .filter-picker {
@@ -340,7 +389,7 @@ const deleteTransaction = (id) => {
   font-size: 14px;
   color: #333;
 }
-.title { font-weight: bold; margin-bottom: 10px; display: block; }
+.title { font-weight: bold; display: block; font-size: 16px; }
 .record-item { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
 .record-item:last-child { border-bottom: none; }
 .record-info { display: flex; flex-direction: column; }
@@ -348,8 +397,25 @@ const deleteTransaction = (id) => {
 .date { color: #999; font-size: 12px; }
 .record-right { display: flex; align-items: center; gap: 10px; }
 .amount { color: #ff4d4f; font-weight: bold; }
-.delete { color: #999; font-size: 12px; }
+.edit-icon { width: 18px; height: 18px; }
 .loading { text-align: center; padding: 20px; color: #999; }
 .loading-more { text-align: center; padding: 15px; color: #999; font-size: 14px; }
 .no-more-data { text-align: center; padding: 15px; color: #999; font-size: 14px; }
+
+.menu-icon-svg {
+  width: 40rpx;
+  height: 40rpx;
+}
+
+
+/* 报价弹窗 */
+.transaction-popup { background: #fff; border-radius: 16px; padding-bottom: 20px; width: 80vw; margin: 0 auto; }
+.popup-header { display: flex; justify-content: space-between; align-items: baseline; padding: 15px 20px; border-bottom: 1px solid #f0f0f0; }
+.popup-header-title{ align-items: start;}
+.popup-title { font-size: 18px; font-weight: bold; }
+.popup-date{color: #666}
+.popup-content { padding: 20px; }
+.form-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f5f5f5; }
+.form-item input { text-align: right; width: 150px; font-size: 14px; }
+.save-btn { background: #007aff; color: #fff; width: 120px; }
 </style>
