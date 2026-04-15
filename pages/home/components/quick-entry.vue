@@ -1,8 +1,8 @@
 <!-- 快捷操作 -->
 <template>
     <!-- 快捷操作 -->
-    <view class="stats-cards" :class="{ 'stats-cards-all': userStore.isLoader }">
-      <view class="action-btn" @click="openSettingsPopup" v-if="userStore.isAdmin || userStore.isMiddleman">
+    <view class="stats-cards" v-if="userStore.isAdmin || userStore.isMiddleman">
+      <view class="action-btn" @click="openSettingsPopup">
         <text class="icon">⚙️</text>
         <text>参数设置</text>
       </view>
@@ -10,15 +10,15 @@
         <text class="icon">🚚</text>
         <text>发车记录</text>
       </view>
-      <view class="action-btn" @click="goToMerchant" v-if="userStore.isAdmin || userStore.isMiddleman">
+      <view class="action-btn" @click="goToMerchant">
         <text class="icon">🐔</text>
         <text>鸡场管理</text>
       </view>
-      <view class="action-btn" @click="goToWorker" v-if="userStore.isAdmin || userStore.isMiddleman">
+      <view class="action-btn" @click="goToWorker">
         <text class="icon">👤</text>
         <text>人员管理</text>
       </view>
-      <view class="action-btn" @click="goToTransaction" v-if="userStore.isAdmin || userStore.isMiddleman">
+      <view class="action-btn" @click="goToTransaction">
         <text class="icon">💰</text>
         <text>单次结账</text>
       </view>

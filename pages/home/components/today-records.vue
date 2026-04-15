@@ -4,10 +4,12 @@
     <view class="section-title-wrapper">
       <view class="section-title-content">
         <text class="section-title">今日记录</text>
-        <text class="section-title-value" v-if="todayStats.count > 0">共{{ todayStats.count }}次</text>
+        <!-- <image v-if="userStore.isLoader" @click="goToDepartureForm" class="section-title-icon" src="/static/svg/add.svg" mode="aspectFit"></image> -->
+        <text class="section-title-value" v-if="todayStats.count > 0 && (userStore.isAdmin || userStore.isMiddleman)">共{{ todayStats.count }}次</text>
       </view>
       <view class="section-title-value-wrapper">
-        <image v-if="userStore.isAdmin || userStore.isMiddleman || userStore.isLoader" @click="goToDepartureForm" class="section-title-icon" src="/static/svg/add.svg" mode="aspectFit"></image>
+        <image v-if="userStore.isAdmin || userStore.isMiddleman || userStore.isLoader" @click="goToDepartureForm" class="section-title-icon ml-10" src="/static/svg/add.svg" mode="aspectFit"></image>
+        <image v-if="userStore.isLoader" @click="goToDeparture" class="records-all-icon ml-5" src="/static/svg/right-arrow.svg" mode="aspectFit"></image>
       </view>
     </view>
     <view v-for="record in todayRecords" :key="record.id" class="record-item" @click="editRecord(record)">
@@ -39,6 +41,7 @@ onShow(() => {
   loadTodayRecords()
 })
 
+const goToDeparture = () => uni.navigateTo({ url: '/pages/departure/departure' })
 const goToDepartureForm = () => uni.navigateTo({ url: '/pages/departure/form' })
 
 const editRecord = (record) => {
@@ -62,9 +65,15 @@ const todayStats = computed(() => {
 .section-title-wrapper { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
 .section-title-content { display: flex; justify-content: start; align-items: center; }
 .section-title { font-weight: bold; display: block; margin-right: 10px; }
-.section-title-icon { width: 28px; height: 28px; margin-left: 10px; }
+.section-title-icon { width: 28px; height: 28px; }
+.records-all-icon{
+   width: 18px;
+   height: 18px;
+   color: #1890ff;
+}
 .section-title-value-wrapper { display: flex; justify-content: space-between; align-items: center; }
 .section-title-value { color: #999; font-size: 14px; display: block; margin-right: 10px; }
+.arrow-text { color: #1890ff; font-size: 24px; font-weight: 300; line-height: 1; }
 .record-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f0f0f0; }
 .record-item:last-child { border-bottom: none; }
 .record-info { display: flex; flex-direction: column; gap: 4px; }

@@ -3,14 +3,14 @@
     <!-- 管理员中间商选择器 -->
     <middleman-selector />
 
+    <!-- 装发车人员日历 -->
+    <loader-calendar />
+
     <!-- 快捷操作 -->
     <quick-entry />
 
     <!-- 日报价组件（包含日历和图表） -->
     <daily-quotes ref="dailyQuotesRef" />
-
-    <!-- 装发车人员日历 -->
-    <loader-calendar />
 
     <!-- 今日记录组件 -->
     <today-records />
