@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
 import { apiOps } from '@/api'
+import { invalidateCache } from '@/api/cache'
 import { useUserStore } from './user'
 import { ROLES } from './user'
 import toast from '@/utils/toast'
@@ -69,6 +70,8 @@ export const useSettingsStore = defineStore('settings', () => {
     }
 
     try {
+      // 清除settings缓存，确保获取最新数据
+      invalidateCache('settings')
       // 按userId查询对应的settings
       const res = await apiOps.queryBy('settings', 'userId', middlemanId)
       const results = res.data || []
