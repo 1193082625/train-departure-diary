@@ -65,7 +65,7 @@
 			<uni-forms-item label="姓名" name="name">
 				<uni-easyinput type="text" v-model="form.name" placeholder="请输入姓名" />
 			</uni-forms-item>
-			<uni-forms-item label="手机号" name="phone">
+			<uni-forms-item label="手机号" name="phone" v-if="!editingWorker">
 				<uni-easyinput type="tel" v-model="form.phone" placeholder="请输入手机号" />
 			</uni-forms-item>
 			<uni-forms-item label="工作内容" name="typeIndex">
@@ -85,9 +85,9 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted, nextTick } from 'vue'
-import { onShow, onHide, onReachBottom, onPullDownRefresh } from '@dcloudio/uni-app'
+import { onShow, onReachBottom, onPullDownRefresh } from '@dcloudio/uni-app'
 import { useUserStore } from '@/store/user'
-import { request } from '@/api'
+import { request, invalidateCache } from '@/api'
 import toast from '@/utils/toast'
 
 const userStore = useUserStore()
@@ -261,7 +261,7 @@ const saveWorker = async () => {
     }
     closeModal()
     loadWorkers(pagination.value.page)
-    await apiOps.queryAll('workers')
+    invalidateCache('workers')
   } catch (e) {
     console.error('保存失败:', e)
     toast.error('保存失败')
@@ -278,7 +278,7 @@ const deleteWorker = async (id) => {
           await request(`/workers/${id}`, { method: 'DELETE' })
           toast.success('删除成功')
           loadWorkers(pagination.value.page)
-          await apiOps.queryAll('workers')
+          invalidateCache('workers')
         } catch (e) {
           console.error('删除失败:', e)
           toast.error('删除失败')

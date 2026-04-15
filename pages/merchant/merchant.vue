@@ -87,7 +87,7 @@
 import { ref, reactive, computed, onMounted, nextTick } from 'vue'
 import { onShow, onHide, onReachBottom, onPullDownRefresh } from '@dcloudio/uni-app'
 import { useUserStore } from '@/store/user'
-import { request } from '@/api'
+import { request, invalidateCache } from '@/api'
 import toast from '@/utils/toast'
 
 const userStore = useUserStore()
@@ -266,7 +266,7 @@ const saveMerchant = async () => {
     }
     closeModal()
     loadMerchants(pagination.value.page)
-    await apiOps.queryAll('merchants')
+    invalidateCache('merchants')
   } catch (e) {
     console.error('保存失败:', e)
     toast.error('保存失败')
@@ -283,7 +283,7 @@ const deleteMerchant = async (id) => {
           await request(`/merchants/${id}`, { method: 'DELETE' })
           toast.success('删除成功')
           loadMerchants(pagination.value.page)
-          await apiOps.queryAll('merchants')
+          invalidateCache('merchants')
         } catch (e) {
           console.error('删除失败:', e)
           toast.error('删除失败')
