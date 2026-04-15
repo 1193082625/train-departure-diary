@@ -261,6 +261,7 @@ const saveWorker = async () => {
     }
     closeModal()
     loadWorkers(pagination.value.page)
+    await apiOps.queryAll('workers')
   } catch (e) {
     console.error('保存失败:', e)
     toast.error('保存失败')
@@ -277,6 +278,7 @@ const deleteWorker = async (id) => {
           await request(`/workers/${id}`, { method: 'DELETE' })
           toast.success('删除成功')
           loadWorkers(pagination.value.page)
+          await apiOps.queryAll('workers')
         } catch (e) {
           console.error('删除失败:', e)
           toast.error('删除失败')
