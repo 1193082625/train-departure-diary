@@ -77,7 +77,7 @@
 import { ref, computed, watch, nextTick } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { useUserStore } from '@/store/user'
-import { dailyQuoteApi } from '@/api'
+import { dailyQuoteApi, invalidateCache } from '@/api'
 import request from '@/api/request'
 import toast from '@/utils/toast'
 
@@ -156,6 +156,7 @@ const saveQuoteToServer = async (date, quote) => {
     })
   }
   loadQuotes()
+  invalidateCache('daily_quotes')  // 清除缓存，否则 getQuoteByDate 会返回旧数据
 }
 
 // 获取指定日期的报价（由后端过滤）

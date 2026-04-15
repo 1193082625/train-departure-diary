@@ -121,7 +121,7 @@ export const useUserStore = defineStore('user', () => {
       // 如果用户已存在且设置了密码，必须使用密码登录
       if (existingUsers && existingUsers.length > 0) {
         const user = existingUsers[0]
-        if (user.password) {
+        if (user.hasPassword) {
           // 需要密码登录
           if (!code) {
             return { success: false, message: '请输入密码' }
@@ -362,7 +362,7 @@ export const useUserStore = defineStore('user', () => {
       let hasPassword = false
       if(existingUsers.length > 0) {
         const user = existingUsers[0]
-        hasPassword = !!user.password
+        hasPassword = !!user.hasPassword
       }
       return existingUsers && existingUsers.length > 0 && hasPassword
     } catch (e) {
