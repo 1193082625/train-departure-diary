@@ -138,6 +138,7 @@ import { ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { useUserStore, ROLES } from '@/store/user'
 import { validatePhone } from '@/utils/validate'
+import request from '@/api/request'
 
 const userStore = useUserStore()
 

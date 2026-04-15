@@ -75,9 +75,10 @@
 
 <script setup>
 import { ref, computed, watch, nextTick } from 'vue'
-import { onShow, onHide } from '@dcloudio/uni-app'
-import { useUserStore, ROLES } from '@/store/user'
-import request from '@/api/request'   
+import { onShow } from '@dcloudio/uni-app'
+import { useUserStore } from '@/store/user'
+import { dailyQuoteApi } from '@/api'
+import request from '@/api/request'
 import toast from '@/utils/toast'
 
 const userStore = useUserStore()
@@ -154,6 +155,7 @@ const saveQuoteToServer = async (date, quote) => {
       })
     })
   }
+  loadQuotes()
 }
 
 // 获取指定日期的报价（由后端过滤）

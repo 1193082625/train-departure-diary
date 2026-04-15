@@ -99,6 +99,7 @@ export const calculateMerchantCost = ({
           totalDeliveryPrice += deliveryPrice
       
           merchantAmount.push({
+            merchantId: merchant.id,
               name: merchant.name,
               amount: receivePrice,
               receivePrice: receivePrice,

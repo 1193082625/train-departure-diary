@@ -18,6 +18,7 @@ export interface TruckRow {
 }
 
 export interface MerchantAmount {
+	merchantId: string
 	name: string
 	amount: number
 	receivePrice: number
