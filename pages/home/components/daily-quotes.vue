@@ -84,11 +84,13 @@ import toast from '@/utils/toast'
 const userStore = useUserStore()
 
 onShow(() => {
-  // 切换回当前 tab 时重置日历到当前月并加载当月数据
-  resetCalendarToCurrentMonth()
-  const today = new Date()
-  const currentMonth = getMonthRange(today.getFullYear(), today.getMonth() + 1)
-  loadQuotes(currentMonth.start, currentMonth.end)
+  // 只有管理员或中间商角色才加载日报价数据
+  if (userStore.isAdmin || userStore.isMiddleman) {
+    resetCalendarToCurrentMonth()
+    const today = new Date()
+    const currentMonth = getMonthRange(today.getFullYear(), today.getMonth() + 1)
+    loadQuotes(currentMonth.start, currentMonth.end)
+  }
 })
 
 // 本地状态
