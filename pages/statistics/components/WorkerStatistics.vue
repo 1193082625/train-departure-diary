@@ -20,10 +20,6 @@
       <!-- 统计汇总 -->
       <view class="stats-result">
         <view class="stat-item">
-          <text>出勤天数</text>
-          <text class="value">{{ workerStats.workDays }}</text>
-        </view>
-        <view class="stat-item">
           <text>发车次数</text>
           <text class="value">{{ workerStats.departureCount }}</text>
         </view>
@@ -44,43 +40,6 @@
           <text class="value unpaid">¥{{ workerStats.unpaidAmount || 0 }}</text>
         </view>
       </view>
-      <!-- <view class="summary mt-15">
-        <view class="summary-item">
-          <text class="summary-label">出勤(天)</text>
-          <text class="summary-value">{{ workerStats.workDays }}</text>
-        </view>
-        <view class="summary-item">
-          <text class="summary-label">发车(次)</text>
-          <text class="summary-value">{{ workerStats.departureCount }}</text>
-        </view>
-        <view class="summary-item">
-          <text class="summary-label">装车(次)</text>
-          <text class="summary-value">{{ workerStats.loadingCount }}</text>
-        </view>
-        <view class="summary-item">
-          <text class="summary-label">应结</text>
-          <text class="summary-value">¥{{ workerStats.totalEarned || 0 }}</text>
-        </view>
-        <view class="summary-item">
-          <text class="summary-label">已结</text>
-          <text class="summary-value">¥{{ workerStats.settledAmount || 0 }}</text>
-        </view>
-        <view class="summary-item">
-          <text class="summary-label">待结</text>
-          <text class="summary-value profit">¥{{ workerStats.unpaidAmount }}</text>
-        </view>
-      </view> -->
-      <!-- <uni-calendar
-        :insert="true"
-        :date="currentDate"
-        :start-date="dateRange.start"
-        :end-date="dateRange.end"
-        :clear-date="true"
-        :show-month="false"
-        :selected="calendarRecords"
-        @change="changeDateRange"
-        @monthSwitch="onMonthSwitch"
-      /> -->
 
       <!-- 明细列表 -->
       <uni-collapse class="mt-section detail-list-collapse" v-if="personRecordList.length > 0">
@@ -88,11 +47,9 @@
           <view class="detail-list">
             <view class="detail-header">
               <text>日期</text>
-              <text>报价</text>
               <text>信息</text>
               <text>发车费</text>
               <text>装车费</text>
-              <!-- <text>装车人数</text> -->
             </view>
             <scroll-view
               scroll-y
@@ -103,11 +60,9 @@
             >
               <view class="detail-item" v-for="(item, index) in personRecordList" :key="`${item.date}-${index}`" @click="goToDetail(item)">
                 <text>{{ item.date }}</text>
-                <text>{{ item.dailyQuote }}</text>
                 <text>{{ item.info }}</text>
                 <text>{{ item.departureFee }}</text>
                 <text>{{ item.loadingFee }}</text>
-                <!-- <text>{{ item.loadingWorkerCount }}</text> -->
               </view>
               <view class="load-more" v-if="hasMore">
                 <text>{{ loadingMore ? '加载中...' : '上拉加载更多' }}</text>

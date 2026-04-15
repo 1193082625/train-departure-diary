@@ -1,7 +1,9 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { apiOps, userApi, inviteApi } from '@/api'
+import request from '@/api/request'
 import toast from '@/utils/toast'
+import { useSettingsStore } from './settings'
 
 // 生成邀请码
 const generateInviteCode = () => {
@@ -99,6 +101,9 @@ export const useUserStore = defineStore('user', () => {
         if (currentUser.value.role === ROLES.ADMIN) {
           await loadUsers()
         }
+
+        // 加载 settings
+        useSettingsStore().loadSettings()
       }
     } catch (e) {
       console.error('【User】初始化失败:', e)
@@ -165,6 +170,10 @@ export const useUserStore = defineStore('user', () => {
       currentUser.value = regResult.data
       // 不设置 isLoggedIn = true，等待设置密码后再登录
       uni.setStorageSync('currentUser', JSON.stringify(currentUser.value))
+      // 存储 token
+      if (regResult.data?.token) {
+        uni.setStorageSync('token', regResult.data.token)
+      }
       return { success: true, needSetPassword: true, user: regResult.data }
     } catch (e) {
       console.error('【User】登录失败:', e)
@@ -177,13 +186,20 @@ export const useUserStore = defineStore('user', () => {
   const setPassword = async (password) => {
     if (!currentUser.value) return { success: false, message: '未登录' }
     try {
-      await userApi.updateUser(currentUser.value.id, { password: password })
-      // 后端返回的用户数据不包含密码，本地也不存储密码
-      currentUser.value = { ...currentUser.value, password: undefined }
-      isLoggedIn.value = true
-      uni.setStorageSync('currentUser', JSON.stringify(currentUser.value))
-      uni.setStorageSync('loginTime', Date.now())
-      return { success: true }
+      const result = await request('/users/setPassword', {
+        method: 'PUT',
+        data: { password }
+      })
+
+      if (result.success) {
+        // 后端返回的用户数据不包含密码，本地也不存储密码
+        currentUser.value = { ...currentUser.value, password: undefined }
+        isLoggedIn.value = true
+        uni.setStorageSync('currentUser', JSON.stringify(currentUser.value))
+        uni.setStorageSync('loginTime', Date.now())
+      }
+
+      return result
     } catch (e) {
       console.error('【User】设置密码失败:', e)
       toast.error('设置密码失败')
