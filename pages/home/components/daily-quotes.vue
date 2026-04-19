@@ -67,7 +67,7 @@
             <input v-model="quoteInput" type="digit" placeholder="请输入报价（元/框）" />
           </view>
         </view>
-        <button @click="saveQuote" class="save-btn">保存</button>
+        <button @click="saveQuote" :disabled="saveLoading" class="save-btn">保存</button>
       </view>
     </uni-popup>
   </view>
@@ -80,6 +80,7 @@ import { useUserStore } from '@/store/user'
 import { dailyQuoteApi, invalidateCache } from '@/api'
 import request from '@/api/request'
 import toast from '@/utils/toast'
+import { debounce } from '@/utils/throttle'
 
 const userStore = useUserStore()
 
@@ -95,6 +96,7 @@ onShow(() => {
 const quotes = ref([])
 const loading = ref(false)
 const isLoadingQuotes = ref(false)
+const saveLoading = ref(false)
 
 // API 调用：按日期范围加载日报价
 const loadQuotes = async (startDate, endDate) => {
@@ -310,11 +312,14 @@ const onMonthChange = async (e) => {
 }
 
 // 保存报价
-const saveQuote = async () => {
+const saveQuote = debounce(async () => {
   if (!quoteInput.value || quoteInput.value <= 0) {
     toast.error('请输入有效报价')
     return
   }
+
+  saveLoading.value = true
+  toast.loading('保存中...')
 
   try {
     await saveQuoteToServer(popupDate.value, quoteInput.value)
@@ -329,8 +334,11 @@ const saveQuote = async () => {
 
   } catch (e) {
     console.error('保存日报价失败:', e)
+  } finally {
+    saveLoading.value = false
+    toast.hideLoading()
   }
-}
+}, 1500)
 
 // 折线图相关
 const chartRange = ref('month')

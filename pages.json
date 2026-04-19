@@ -83,6 +83,12 @@
 		"style": {
 			"navigationBarTitleText": "中间商管理"
 		}
+	},
+	{
+		"path": "pages/feedback/feedback",
+		"style": {
+			"navigationBarTitleText": "问题反馈"
+		}
 	}
 ],
 	"globalStyle": {

@@ -267,7 +267,7 @@
       </view>
 
       <view class="actions" v-if="showSaveButton">
-        <button @click="saveRecord" class="save-btn">保存</button>
+        <button @click="saveRecord" :disabled="saveLoading" class="save-btn">保存</button>
       </view>
     </view>
 
@@ -290,6 +290,7 @@ import { useUserStore, ROLES } from '@/store/user'
 import { departureApi, dailyQuoteApi, apiOps } from '@/api'
 import { calculateMerchantCost } from '@/utils/calc'
 import toast from '@/utils/toast'
+import { debounce } from '@/utils/throttle'
 import MerchantSelector from './components/merchant-selector.vue'
 
 const settingsStore = useSettingsStore()
@@ -383,6 +384,7 @@ const form = reactive({
 // 鸡场选择弹窗状态
 const merchantSelectorVisible = ref(false)
 const currentEditingMerchantIndex = ref(-1)
+const saveLoading = ref(false)
 const currentEditingMerchantId = computed(() => {
   if (currentEditingMerchantIndex.value >= 0 && currentEditingMerchantIndex.value < form.merchantDetails.length) {
     return form.merchantDetails[currentEditingMerchantIndex.value].merchantId || ''
@@ -581,7 +583,7 @@ const removeMerchant = (index) => { form.merchantDetails.splice(index, 1) }
 const addTruckRow = () => { form.truckRows.push({ rowNumber: form.truckRows.length + 1, bigBoxes: null, smallBoxes: null }) }
 const removeTruckRow = (index) => { form.truckRows.splice(index, 1) }
 
-const saveRecord = async () => {
+const saveRecord = debounce(async () => {
   // 添加校验
   if (!form.dailyQuote) {
     toast.error('请填写当日报价')
@@ -648,14 +650,24 @@ const saveRecord = async () => {
     dailyQuote: Number(form.dailyQuote) || 0
   }
 
-  if (form.id) {
-    await departureApi.update(form.id, record)
-  } else {
-    await departureApi.create(record)
-  }
+  saveLoading.value = true
+  toast.loading('保存中...')
 
-  uni.navigateBack()
-}
+  try {
+    if (form.id) {
+      await departureApi.update(form.id, record)
+    } else {
+      await departureApi.create(record)
+    }
+
+    uni.navigateBack()
+  } catch (e) {
+    console.error('保存失败:', e)
+  } finally {
+    saveLoading.value = false
+    toast.hideLoading()
+  }
+}, 1500)
 
 onMounted(async () => {
   // 加载默认设置

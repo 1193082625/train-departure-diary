@@ -37,4 +37,19 @@ toast.error = (title, duration = 2000) => toast(title, 'none', duration)
  */
 toast.warning = (title, duration = 2000) => toast(title, 'none', duration)
 
+/**
+ * 显示加载中提示
+ * @param {string} title - 提示内容
+ */
+toast.loading = (title = '处理中...') => {
+  uni.showLoading({ title, mask: true })
+}
+
+/**
+ * 隐藏加载中提示
+ */
+toast.hideLoading = () => {
+  uni.hideLoading()
+}
+
 export default toast

@@ -76,7 +76,7 @@
 		</uni-forms>
         <view class="modal-actions">
           <button @click="closeModal">取消</button>
-          <button @click="saveMerchant">保存</button>
+          <button @click="saveMerchant" :disabled="saveLoading">保存</button>
         </view>
       </view>
     </view>
@@ -89,6 +89,7 @@ import { onShow, onHide, onReachBottom, onPullDownRefresh } from '@dcloudio/uni-
 import { useUserStore } from '@/store/user'
 import { request, invalidateCache } from '@/api'
 import toast from '@/utils/toast'
+import { debounce } from '@/utils/throttle'
 
 const userStore = useUserStore()
 
@@ -121,6 +122,7 @@ onPullDownRefresh(() => {
 const merchants = ref([])
 const loading = ref(false)
 const loadingMore = ref(false)
+const saveLoading = ref(false)
 const pagination = ref({
   page: 1,
   pageSize: 15,
@@ -231,7 +233,7 @@ const closeModal = () => {
   form.margin = null
 }
 
-const saveMerchant = async () => {
+const saveMerchant = debounce(async () => {
   // 校验手机号格式
   if (!form.phone || !form.phone.match(/^1[3-9]\d{9}$/)) {
     toast.error('请输入正确的手机号')
@@ -249,6 +251,9 @@ const saveMerchant = async () => {
     margin: Number(form.margin) || 0,
     userId: userStore.currentUser?.id || null
   }
+
+  saveLoading.value = true
+  toast.loading('保存中...')
 
   try {
     if (editingMerchant.value) {
@@ -269,8 +274,11 @@ const saveMerchant = async () => {
     invalidateCache('merchants')
   } catch (e) {
     console.error('保存失败:', e)
+  } finally {
+    saveLoading.value = false
+    toast.hideLoading()
   }
-}
+}, 1500)
 
 const deleteMerchant = async (id) => {
   uni.showModal({

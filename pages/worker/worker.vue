@@ -76,7 +76,7 @@
 		</uni-forms>
         <view class="modal-actions">
           <button @click="closeModal">取消</button>
-          <button @click="saveWorker">保存</button>
+          <button @click="saveWorker" :disabled="saveLoading">保存</button>
         </view>
       </view>
     </view>
@@ -89,6 +89,7 @@ import { onShow, onReachBottom, onPullDownRefresh } from '@dcloudio/uni-app'
 import { useUserStore } from '@/store/user'
 import { request, invalidateCache } from '@/api'
 import toast from '@/utils/toast'
+import { debounce } from '@/utils/throttle'
 
 const userStore = useUserStore()
 
@@ -121,6 +122,7 @@ onPullDownRefresh(() => {
 const workers = ref([])
 const loading = ref(false)
 const loadingMore = ref(false)
+const saveLoading = ref(false)
 const pagination = ref({
   page: 1,
   pageSize: 50,
@@ -228,7 +230,7 @@ const closeModal = () => {
   form.typeIndex = 2
 }
 
-const saveWorker = async () => {
+const saveWorker = debounce(async () => {
   if (!form.name) {
     toast.error('请输入姓名')
     return
@@ -244,6 +246,9 @@ const saveWorker = async () => {
     type: typeMap[form.typeIndex],
     userId: userStore.currentUser?.id || null
   }
+
+  saveLoading.value = true
+  toast.loading('保存中...')
 
   try {
     if (editingWorker.value) {
@@ -264,8 +269,11 @@ const saveWorker = async () => {
     invalidateCache('workers')
   } catch (e) {
     console.error('保存失败:', e)
+  } finally {
+    saveLoading.value = false
+    toast.hideLoading()
   }
-}
+}, 1500)
 
 const deleteWorker = async (id) => {
   uni.showModal({

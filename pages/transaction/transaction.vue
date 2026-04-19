@@ -33,7 +33,7 @@
         <input v-model="form.note" placeholder="可选" />
       </view>
 
-      <button @click="addTransaction" class="add-btn">确认结账</button>
+      <button @click="addTransaction" :disabled="saveLoading" class="add-btn">确认结账</button>
     </view>
 
     <view class="records">
@@ -101,6 +101,7 @@ import { ref, computed, reactive, nextTick, watch } from 'vue'
 import { onShow, onReachBottom, onPullDownRefresh } from '@dcloudio/uni-app'
 import { apiOps, request } from '@/api'
 import toast from '@/utils/toast'
+import { debounce } from '@/utils/throttle'
 
 // 交易记录（本地管理）
 const transactions = ref([])
@@ -112,6 +113,7 @@ const pagination = ref({
   total: 0,
   totalPages: 0
 })
+const saveLoading = ref(false)
 
 // 筛选器状态
 const filterTargetId = ref('')
@@ -295,11 +297,14 @@ const onFilterChange = (e) => {
 
 const onDateChange = (e) => { form.date = e.detail.value }
 
-const addTransaction = async () => {
+const addTransaction = debounce(async () => {
   if (!form.targetId || !form.amount) {
     toast.error('请完善信息')
     return
   }
+
+  saveLoading.value = true
+  toast.loading('处理中...')
 
   try {
     // 根据 type 确定 targetType
@@ -318,8 +323,11 @@ const addTransaction = async () => {
     form.note = ''
   } catch (e) {
     // toast.error('结账失败')
+  } finally {
+    saveLoading.value = false
+    toast.hideLoading()
   }
-}
+}, 1500)
 
 const deleteTransaction = (id) => {
   uni.showModal({
