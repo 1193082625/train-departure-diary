@@ -65,13 +65,13 @@
         <text class="modal-title">{{ editingMerchant ? '编辑鸡场' : '添加鸡场' }}</text>
 		<uni-forms :modelValue="form">
 			<uni-forms-item label="姓名" name="name">
-				<uni-easyinput type="text" v-model="form.name" placeholder="请输入姓名" />
+				<uni-easyinput type="text" v-model="form.name" placeholder="请输入姓名" @click.stop />
 			</uni-forms-item>
 			<uni-forms-item label="手机号" name="phone" v-if="!editingMerchant">
-				<uni-easyinput type="tel" v-model="form.phone" placeholder="请输入手机号" />
+				<uni-easyinput type="tel" v-model="form.phone" placeholder="请输入手机号" @click.stop />
 			</uni-forms-item>
 			<uni-forms-item label="差额" name="margin">
-				<uni-easyinput type="digit" v-model="form.margin" placeholder="差额（元/框）" />
+				<uni-easyinput type="digit" v-model="form.margin" placeholder="差额（元/框）" @click.stop />
 			</uni-forms-item>
 		</uni-forms>
         <view class="modal-actions">

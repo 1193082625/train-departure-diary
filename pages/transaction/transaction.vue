@@ -9,9 +9,15 @@
     </view>
 
     <view class="form-section">
-      <picker :range="targetOptions" :range-key="'name'" @change="onTargetChange">
+      <picker
+        :range="targetOptions"
+        :range-key="'name'"
+        :disabled="workersLoading || merchantsLoading"
+        @change="onTargetChange">
         <view class="flex-start">
-          <view class="picker font-bold">{{ selectedTarget?.name || '选择对象' }}</view>
+          <view class="picker font-bold">
+            {{ workersLoading || merchantsLoading ? '加载中...' : (selectedTarget?.name || '选择对象') }}
+          </view>
           <view class="ml-10 picker-text-label">(点击选择或切换)</view>
         </view>
       </picker>
@@ -216,14 +222,18 @@ onPullDownRefresh(() => {
 
 // 员工数据（本地管理）
 const allWorkers = ref([])
+const workersLoading = ref(false)
 
 const loadWorkers = async () => {
+  workersLoading.value = true
   try {
     const res = await apiOps.queryAll('workers')
     allWorkers.value = res.data || []
   } catch (e) {
     console.error('加载员工列表失败:', e)
     allWorkers.value = []
+  } finally {
+    workersLoading.value = false
   }
 }
 
@@ -231,14 +241,18 @@ const getWorkerById = (id) => allWorkers.value.find(w => w.id === id)
 
 // 商户数据（本地管理）
 const merchants = ref([])
+const merchantsLoading = ref(false)
 
 const loadMerchants = async () => {
+  merchantsLoading.value = true
   try {
     const res = await apiOps.queryAll('merchants')
     merchants.value = res.data || []
   } catch (e) {
     console.error('加载商户列表失败:', e)
     merchants.value = []
+  } finally {
+    merchantsLoading.value = false
   }
 }
 

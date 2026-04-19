@@ -296,7 +296,9 @@ const onCalendarChange = async (e) => {
   }
 
   // 弹出填写窗口
-  quotePopup.value.open('center')
+  if (quotePopup.value) {
+    quotePopup.value.open('center')
+  }
 }
 
 // 日历月份切换事件
@@ -324,7 +326,9 @@ const saveQuote = debounce(async () => {
   try {
     await saveQuoteToServer(popupDate.value, quoteInput.value)
     toast.success('报价保存成功')
-    quotePopup.value.close()
+    if (quotePopup.value) {
+      quotePopup.value.close()
+    }
 
     // 重新加载报价数据
     await loadQuotes(currentVisibleMonth.value.start, currentVisibleMonth.value.end)
