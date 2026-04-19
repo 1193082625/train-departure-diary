@@ -165,6 +165,7 @@ import { departureApi, apiOps } from '@/api'
 import { useUserStore, ROLES } from '@/store/user'
 import MiddlemanSelector from '@/components/middleman-selector.vue'
 import RecordCard from './components/record-card.vue'
+import toast from '@/utils/toast'
 
 const userStore = useUserStore()
 
@@ -470,6 +471,10 @@ const goToForm = () => {
 }
 
 const editRecord = (record) => {
+  if(userStore.currentUser.role === 'loader' && !record.isCreatedByMe) {
+    toast.error('没有操作权限')
+    return
+  }
   uni.navigateTo({ url: `/pages/departure/form?id=${record.id}` })
 }
 

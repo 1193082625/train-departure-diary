@@ -670,6 +670,8 @@ const saveRecord = debounce(async () => {
 }, 1500)
 
 onMounted(async () => {
+  // 加载中间商的settings（loader角色需要等settings加载完成）
+  await settingsStore.loadSettings()   
   // 加载默认设置
   loadDefaultSettings()
   // 加载员工数据

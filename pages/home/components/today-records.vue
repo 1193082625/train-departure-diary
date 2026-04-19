@@ -27,6 +27,7 @@ import { ref, computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { departureApi } from '@/api'
 import { useUserStore } from '@/store/user'
+import toast from '@/utils/toast'
 
 const userStore = useUserStore()
 
@@ -45,6 +46,10 @@ const goToDeparture = () => uni.navigateTo({ url: '/pages/departure/departure' }
 const goToDepartureForm = () => uni.navigateTo({ url: '/pages/departure/form' })
 
 const editRecord = (record) => {
+  if(userStore.currentUser.role === 'loader' && !record.isCreatedByMe) {
+    toast.error('没有操作权限')
+    return
+  }
   uni.navigateTo({ url: `/pages/departure/form?id=${record.id}` })
 }
 

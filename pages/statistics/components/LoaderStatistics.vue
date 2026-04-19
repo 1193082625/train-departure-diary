@@ -60,7 +60,7 @@
               @scrolltolower="loadMore"
               :lower-threshold="50"
             >
-              <view class="detail-item" v-for="(item, index) in personRecordList" :key="`${item.date}-${index}`" @click="goToDetail(item)">
+              <view class="detail-item" v-for="(item, index) in personRecordList" :key="`${item.date}-${index}`">
                 <text>{{ item.date }}</text>
                 <text>{{ item.info }}</text>
                 <text>{{ item.departureFee }}</text>
@@ -84,6 +84,7 @@
 
 <script setup>
 import { ref, reactive, watch, onMounted, onUnmounted } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import { departureApi } from '@/api'
 import { useUserStore } from '@/store/user'
 
@@ -281,6 +282,13 @@ onMounted(() => {
   }, 60000)
 })
 
+// 页面显示时刷新数据
+onShow(() => {
+  if (userStore.currentUser?.workerId) {
+    refreshData()
+  }
+})
+
 
 const onStartDateChange = (e) => {
   dateRange.start = e.detail.value
@@ -327,13 +335,6 @@ const setQuickRange = (type) => {
 // 获取当前激活的快捷范围
 const getActiveRange = () => {
   return quickRangeType.value
-}
-
-// 跳转详情
-const goToDetail = (item) => {
-  if (item.id) {
-    uni.navigateTo({ url: `/pages/departure/form?id=${item.id}` })
-  }
 }
 
 // 监听日期范围变化

@@ -52,7 +52,7 @@
         @scrolltolower="loadMore"
         :lower-threshold="50"
       >
-        <view class="detail-item" v-for="(item, index) in personRecordList" :key="`${item.date}-${index}`" @click="goToDetail(item)">
+        <view class="detail-item" v-for="(item, index) in personRecordList" :key="`${item.date}-${index}`">
           <text>{{ item.date }}</text>
           <text>{{ item.info }}</text>
           <text>{{ item.departureFee }}</text>
@@ -217,13 +217,6 @@ const refreshData = async () => {
     loadWorkerStats(),
     loadListData()
   ])
-}
-
-// 跳转详情
-const goToDetail = (item) => {
-  if (item.id) {
-    uni.navigateTo({ url: `/pages/departure/form?id=${item.id}` })
-  }
 }
 
 // 监听日期范围变化

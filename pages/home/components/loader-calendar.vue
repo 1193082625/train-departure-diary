@@ -15,6 +15,7 @@
 </template>
 <script setup>
 import { ref, onMounted, watch, computed } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import { useUserStore } from '@/store/user'
 import { departureApi } from '@/api'
 
@@ -88,6 +89,13 @@ onMounted(() => {
   const today = new Date()
   currentDate.value = today.toISOString().split('T')[0]
   loadCalendarRecords(currentDate.value)
+})
+
+// 页面显示时刷新日历数据
+onShow(() => {
+  if (currentWorkerId.value && currentDate.value) {
+    loadCalendarRecords(currentDate.value)
+  }
 })
 
 // 监听 currentUser 变化，确保 workerId 就绪后加载数据
