@@ -12,8 +12,8 @@ import toast from '@/utils/toast'
 // test环境 （测试，连接测试数据库）
 // const BASE_URL = ref('http://47.96.90.103:3001/api')
 // staging环境（预发布, 连接线上数据库）
-const BASE_URL = ref('http://47.96.90.103:3002/api')
-// const BASE_URL = ref('http://localhost:3000/api')
+// const BASE_URL = ref('http://47.96.90.103:3002/api')
+const BASE_URL = ref('http://localhost:3000/api')
 
 /**
  * 获取存储的 token

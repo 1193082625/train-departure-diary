@@ -139,6 +139,7 @@ import { onShow } from '@dcloudio/uni-app'
 import { useUserStore, ROLES } from '@/store/user'
 import { validatePhone } from '@/utils/validate'
 import request from '@/api/request'
+import toast from '@/utils/toast'
 
 const userStore = useUserStore()
 
@@ -149,7 +150,7 @@ const loginType = ref('') // 'invite' 或 'password'
 const showSetPassword = ref(false)
 const password = ref('')
 const confirmPassword = ref('')
-// 是否为完整正确的手机号
+const loginLoading = ref(false) // 是否为完整正确的手机号
 const phoneChecked = ref(false) // 是否已检查过手机号
 const agreedToAgreement = ref(false) // 是否同意协议
 const showAgreementPopup = ref('') // 显示协议弹窗 '' | 'user' | 'privacy'
@@ -250,7 +251,13 @@ const handleLogin = async () => {
     return
   }
 
+  loginLoading.value = true
+  toast.loading('登录中...')
+
   const result = await userStore.login(phone.value, inviteCode.value)
+
+  loginLoading.value = false
+  toast.hideLoading()
 
   if (result.success) {
     // 需要设置密码（首次登录的新用户或未设置密码的用户）
@@ -288,7 +295,14 @@ const handleSetPassword = async () => {
     return
   }
 
+  loginLoading.value = true
+  toast.loading('设置中...')
+
   const result = await userStore.setPassword(password.value)
+
+  loginLoading.value = false
+  toast.hideLoading()
+
   if (result.success) {
     uni.switchTab({
       url: '/pages/home/home'

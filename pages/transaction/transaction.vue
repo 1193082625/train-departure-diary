@@ -16,7 +16,7 @@
         @change="onTargetChange">
         <view class="flex-start">
           <view class="picker font-bold">
-            {{ workersLoading || merchantsLoading ? '加载中...' : (selectedTarget?.name || '选择对象') }}
+            {{ workersLoading || merchantsLoading ? '加载中...' : (selectedTarget?.name || (form.type === 'payment_to_merchant' ? '选择鸡场' : '选择员工')) }}
           </view>
           <view class="ml-10 picker-text-label">(点击选择或切换)</view>
         </view>
@@ -231,6 +231,7 @@ const loadWorkers = async () => {
     allWorkers.value = res.data || []
   } catch (e) {
     console.error('加载员工列表失败:', e)
+    toast.error('加载员工列表失败')
     allWorkers.value = []
   } finally {
     workersLoading.value = false
@@ -250,6 +251,7 @@ const loadMerchants = async () => {
     merchants.value = res.data || []
   } catch (e) {
     console.error('加载商户列表失败:', e)
+    toast.error('加载商户列表失败')
     merchants.value = []
   } finally {
     merchantsLoading.value = false
@@ -274,9 +276,7 @@ watch(() => form.type, () => {
 
 // 筛选器变化时重新加载
 watch(filterTargetId, () => {
-  if (transactions.value.length > 0) {
-    loadTransactions(1)
-  }
+  loadTransactions(1)
 })
 
 const targetOptions = computed(() =>
@@ -336,12 +336,12 @@ const addTransaction = debounce(async () => {
     form.amount = null
     form.note = ''
   } catch (e) {
-    // toast.error('结账失败')
+    toast.error('结账失败，请重试')
   } finally {
     saveLoading.value = false
     toast.hideLoading()
   }
-}, 1500)
+}, 1000)
 
 const deleteTransaction = (id) => {
   uni.showModal({
@@ -354,7 +354,7 @@ const deleteTransaction = (id) => {
           await loadTransactions()
           toast.success('删除成功')
         } catch (e) {
-          // toast.error('删除失败')
+          toast.error('删除失败')
         }
       }
     }
@@ -384,7 +384,7 @@ const saveTransaction = async () => {
     transactionPopup.value.close()
     toast.success('修改成功')
   } catch (e) {
-    // toast.error('修改失败')
+    toast.error('修改失败')
   }
 }
 </script>

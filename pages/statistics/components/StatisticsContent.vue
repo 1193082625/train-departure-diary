@@ -14,15 +14,16 @@
     </view>
 
     <view class="tabs">
-      <view :class="['tab', activeTab === 'worker' && 'active']" @click="activeTab = 'worker'">按人员</view>
       <view :class="['tab', activeTab === 'merchant' && 'active']" @click="activeTab = 'merchant'">按鸡场</view>
+      <view :class="['tab', activeTab === 'worker' && 'active']" @click="activeTab = 'worker'">按人员</view>
     </view>
-
-    <!-- 按人员统计 -->
-    <WorkerStatistics v-if="activeTab === 'worker'" :date-range="dateRange" @update:date-range="onDateRangeUpdate" />
 
     <!-- 按鸡场统计 -->
     <MerchantStatistics v-if="activeTab === 'merchant'" :date-range="dateRange" @update:date-range="onDateRangeUpdate" />
+    
+    <!-- 按人员统计 -->
+    <WorkerStatistics v-if="activeTab === 'worker'" :date-range="dateRange" @update:date-range="onDateRangeUpdate" />
+
   </view>
 </template>
 

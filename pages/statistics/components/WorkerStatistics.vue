@@ -1,8 +1,8 @@
 <template>
   <!-- 按人员统计 -->
   <view class="tab-content">
-    <picker :range="workerOptions" :range-key="'name'" @change="onWorkerChange">
-      <view class="picker">{{ selectedWorker?.name || '选择人员' }}</view>
+    <picker :range="workerOptions" :range-key="'name'" :disabled="workersLoading" @change="onWorkerChange">
+      <view class="picker">{{ workersLoading ? '加载中...' : (selectedWorker?.name || '选择人员') }}</view>
     </picker>
 
     <picker mode="date" :value="dateRange.start" @change="onStartDateChange">
@@ -83,6 +83,7 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { departureApi, apiOps } from '@/api'
 import { useUserStore, ROLES } from '@/store/user'
+import toast from '@/utils/toast'
 
 const props = defineProps({
   dateRange: {
@@ -96,6 +97,7 @@ const emit = defineEmits(['update:dateRange'])
 const userStore = useUserStore()
 
 const allWorkers = ref([])
+const workersLoading = ref(false)
 const selectedWorkerId = ref('')
 const openPersonRecordList = ref(true)
 
@@ -114,6 +116,7 @@ const workerStats = ref({
 
 // 日历数据
 const calendarRecords = ref([])
+const recordsLoading = ref(false)
 const currentDate = ref('')
 
 // 列表数据（分页）
@@ -125,16 +128,20 @@ const loadingMore = ref(false)
 const totalList = ref([]) // 完整列表数据
 
 const loadWorkers = async () => {
+  workersLoading.value = true
   try {
     const res = await apiOps.queryAll('workers')
     allWorkers.value = res.data || []
   } catch (e) {
     console.error('加载员工列表失败:', e)
     allWorkers.value = []
+  } finally {
+    workersLoading.value = false
   }
 }
 
 // 加载统计数据
+const statsLoading = ref(false)
 const loadWorkerStats = async () => {
   if (!selectedWorkerId.value) {
     workerStats.value = {
@@ -150,6 +157,7 @@ const loadWorkerStats = async () => {
     }
     return
   }
+  statsLoading.value = true
   try {
     const res = await departureApi.getWorkerStats(
       selectedWorkerId.value,
@@ -161,6 +169,7 @@ const loadWorkerStats = async () => {
     }
   } catch (e) {
     console.error('加载员工统计失败:', e)
+    toast.error('加载统计数据失败')
     workerStats.value = {
       workerId: '',
       workDays: 0,
@@ -172,6 +181,8 @@ const loadWorkerStats = async () => {
       totalEarned: 0,
       unpaidAmount: 0
     }
+  } finally {
+    statsLoading.value = false
   }
 }
 
@@ -181,6 +192,7 @@ const loadCalendarRecords = async () => {
     calendarRecords.value = []
     return
   }
+  recordsLoading.value = true
   try {
     const res = await departureApi.getWorkerCalendar(
       selectedWorkerId.value,
@@ -195,7 +207,10 @@ const loadCalendarRecords = async () => {
     }
   } catch (e) {
     console.error('加载日历数据失败:', e)
+    toast.error('加载日历数据失败')
     calendarRecords.value = []
+  } finally {
+    recordsLoading.value = false
   }
 }
 

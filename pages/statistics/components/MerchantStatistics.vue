@@ -1,8 +1,8 @@
 <template>
   <!-- 按鸡场统计 -->
   <view class="tab-content">
-    <picker :range="merchantOptions" :range-key="'name'" @change="onMerchantChange">
-      <view class="picker">{{ selectedMerchant?.name || '选择鸡场' }}</view>
+    <picker :range="merchantOptions" :range-key="'name'" :disabled="merchantsLoading" @change="onMerchantChange">
+      <view class="picker">{{ merchantsLoading ? '加载中...' : (selectedMerchant?.name || '选择鸡场') }}</view>
     </picker>
 
     <picker mode="date" :value="dateRange.start" @change="onStartDateChange">
@@ -127,6 +127,7 @@ const emit = defineEmits(['update:dateRange'])
 const userStore = useUserStore()
 
 const merchants = ref([])
+const merchantsLoading = ref(false)
 const selectedMerchantId = ref('')
 const merchantRecord = ref([])
 const openMerchantRecordList = ref(true)
@@ -142,12 +143,15 @@ const totalList = ref([]) // 完整列表数据
 
 // 加载商户列表
 const loadMerchants = async () => {
+  merchantsLoading.value = true
   try {
     const res = await apiOps.queryAll('merchants')
     merchants.value = res.data || []
   } catch (e) {
     console.error('【MerchantStatistics】加载商户列表失败:', e)
     merchants.value = []
+  } finally {
+    merchantsLoading.value = false
   }
 }
 

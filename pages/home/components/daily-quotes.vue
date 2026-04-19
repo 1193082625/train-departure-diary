@@ -344,7 +344,7 @@ const saveQuote = debounce(async () => {
     saveLoading.value = false
     toast.hideLoading()
   }
-}, 1500)
+}, 1000)
 
 // 折线图相关
 const chartRange = ref('month')

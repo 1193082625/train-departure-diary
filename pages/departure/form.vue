@@ -385,6 +385,7 @@ const form = reactive({
 const merchantSelectorVisible = ref(false)
 const currentEditingMerchantIndex = ref(-1)
 const saveLoading = ref(false)
+const initLoading = ref(false)
 const currentEditingMerchantId = computed(() => {
   if (currentEditingMerchantIndex.value >= 0 && currentEditingMerchantIndex.value < form.merchantDetails.length) {
     return form.merchantDetails[currentEditingMerchantIndex.value].merchantId || ''
@@ -663,15 +664,17 @@ const saveRecord = debounce(async () => {
     uni.navigateBack()
   } catch (e) {
     console.error('保存失败:', e)
+    toast.error('保存失败，请重试')
   } finally {
     saveLoading.value = false
     toast.hideLoading()
   }
-}, 1500)
+}, 1000)
 
 onMounted(async () => {
+  initLoading.value = true
   // 加载中间商的settings（loader角色需要等settings加载完成）
-  await settingsStore.loadSettings()   
+  await settingsStore.loadSettings()
   // 加载默认设置
   loadDefaultSettings()
   // 加载员工数据
@@ -694,6 +697,7 @@ onMounted(async () => {
     // 非编辑模式，自动带出当日报价
     loadQuoteByDate(form.date)
   }
+  initLoading.value = false
 })
 </script>
 

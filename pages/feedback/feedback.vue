@@ -126,16 +126,23 @@ const handleSubmit = async () => {
 </script>
 
 <style lang="scss" scoped>
+page {
+  height: 100%;
+  overflow: hidden;
+}
+
 .feedback-container {
-  min-height: 100vh;
+  height: 100%;
   background: #f5f5f5;
   padding: 30rpx;
+  box-sizing: border-box;
+  overflow-y: auto;
 }
 
 .form-card {
   background: #fff;
   border-radius: 16rpx;
-  padding: 0 30rpx;
+  padding: 0 30rpx 20rpx;
 }
 
 .form-item {

@@ -51,13 +51,13 @@
       </view>
 
       <!-- 问题反馈 -->
-      <!-- <view class="menu-item" @click="goToFeedback">
+      <view class="menu-item" @click="goToFeedback">
         <view class="menu-left">
           <image class="menu-icon-svg" src="/static/svg/feedback.svg" mode="aspectFit"></image>
           <text class="menu-text">问题反馈</text>
         </view>
         <image class="menu-icon-svg" src="/static/svg/arrow-right.svg" mode="aspectFit"></image>
-      </view> -->
+      </view>
     </view>
 
     <!-- 退出登录 -->
@@ -126,8 +126,10 @@ const editProfile = () => {
     editable: true,
     success: async (res) => {
       if (res.confirm && res.content) {
+        toast.loading('更新中...')
         const result = await userStore.updateUser({ nickname: res.content })
-        
+        toast.hideLoading()
+
         if (result.success) {
           showMessage('昵称已更新')
         } else {
@@ -158,7 +160,10 @@ const changePassword = () => {
                 showMessage('密码至少6位')
                 return
               }
+              toast.loading('修改中...')
               const result = await userStore.changePassword(oldPassword, newPassword)
+              toast.hideLoading()
+
               if (result.success) {
                 showMessage('密码修改成功')
               } else {
@@ -178,8 +183,10 @@ const handleLogout = () => {
     content: '确定要退出登录吗？',
     success: (res) => {
       if (res.confirm) {
+        toast.loading('退出中...')
         userStore.logout()
         setTimeout(() => {
+          toast.hideLoading()
           uni.reLaunch({
             url: '/pages/login/login'
           })

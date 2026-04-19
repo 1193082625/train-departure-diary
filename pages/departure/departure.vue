@@ -227,6 +227,7 @@ const loadRecords = async (reset = false) => {
     }
   } catch (e) {
     console.error('加载发车记录失败:', e)
+    toast.error('加载发车记录失败')
     if (reset) {
       refreshing.value = false
     }
@@ -268,6 +269,7 @@ const loadAggregateStats = async () => {
     }
   } catch (e) {
     console.error('加载聚合统计失败:', e)
+    toast.error('加载统计数据失败')
   } finally {
     statsLoading.value = false
   }

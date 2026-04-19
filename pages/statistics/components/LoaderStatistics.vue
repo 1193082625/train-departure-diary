@@ -87,6 +87,7 @@ import { ref, reactive, watch, onMounted, onUnmounted } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { departureApi } from '@/api'
 import { useUserStore } from '@/store/user'
+import toast from '@/utils/toast'
 
 const userStore = useUserStore()
 
@@ -101,6 +102,7 @@ const scrollHeight = ref('400px')
 const quickRangeType = ref('month') // 当前激活的快捷范围，默认本月
 
 // 统计数据
+const statsLoading = ref(false)
 const workerStats = ref({
   workerId: '',
   workDays: 0,
@@ -115,6 +117,7 @@ const workerStats = ref({
 
 // 日历数据
 const calendarRecords = ref([])
+const recordsLoading = ref(false)
 const currentDate = ref('')
 
 // 列表数据（分页）
@@ -123,6 +126,7 @@ const currentPage = ref(1)
 const pageSize = 20
 const hasMore = ref(false)
 const loadingMore = ref(false)
+const listLoading = ref(false)
 const totalList = ref([]) // 完整列表数据
 
 
@@ -142,6 +146,7 @@ const loadWorkerStats = async () => {
     }
     return
   }
+  statsLoading.value = true
   try {
     const res = await departureApi.getWorkerStats(
       userStore.currentUser.workerId,
@@ -153,6 +158,7 @@ const loadWorkerStats = async () => {
     }
   } catch (e) {
     console.error('加载员工统计失败:', e)
+    toast.error('加载统计数据失败')
     workerStats.value = {
       workerId: '',
       workDays: 0,
@@ -164,6 +170,8 @@ const loadWorkerStats = async () => {
       totalEarned: 0,
       unpaidAmount: 0
     }
+  } finally {
+    statsLoading.value = false
   }
 }
 
@@ -173,6 +181,7 @@ const loadCalendarRecords = async () => {
     calendarRecords.value = []
     return
   }
+  recordsLoading.value = true
   try {
     const res = await departureApi.getWorkerCalendar(
       userStore.currentUser.workerId,
@@ -187,7 +196,10 @@ const loadCalendarRecords = async () => {
     }
   } catch (e) {
     console.error('加载日历数据失败:', e)
+    toast.error('加载日历数据失败')
     calendarRecords.value = []
+  } finally {
+    recordsLoading.value = false
   }
 }
 
@@ -198,6 +210,7 @@ const loadListData = async () => {
     totalList.value = []
     return
   }
+  listLoading.value = true
   try {
     const res = await departureApi.getWorkerList(
       userStore.currentUser.workerId,
@@ -214,8 +227,11 @@ const loadListData = async () => {
     }
   } catch (e) {
     console.error('加载列表数据失败:', e)
+    toast.error('加载列表数据失败')
     personRecordList.value = []
     totalList.value = []
+  } finally {
+    listLoading.value = false
   }
 }
 

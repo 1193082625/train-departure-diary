@@ -269,11 +269,12 @@ const saveWorker = debounce(async () => {
     invalidateCache('workers')
   } catch (e) {
     console.error('保存失败:', e)
+    toast.error('保存失败')
   } finally {
     saveLoading.value = false
     toast.hideLoading()
   }
-}, 1500)
+}, 1000)
 
 const deleteWorker = async (id) => {
   uni.showModal({
@@ -288,6 +289,7 @@ const deleteWorker = async (id) => {
           invalidateCache('workers')
         } catch (e) {
           console.error('删除失败:', e)
+          toast.error('删除失败')
         }
       }
     }

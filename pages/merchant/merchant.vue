@@ -274,11 +274,12 @@ const saveMerchant = debounce(async () => {
     invalidateCache('merchants')
   } catch (e) {
     console.error('保存失败:', e)
+    toast.error('保存失败')
   } finally {
     saveLoading.value = false
     toast.hideLoading()
   }
-}, 1500)
+}, 1000)
 
 const deleteMerchant = async (id) => {
   uni.showModal({
@@ -293,6 +294,7 @@ const deleteMerchant = async (id) => {
           invalidateCache('merchants')
         } catch (e) {
           console.error('删除失败:', e)
+          toast.error('删除失败')
         }
       }
     }
