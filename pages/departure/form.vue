@@ -429,7 +429,9 @@ const showSaveButton = computed(() => {
       return true
     }
     // 编辑记录：只显示自己创建的
-    return form.userId === currentUser.value?.id
+    // return form.userId === currentUser.value?.id
+    // 装发车角色创建后只允许查看不允许删除
+    return false
   }
   return true
 })
