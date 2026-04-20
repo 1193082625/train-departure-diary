@@ -4,6 +4,7 @@ import { apiOps, userApi, inviteApi } from '@/api'
 import request from '@/api/request'
 import toast from '@/utils/toast'
 import { useSettingsStore } from './settings'
+import { cacheOps } from '@/api/cache'
 
 // 生成邀请码
 const generateInviteCode = () => {
@@ -272,6 +273,15 @@ export const useUserStore = defineStore('user', () => {
   const logout = () => {
     currentUser.value = null
     isLoggedIn.value = false
+    users.value = []  // 清空用户列表
+    currentMiddlemanId.value = null  // 重置中间商选择
+
+    // 清空所有 API 缓存
+    cacheOps.clearAll()
+
+    // 重置 settings store
+    useSettingsStore().resetToDefaults()
+
     uni.removeStorageSync('currentUser')
     uni.removeStorageSync('loginTime')
     uni.removeStorageSync('token')

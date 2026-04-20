@@ -59,15 +59,17 @@
       @scrolltolower="loadMore"
       v-if="userStore.isAdmin || userStore.isMiddleman"
     >
-      <view v-for="record in records" :key="record.id" class="record-item">
-        <text>{{ record.date }}</text>
-        <text class="merchant-name">{{ formatMerchants(record.merchantDetails) }}</text>
-        <text>{{ getTotalBigBoxes(record) }}</text>
-        <text>{{ getTotalSmallBoxes(record) }}</text>
-        <text :class="['profit', record.getMoney >= 0 ? 'positive' : 'negative']">
-          ¥{{ record.getMoney ? Number(record.getMoney).toFixed(2) : '0.00' }}
-        </text>
-      </view>
+      <template v-if="records.length">
+        <view v-for="record in records" :key="record.id" class="record-item" @click="goToDetail(record)">
+          <text>{{ record.date }}</text>
+          <text class="merchant-name">{{ formatMerchants(record.merchantDetails) }}</text>
+          <text>{{ getTotalBigBoxes(record) }}</text>
+          <text>{{ getTotalSmallBoxes(record) }}</text>
+          <text :class="['profit', record.getMoney >= 0 ? 'positive' : 'negative']">
+            ¥{{ record.getMoney ? Number(record.getMoney).toFixed(2) : '0.00' }}
+          </text>
+        </view>
+      </template>
       <view v-if="records.length === 0 && !isLoading" class="empty">暂无发车记录</view>
       <view v-if="isLoadingMore" class="loading-more">加载中...</view>
       <view v-if="!hasMore && records.length > 0" class="no-more">没有更多了</view>
@@ -77,7 +79,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onUnmounted, watch } from 'vue'
+import { ref, reactive, computed, onUnmounted, watch, nextTick } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { departureApi } from '@/api'
 import { useUserStore } from '@/store/user'
@@ -109,6 +111,13 @@ const getCacheKey = () => `userStats:${dateRange.start}:${dateRange.end}:${curre
 // 缓存 Map（内存缓存，避免重复请求）
 const pageCache = new Map()
 
+// 跳转详情
+const goToDetail = (item) => {
+  if (item.id) {
+    uni.navigateTo({ url: `/pages/departure/form?id=${item.id}` })
+  }
+}
+
 // 加载记录（分页）
 const loadRecords = async (reset = false) => {
   if (isLoading.value && !reset) {
@@ -135,16 +144,20 @@ const loadRecords = async (reset = false) => {
       pageSize
     )
 
+    records.value = []
     const newRecords = res.data || []
     // 从 pagination 对象中获取 total（后端返回格式：{ data, pagination: { total, totalPages } }）
     const total = res.pagination?.total || 0
     totalPages.value = Math.max(1, Math.ceil(total / pageSize))
 
-    if (currentPage.value === 1) {
-      records.value = newRecords
-    } else {
-      records.value = [...records.value, ...newRecords]
-    }
+    nextTick(() => {
+      if (currentPage.value === 1) {
+        records.value = newRecords
+      } else {
+        const newRecords = [...records.value, ...newRecords]
+        records.value = newRecords 
+      }
+    })
 
     // 缓存当前页
     pageCache.set(cacheKey, newRecords)

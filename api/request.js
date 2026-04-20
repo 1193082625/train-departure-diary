@@ -4,6 +4,7 @@
 
 import { ref } from 'vue'
 import toast from '@/utils/toast'
+import { cacheOps } from './cache'
 
 
 // API 基础 URL
@@ -12,8 +13,8 @@ import toast from '@/utils/toast'
 // test环境 （测试，连接测试数据库）
 // const BASE_URL = ref('http://47.96.90.103:3001/api')
 // staging环境（预发布, 连接线上数据库）
-// const BASE_URL = ref('http://47.96.90.103:3002/api')
-const BASE_URL = ref('http://localhost:3000/api')
+const BASE_URL = ref('http://47.96.90.103:3002/api')
+// const BASE_URL = ref('http://localhost:3000/api')
 
 /**
  * 获取存储的 token
@@ -26,6 +27,8 @@ const getToken = () => uni.getStorageSync('token')
 const redirectToLogin = () => {
   uni.removeStorageSync('token')
   uni.removeStorageSync('currentUser')
+  // 清空 API 缓存
+  cacheOps.clearAll()
   uni.reLaunch({ url: '/pages/login/login' })
 }
 

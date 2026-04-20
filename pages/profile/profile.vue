@@ -51,13 +51,13 @@
       </view>
 
       <!-- 问题反馈 -->
-      <view class="menu-item" @click="goToFeedback">
+      <!-- <view class="menu-item" @click="goToFeedback">
         <view class="menu-left">
           <image class="menu-icon-svg" src="/static/svg/feedback.svg" mode="aspectFit"></image>
           <text class="menu-text">问题反馈</text>
         </view>
         <image class="menu-icon-svg" src="/static/svg/arrow-right.svg" mode="aspectFit"></image>
-      </view>
+      </view> -->
     </view>
 
     <!-- 退出登录 -->

@@ -306,6 +306,7 @@ export const useSettingsStore = defineStore('settings', () => {
     setOilFee,
     updateAllSettings,
     loadSettings,
-    initSettingsForUser
+    initSettingsForUser,
+    resetToDefaults
   }
 })
